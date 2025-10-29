@@ -526,6 +526,12 @@ export default function MentalWheelApp() {
                 </div>
             </div>
 
+            <div className="fixed bottom-0 p-2">
+                <p className="text-xs text-center">
+                    Todos tus datos son almacenados localmente, de forma 100% privada y no se usan para nada.
+                </p>
+            </div>
+
             {/* Overlay del drawer */}
             {drawerOpen && (
                 <div
