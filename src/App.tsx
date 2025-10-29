@@ -84,6 +84,15 @@ export default function MentalWheelApp() {
         }
     });
 
+    // Estado para zoom y pan del SVG
+    const [scale, setScale] = useState<number>(1);
+    const [translateX, setTranslateX] = useState<number>(0);
+    const [translateY, setTranslateY] = useState<number>(0);
+    const [isPanning, setIsPanning] = useState<boolean>(false);
+    const [startPan, setStartPan] = useState<{ x: number; y: number } | null>(null);
+    const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
+    const [hasPanned, setHasPanned] = useState<boolean>(false);
+
     // Guardar preferencia de tema
     useEffect(() => {
         try {
@@ -200,6 +209,10 @@ export default function MentalWheelApp() {
 
     // --- Interacción (clic en rueda) ---
     function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+        if (hasPanned) {
+            setHasPanned(false);
+            return;
+        }
         const pt = getSvgPoint(e);
         const dx = pt.x - cx;
         const dy = pt.y - cy;
@@ -220,6 +233,20 @@ export default function MentalWheelApp() {
     }
 
     function handleSvgMove(e: React.MouseEvent<SVGSVGElement>) {
+        // Manejar pan
+        if (isPanning && startPan) {
+            const dx = e.clientX - startPan.x;
+            const dy = e.clientY - startPan.y;
+            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                setHasPanned(true);
+            }
+            setTranslateX((prev) => prev + dx);
+            setTranslateY((prev) => prev + dy);
+            setStartPan({ x: e.clientX, y: e.clientY });
+            return; // No mostrar hover mientras se hace pan
+        }
+
+        // Manejar hover info
         const pt = getSvgPoint(e);
         const dx = pt.x - cx;
         const dy = pt.y - cy;
@@ -250,6 +277,15 @@ export default function MentalWheelApp() {
         }
         const inv = screenCTM.inverse();
         const loc = pt.matrixTransform(inv);
+        
+        // Aplicar transformación inversa del zoom y pan
+        // La transformación es: translate(SIZE/2 + translateX, SIZE/2 + translateY) scale(scale) translate(-SIZE/2, -SIZE/2)
+        // La inversa es: translate(SIZE/2, SIZE/2) scale(1/scale) translate(-SIZE/2 - translateX, -SIZE/2 - translateY)
+        const transformedX = (loc.x - SIZE/2 - translateX) / scale + SIZE/2;
+        const transformedY = (loc.y - SIZE/2 - translateY) / scale + SIZE/2;
+        
+        loc.x = transformedX;
+        loc.y = transformedY;
         return loc;
     }
 
@@ -424,6 +460,73 @@ export default function MentalWheelApp() {
     const total = sectors.reduce((acc, s) => acc + (scores[s.id] || 0), 0);
     const avg = sectors.length ? (total / sectors.length).toFixed(2) : "0.00";
 
+    // === Funciones de zoom y pan ===
+    const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        setScale((prev) => clamp(prev * delta, 0.5, 5));
+    };
+
+    const getTouchDistance = (touch1: React.Touch, touch2: React.Touch): number => {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent<SVGSVGElement>) => {
+        if (e.touches.length === 2) {
+            const distance = getTouchDistance(e.touches[0], e.touches[1]);
+            setLastTouchDistance(distance);
+        } else if (e.touches.length === 1) {
+            setIsPanning(true);
+            setHasPanned(false);
+            setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+        if (e.touches.length === 2 && lastTouchDistance !== null) {
+            const distance = getTouchDistance(e.touches[0], e.touches[1]);
+            const delta = distance / lastTouchDistance;
+            setScale((prev) => clamp(prev * delta, 0.5, 5));
+            setLastTouchDistance(distance);
+        } else if (e.touches.length === 1 && isPanning && startPan) {
+            const dx = e.touches[0].clientX - startPan.x;
+            const dy = e.touches[0].clientY - startPan.y;
+            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                setHasPanned(true);
+            }
+            setTranslateX((prev) => prev + dx);
+            setTranslateY((prev) => prev + dy);
+            setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setLastTouchDistance(null);
+        setIsPanning(false);
+        setStartPan(null);
+    };
+
+    const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+        if (e.button === 0) {
+            setIsPanning(true);
+            setHasPanned(false);
+            setStartPan({ x: e.clientX, y: e.clientY });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsPanning(false);
+        setStartPan(null);
+    };
+
+    const resetZoom = () => {
+        setScale(1);
+        setTranslateX(0);
+        setTranslateY(0);
+    };
+
     // Colores según tema
     const theme = {
         bg: darkMode ? "bg-neutral-600" : "bg-neutral-300",
@@ -460,6 +563,17 @@ export default function MentalWheelApp() {
                     <line x1="3" y1="18" x2="21" y2="18" />
                 </svg>
             </button>
+
+            {/* Botón de reset zoom - solo visible cuando hay zoom o pan */}
+            {(scale !== 1 || translateX !== 0 || translateY !== 0) && (
+                <button
+                    onClick={resetZoom}
+                    className={`fixed bottom-4 right-4 z-40 rounded-full ${theme.buttonPrimary} px-4 py-3 shadow-lg transition-colors text-sm font-medium`}
+                    title="Resetear zoom"
+                >
+                    🔍
+                </button>
+            )}
 
             {/* Información flotante arriba a la izquierda */}
             <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row gap-2 sm:gap-3 max-w-[calc(100%-120px)] sm:max-w-none">
@@ -498,10 +612,17 @@ export default function MentalWheelApp() {
                         onClick={handleSvgClick}
                         onMouseMove={handleSvgMove}
                         onMouseLeave={() => setHoverInfo(null)}
+                        onWheel={handleWheel}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onMouseDown={handleMouseDown}
+                        onMouseUp={handleMouseUp}
                         className="select-none touch-none drop-shadow-2xl"
-                        style={{ maxWidth: '100%', maxHeight: '100%' }}
+                        style={{ maxWidth: '100%', maxHeight: '100%', cursor: isPanning ? 'grabbing' : 'grab' }}
                         preserveAspectRatio="xMidYMid meet"
                     >
+                        <g transform={`translate(${SIZE/2 + translateX} ${SIZE/2 + translateY}) scale(${scale}) translate(${-SIZE/2} ${-SIZE/2})`}>
                         {/* fondo */}
                         <circle cx={cx} cy={cy} r={radius} fill={theme.svgBg} />
 
@@ -522,11 +643,12 @@ export default function MentalWheelApp() {
 
                         {/* círculo central */}
                         <circle cx={cx} cy={cy} r={ringThickness * 0.6} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
+                        </g>
                     </svg>
                 </div>
             </div>
 
-            <div className="fixed bottom-0 p-2">
+            <div className="fixed bottom-0 p-2 me-20">
                 <p className="text-xs text-center">
                     Todos tus datos son almacenados localmente, de forma 100% privada y no se usan para nada.
                 </p>
@@ -608,7 +730,7 @@ export default function MentalWheelApp() {
                                                 setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, color: e.target.value } : x)))
                                             }
                                             title="Color"
-                                            className={`h-5 w-5 sm:h-7 sm:w-7 cursor-pointer rounded-sm border ${ darkMode ? 'border-black' : 'border-white'} flex-shrink-0`}
+                                            className="h-8 w-8 sm:h-10 sm:w-10 cursor-pointer rounded-md border flex-shrink-0"
                                         />
                                         <input
                                             value={s.name}
