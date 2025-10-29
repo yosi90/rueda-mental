@@ -451,7 +451,7 @@ export default function MentalWheelApp() {
             {/* Botón para abrir drawer */}
             <button
                 onClick={() => setDrawerOpen(true)}
-                className={`fixed top-4 right-4 z-40 rounded-full ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
+                className={`fixed top-4 right-4 z-40 rounded-lg ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
                 title="Configuración"
             >
                 <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -462,29 +462,29 @@ export default function MentalWheelApp() {
             </button>
 
             {/* Información flotante arriba a la izquierda */}
-            <div className="fixed top-4 left-4 z-40 flex gap-3">
+            <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row gap-2 sm:gap-3 max-w-[calc(100%-120px)] sm:max-w-none">
                 {/* Card de promedio */}
-                <div className={`rounded-2xl ${theme.card} backdrop-blur-sm px-4 py-3 shadow-lg`}>
-                    <div className={`text-sm ${theme.textMuted} mb-2`}>
+                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
+                    <div className={`text-xs sm:text-sm ${theme.textMuted} mb-1 sm:mb-2`}>
                         {hoverInfo ? (
                             <HoverText sectors={sectors} hoverInfo={hoverInfo} darkMode={darkMode} />
                         ) : (
-                            <span>Media del día: <b className={`text-lg ${theme.text}`}>{avg}</b></span>
+                            <span>Media del día: <b className={`text-base sm:text-lg ${theme.text}`}>{avg}</b></span>
                         )}
                     </div>
-                    <div className={`text-xs ${theme.textLight}`}>Click para puntuar</div>
+                    <div className={`text-[10px] sm:text-xs ${theme.textLight}`}>Click para puntuar</div>
                 </div>
 
                 {/* Card de fecha */}
-                <div className={`rounded-2xl ${theme.card} backdrop-blur-sm px-4 py-3 shadow-lg`}>
+                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
                     <input
                         type="date"
                         value={dateStr}
                         onChange={(e) => setDateStr(e.target.value)}
-                        className={`text-sm border-0 bg-transparent p-0 cursor-pointer focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} rounded ${theme.text} mb-3`}
+                        className={`text-xs sm:text-sm border-0 bg-transparent p-0 cursor-pointer focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} rounded ${theme.text} mb-2 sm:mb-3`}
                         style={{ fontFamily: 'inherit', colorScheme: darkMode ? 'dark' : 'light' }}
                     />
-                    <div className={`text-xs ${theme.textLight}`}>Día seleccionado</div>
+                    <div className={`text-[10px] sm:text-xs ${theme.textLight}`}>Día seleccionado</div>
                 </div>
             </div>
 
@@ -593,8 +593,8 @@ export default function MentalWheelApp() {
 
                         <ul className="flex flex-col gap-3">
                             {sectors.map((s, i) => (
-                                <li key={s.id} className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                    <div className="flex items-center gap-2 mb-3">
+                                <li key={s.id} className={`rounded-xl border ${theme.border} p-3 sm:p-4 ${theme.inputAlt}`}>
+                                    <div className="flex items-center gap-2 mb-3 flex-wrap sm:flex-nowrap">
                                         <input
                                             type="color"
                                             value={rgbToHex(s.color)}
@@ -602,19 +602,19 @@ export default function MentalWheelApp() {
                                                 setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, color: e.target.value } : x)))
                                             }
                                             title="Color"
-                                            className="h-10 w-10 cursor-pointer rounded-md border"
+                                            className={`h-5 w-5 sm:h-7 sm:w-7 cursor-pointer rounded-sm border ${ darkMode ? 'border-black' : 'border-white'} flex-shrink-0`}
                                         />
                                         <input
                                             value={s.name}
                                             onChange={(e) =>
                                                 setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)))
                                             }
-                                            className={`flex-1 rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                            className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
                                         />
                                         <div className="flex gap-1">
                                             <button
                                                 onClick={() => moveSector(s.id, -1)}
-                                                className={`rounded-md border ${theme.border} ${theme.button} px-2 py-1 text-xs transition-colors`}
+                                                className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
                                                 disabled={i === 0}
                                                 title="Subir"
                                             >
@@ -622,7 +622,7 @@ export default function MentalWheelApp() {
                                             </button>
                                             <button
                                                 onClick={() => moveSector(s.id, +1)}
-                                                className={`rounded-md border ${theme.border} ${theme.button} px-2 py-1 text-xs transition-colors`}
+                                                className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
                                                 disabled={i === sectors.length - 1}
                                                 title="Bajar"
                                             >
@@ -630,7 +630,7 @@ export default function MentalWheelApp() {
                                             </button>
                                             <button
                                                 onClick={() => removeSector(s.id)}
-                                                className={`rounded-md border ${theme.border} ${theme.button} px-2 py-1 text-xs transition-colors`}
+                                                className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
                                                 title="Eliminar"
                                             >
                                                 🗑️
@@ -639,15 +639,15 @@ export default function MentalWheelApp() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-xs ${theme.textMuted} w-20`}>Puntuación:</span>
+                                        <div className="flex items-center gap-1 sm:gap-2">
+                                            <span className={`text-xs ${theme.textMuted} w-16 sm:w-20 flex-shrink-0`}>Puntuación:</span>
                                             <input
                                                 type="range"
                                                 min={0}
                                                 max={RING_COUNT}
                                                 value={scores[s.id] ?? 0}
                                                 onChange={(e) => setScore(s.id, e.target.value)}
-                                                className="flex-1"
+                                                className="flex-1 min-w-0"
                                             />
                                             <input
                                                 type="number"
@@ -655,7 +655,7 @@ export default function MentalWheelApp() {
                                                 max={RING_COUNT}
                                                 value={scores[s.id] ?? 0}
                                                 onChange={(e) => setScore(s.id, e.target.value)}
-                                                className={`w-16 rounded-md border ${theme.input} px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                                className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} flex-shrink-0`}
                                             />
                                         </div>
                                     </div>
@@ -714,7 +714,7 @@ function HoverText({ sectors, hoverInfo, darkMode }: HoverTextProps) {
     if (!s) return null;
     return (
         <span>
-            {s.name}: <b className={`text-lg ${darkMode ? 'text-neutral-100' : 'text-neutral-900'}`}>{hoverInfo.level}</b>
+            {s.name}: <b className={`text-base sm:text-lg ${darkMode ? 'text-neutral-100' : 'text-neutral-900'}`}>{hoverInfo.level}</b>
         </span>
     );
 }

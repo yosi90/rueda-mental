@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // === Mental Performance Wheel (single-file React component) ===
 // - Añade/Quita sectores (aspectos de vida)
@@ -7,30 +7,57 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 // - Exporta/Importa JSON
 // - UI en español (ES)
 
+interface Sector {
+    id: string;
+    name: string;
+    color: string;
+}
+
+interface SectorWithAngles extends Sector {
+    a0: number;
+    a1: number;
+    mid: number;
+    a0n: number;
+    a1n: number;
+}
+
+interface HoverInfo {
+    sectorId: string;
+    level: number;
+}
+
+interface Scores {
+    [key: string]: number;
+}
+
+interface ScoresByDate {
+    [key: string]: Scores;
+}
+
 export default function MentalWheelApp() {
     // --- Configuración base ---
     const RING_COUNT = 10; // 0..10 (0 = sin nota)
     const SIZE = 520; // tamaño SVG
-    const PADDING = 24; // margen para etiquetas externas
+    const PADDING = 70; // margen para etiquetas externas (aumentado para mejor visualización)
     const cx = SIZE / 2;
     const cy = SIZE / 2;
     const radius = (SIZE / 2) - PADDING;
     const ringThickness = radius / RING_COUNT;
 
     // --- Helpers ---
-    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const toDeg = (rad) => (rad * 180) / Math.PI;
+    const clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
+    const toRad = (deg: number): number => (deg * Math.PI) / 180;
+    const toDeg = (rad: number): number => (rad * 180) / Math.PI;
 
-    const formatDateInput = (d) => {
+    const formatDateInput = (d: Date): string => {
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, "0");
         const dd = String(d.getDate()).padStart(2, "0");
         return `${y}-${m}-${dd}`;
     };
 
-    const normDeg = (d) => ((d % 360) + 360) % 360; // 0..360
-    const inSector = (ang, s) => {
+    const normDeg = (d: number): number => ((d % 360) + 360) % 360; // 0..360
+    const inSector = (ang: number, s: SectorWithAngles): boolean => {
         const a0 = s.a0n, a1 = s.a1n;           // ya normalizados
         return a0 <= a1 ? (ang >= a0 && ang <= a1)
             : (ang >= a0 || ang <= a1); // sector que cruza 360°
@@ -38,17 +65,17 @@ export default function MentalWheelApp() {
 
     // --- Estado ---
     const todayStr = formatDateInput(new Date());
-    const [dateStr, setDateStr] = useState(todayStr);
-    const [sectors, setSectors] = useState(() => loadConfig() || defaultSectors());
+    const [dateStr, setDateStr] = useState<string>(todayStr);
+    const [sectors, setSectors] = useState<Sector[]>(() => loadConfig() || defaultSectors());
     // scores: mapa { dateStr: { id: value } }
-    const [scoresByDate, setScoresByDate] = useState(() => loadScores());
+    const [scoresByDate, setScoresByDate] = useState<ScoresByDate>(() => loadScores());
     const scores = scoresByDate[dateStr] || {};
 
     // UI state
-    const [newName, setNewName] = useState("");
-    const [hoverInfo, setHoverInfo] = useState(null); // {sectorId, level}
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const [darkMode, setDarkMode] = useState(() => {
+    const [newName, setNewName] = useState<string>("");
+    const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+    const [darkMode, setDarkMode] = useState<boolean>(() => {
         try {
             const saved = localStorage.getItem("mental-wheel-dark-mode");
             return saved ? JSON.parse(saved) : false;
@@ -61,7 +88,9 @@ export default function MentalWheelApp() {
     useEffect(() => {
         try {
             localStorage.setItem("mental-wheel-dark-mode", JSON.stringify(darkMode));
-        } catch { }
+        } catch (error) {
+            console.error("Error al guardar el tema:", error);
+        }
     }, [darkMode]);
 
     // Guardar en localStorage cuando cambia config o datos
@@ -73,7 +102,7 @@ export default function MentalWheelApp() {
         if (!scoresByDate[dateStr]) {
             setScoresByDate((prev) => ({ ...prev, [dateStr]: {} }));
         }
-    }, [dateStr]);
+    }, [dateStr, scoresByDate]);
 
     const sectorsWithAngles = useMemo(() => {
         const gapDeg = 2;
@@ -100,10 +129,20 @@ export default function MentalWheelApp() {
             return null;
         }
     }
-    function saveConfig(cfg) {
+    function saveConfig(cfg: Sector[]): void {
         try {
             localStorage.setItem("mental-wheel-config-v1", JSON.stringify(cfg));
-        } catch { }
+        } catch (error) {
+            console.error("Error al guardar la configuración:", error);
+        }
+    }
+
+    function saveScores(data: ScoresByDate): void {
+        try {
+            localStorage.setItem("mental-wheel-scores-v1", JSON.stringify(data));
+        } catch (error) {
+            console.error("Error al guardar las puntuaciones:", error);
+        }
     }
     function defaultSectors() {
         const names = [
@@ -116,7 +155,7 @@ export default function MentalWheelApp() {
             "Ocio",
             "Aprendizaje",
         ];
-        return names.map((name, i) => ({ id: genId(), name, color: hslFor(i, names.length) }));
+        return names.map((name, i) => ({ id: genId(), name, color: hslFor(i) }));
     }
     function loadScores() {
         try {
@@ -126,26 +165,25 @@ export default function MentalWheelApp() {
             return {};
         }
     }
-    function saveScores(data) {
-        try {
-            localStorage.setItem("mental-wheel-scores-v1", JSON.stringify(data));
-        } catch { }
-    }
+    // La función saveScores se ha movido más arriba con tipos apropiados
 
     function genId() {
         return Math.random().toString(36).slice(2, 10);
     }
-    function hslFor(i, n) {
-        const hue = Math.round((360 * i) / Math.max(1, n));
+    function hslFor(i: number): string {
+        // Usar el ángulo dorado (~137.5°) para mejor distribución de colores
+        // Esto asegura que los colores estén bien distribuidos incluso con muchos sectores
+        const goldenAngle = 137.508;
+        const hue = Math.round((i * goldenAngle) % 360);
         return `hsl(${hue} 70% 50%)`;
     }
 
     // --- Geometría SVG ---
-    function polar(cx, cy, r, angDeg) {
+    function polar(cx: number, cy: number, r: number, angDeg: number): [number, number] {
         const rad = toRad(angDeg);
         return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
     }
-    function sectorPath(innerR, outerR, a0, a1) {
+    function sectorPath(innerR: number, outerR: number, a0: number, a1: number): string {
         // path para un anillo sectorial (entre innerR y outerR)
         const [x0i, y0i] = polar(cx, cy, innerR, a0);
         const [x0o, y0o] = polar(cx, cy, outerR, a0);
@@ -161,7 +199,7 @@ export default function MentalWheelApp() {
     }
 
     // --- Interacción (clic en rueda) ---
-    function handleSvgClick(e) {
+    function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
         const pt = getSvgPoint(e);
         const dx = pt.x - cx;
         const dy = pt.y - cy;
@@ -181,7 +219,7 @@ export default function MentalWheelApp() {
         }));
     }
 
-    function handleSvgMove(e) {
+    function handleSvgMove(e: React.MouseEvent<SVGSVGElement>) {
         const pt = getSvgPoint(e);
         const dx = pt.x - cx;
         const dy = pt.y - cy;
@@ -201,12 +239,15 @@ export default function MentalWheelApp() {
         setHoverInfo({ sectorId: sector.id, level });
     }
 
-    function getSvgPoint(evt) {
+    function getSvgPoint(evt: React.MouseEvent<SVGSVGElement>): DOMPoint {
         const svg = evt.currentTarget;
         const pt = svg.createSVGPoint();
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         const screenCTM = svg.getScreenCTM();
+        if (!screenCTM) {
+            throw new Error("Failed to get screen CTM");
+        }
         const inv = screenCTM.inverse();
         const loc = pt.matrixTransform(inv);
         return loc;
@@ -215,11 +256,11 @@ export default function MentalWheelApp() {
     // --- UI Ops ---
     function addSector() {
         const name = newName.trim() || `Sector ${sectors.length + 1}`;
-        const color = hslFor(sectors.length, Math.max(1, sectors.length + 1));
+        const color = hslFor(sectors.length);
         setSectors((prev) => [...prev, { id: genId(), name, color }]);
         setNewName("");
     }
-    function removeSector(id) {
+    function removeSector(id: string): void {
         setSectors((prev) => prev.filter((s) => s.id !== id));
         setScoresByDate((prev) => {
             const copy = { ...prev };
@@ -231,7 +272,7 @@ export default function MentalWheelApp() {
             return copy;
         });
     }
-    function moveSector(id, dir) {
+    function moveSector(id: string, dir: number): void {
         setSectors((prev) => {
             const i = prev.findIndex((s) => s.id === id);
             const j = i + dir;
@@ -242,7 +283,7 @@ export default function MentalWheelApp() {
             return arr;
         });
     }
-    function setScore(id, val) {
+    function setScore(id: string, val: string | number): void {
         const level = clamp(Number(val) || 0, 0, RING_COUNT);
         setScoresByDate((prev) => ({ ...prev, [dateStr]: { ...prev[dateStr], [id]: level } }));
     }
@@ -268,7 +309,7 @@ export default function MentalWheelApp() {
         a.click();
         URL.revokeObjectURL(url);
     }
-    function importJSON(evt) {
+    function importJSON(evt: React.ChangeEvent<HTMLInputElement>): void {
         const file = evt.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
@@ -277,8 +318,9 @@ export default function MentalWheelApp() {
                 const data = JSON.parse(String(reader.result));
                 if (data.config && Array.isArray(data.config)) setSectors(data.config);
                 if (data.scoresByDate && typeof data.scoresByDate === "object") setScoresByDate(data.scoresByDate);
-            } catch (e) {
+            } catch (error) {
                 alert("Archivo JSON no válido");
+                console.error("Error al importar JSON:", error);
             }
         };
         reader.readAsText(file);
@@ -301,7 +343,7 @@ export default function MentalWheelApp() {
             />
         ));
         const sectorLines = sectorsWithAngles.map((s) => {
-            const [x0, y0] = polar(cx, cy, 0, s.a0);
+            // Las líneas del sector comienzan desde el centro
             const [x1, y1] = polar(cx, cy, radius, s.a0);
             return (
                 <line key={`l-${s.id}`} x1={cx} y1={cy} x2={x1} y2={y1} stroke={theme.svgGrid} />
@@ -337,15 +379,11 @@ export default function MentalWheelApp() {
 
     function renderLabelsFixed() {
         return sectorsWithAngles.map((s) => {
-            const [lx, ly] = polar(cx, cy, radius - 6, s.mid);
-            const [tx, ty] = polar(cx, cy, radius + 14, s.mid);
+            const [tx, ty] = polar(cx, cy, radius + 24, s.mid);
             const cosv = Math.cos(toRad(s.mid));
-            const sinv = Math.sin(toRad(s.mid));
             const anchor = cosv > 0.25 ? "start" : cosv < -0.25 ? "end" : "middle";
-            const dy = sinv > 0.35 ? 8 : sinv < -0.35 ? -2 : 4;
             return (
                 <g key={`lab-${s.id}`}>
-                    <line x1={lx} y1={ly} x2={tx} y2={ty} stroke={theme.svgText} strokeWidth={1} />
                     <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="middle" fill={theme.svgText}>
                         {s.name}
                     </text>
@@ -355,15 +393,30 @@ export default function MentalWheelApp() {
     }
 
     function renderRingNumbers() {
-        // Números 1..10 en el eje derecho
+        // Números 1..10 escalados según su posición, solo visibles en pantallas grandes y con 10 o menos sectores
+        if (sectors.length > 10) return null;
+        
         return Array.from({ length: RING_COUNT }, (_, i) => {
-            const r = (i + 1) * ringThickness;
+            const level = i + 1;
+            // Posicionar en el centro del anillo, no en el borde
+            const r = (level - 0.5) * ringThickness;
             const [tx, ty] = polar(cx, cy, r, 0); // 0° = derecha
+            // Escalar el tamaño del texto según el nivel (de 6px a 14px)
+            const fontSize = 6 + (level / RING_COUNT) * 8;
             return (
-                <g key={`n-${i}`}>
-                    <line x1={tx - 6} y1={ty} x2={tx + 6} y2={ty} stroke={theme.svgText} />
-                    <text x={tx + 10} y={ty} fontSize={12} dominantBaseline="middle" fill={theme.svgText}>{i + 1}</text>
-                </g>
+                <text 
+                    key={`n-${i}`} 
+                    x={tx} 
+                    y={ty} 
+                    fontSize={fontSize} 
+                    textAnchor="middle" 
+                    dominantBaseline="middle" 
+                    fill={theme.svgText}
+                    opacity={0.6}
+                    className="hidden md:block"
+                >
+                    {level}
+                </text>
             );
         });
     }
@@ -469,9 +522,6 @@ export default function MentalWheelApp() {
 
                         {/* círculo central */}
                         <circle cx={cx} cy={cy} r={ringThickness * 0.6} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
-                        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={11} fill={theme.svgText}>
-                            Haz clic
-                        </text>
                     </svg>
                 </div>
             </div>
@@ -653,8 +703,14 @@ export default function MentalWheelApp() {
     );
 }
 
-function HoverText({ sectors, hoverInfo, darkMode }) {
-    const s = sectors.find((x) => x.id === hoverInfo.sectorId);
+interface HoverTextProps {
+    sectors: Sector[];
+    hoverInfo: HoverInfo;
+    darkMode: boolean;
+}
+
+function HoverText({ sectors, hoverInfo, darkMode }: HoverTextProps) {
+    const s = sectors.find((x: Sector) => x.id === hoverInfo.sectorId);
     if (!s) return null;
     return (
         <span>
@@ -664,7 +720,7 @@ function HoverText({ sectors, hoverInfo, darkMode }) {
 }
 
 // --- utilidades de color ---
-function rgbToHex(input) {
+function rgbToHex(input: string): string {
     // admite hsl() o #hex y normaliza a hex para el input color
     if (!input) return "#888888";
     if (input.startsWith("#")) return input;
@@ -675,16 +731,16 @@ function rgbToHex(input) {
     const s = parseFloat(match[2]) / 100;
     const l = parseFloat(match[3]) / 100;
     const [r, g, b] = hslToRgb(h / 360, s, l);
-    const toHex = (v) => v.toString(16).padStart(2, "0");
+    const toHex = (v: number): string => v.toString(16).padStart(2, "0");
     return `#${toHex(Math.round(r * 255))}${toHex(Math.round(g * 255))}${toHex(Math.round(b * 255))}`;
 }
 
-function hslToRgb(h, s, l) {
-    let r, g, b;
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+    let r: number, g: number, b: number;
     if (s === 0) {
         r = g = b = l; // achromático
     } else {
-        const hue2rgb = (p, q, t) => {
+        const hue2rgb = (p: number, q: number, t: number): number => {
             if (t < 0) t += 1;
             if (t > 1) t -= 1;
             if (t < 1 / 6) return p + (q - p) * 6 * t;
