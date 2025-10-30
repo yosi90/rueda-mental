@@ -730,7 +730,7 @@ export default function MentalWheelApp() {
                                                 setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, color: e.target.value } : x)))
                                             }
                                             title="Color"
-                                            className="h-8 w-8 sm:h-10 sm:w-10 cursor-pointer rounded-md border flex-shrink-0"
+                                            className="h-6 w-6 sm:h-8 sm:w-8 cursor-pointer rounded-md border flex-shrink-0"
                                         />
                                         <input
                                             value={s.name}
