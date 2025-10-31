@@ -714,8 +714,8 @@ export default function MentalWheelApp() {
             )}
 
             {/* Información flotante */}
-            <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row gap-2 sm:gap-3 max-w-[calc(100%-120px)] sm:max-w-none">
-                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
+            <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg w-fit min-w-40 sm: min-w-none`}>
                     <div className={`text-xs sm:text-sm ${theme.textMuted}`}>
                         {hoverInfo ? (
                             <HoverText sectors={sectors} hoverInfo={hoverInfo} darkMode={darkMode} />
@@ -725,7 +725,7 @@ export default function MentalWheelApp() {
                     </div>
                 </div>
 
-                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
+                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 mt-5 sm:mt-0 shadow-lg`}>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => {
