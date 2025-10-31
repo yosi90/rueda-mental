@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 // === Mental Performance Wheel (single-file React component) ===
 // - Añade/Quita sectores (aspectos de vida)
 // - Puntúa de 0 a 10 cada sector haciendo clic en la rueda o con slider
 // - Guarda automáticamente por día en localStorage
 // - Exporta/Importa JSON
+// - Modal de estadísticas y gráficos
 // - UI en español (ES)
 
 interface Sector {
@@ -75,6 +77,8 @@ export default function MentalWheelApp() {
     const [newName, setNewName] = useState<string>("");
     const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+    const [statsOpen, setStatsOpen] = useState<boolean>(false);
+    const [selectedSectorId, setSelectedSectorId] = useState<string>("");
     const [darkMode, setDarkMode] = useState<boolean>(() => {
         try {
             const saved = localStorage.getItem("mental-wheel-dark-mode");
@@ -113,6 +117,13 @@ export default function MentalWheelApp() {
         }
     }, [dateStr, scoresByDate]);
 
+    // Establecer el primer sector como seleccionado por defecto
+    useEffect(() => {
+        if (!selectedSectorId && sectors.length > 0) {
+            setSelectedSectorId(sectors[0].id);
+        }
+    }, [sectors, selectedSectorId]);
+
     const sectorsWithAngles = useMemo(() => {
         const gapDeg = 2;
         const count = Math.max(1, sectors.length);
@@ -128,6 +139,129 @@ export default function MentalWheelApp() {
             return { ...s, a0, a1, mid, a0n: normDeg(a0), a1n: normDeg(a1) };
         });
     }, [sectors]);
+
+    // --- Cálculos de estadísticas ---
+    const statsData = useMemo(() => {
+        const dates = Object.keys(scoresByDate).sort();
+
+        // Media diaria
+        const dailyAverage = dates.map(date => {
+            const dayScores = scoresByDate[date];
+            const values = Object.values(dayScores);
+            const avg = values.length > 0
+                ? values.reduce((a, b) => a + b, 0) / values.length
+                : 0;
+            return {
+                date: date,
+                media: parseFloat(avg.toFixed(2)),
+                displayDate: new Date(date).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short'
+                })
+            };
+        });
+
+        // Progresión por sector
+        const sectorProgress = (sectorId: string) => {
+            return dates.map(date => {
+                const score = scoresByDate[date][sectorId] || 0;
+                return {
+                    date: date,
+                    puntuacion: score,
+                    displayDate: new Date(date).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: 'short'
+                    })
+                };
+            });
+        };
+
+        // Comparación de sectores (última vs promedio histórico)
+        const sectorComparison = sectors.map(sector => {
+            const allScores = dates.map(date => scoresByDate[date][sector.id] || 0);
+            const avg = allScores.length > 0
+                ? allScores.reduce((a, b) => a + b, 0) / allScores.length
+                : 0;
+            const current = scores[sector.id] || 0;
+            return {
+                sector: sector.name,
+                actual: current,
+                promedio: parseFloat(avg.toFixed(2)),
+                color: sector.color
+            };
+        });
+
+        // Tendencia semanal
+        const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const weeklyData = weekDays.map((day, index) => {
+            const daysData = dates.filter(date => new Date(date).getDay() === index);
+            const scores = daysData.flatMap(date => Object.values(scoresByDate[date]));
+            const avg = scores.length > 0
+                ? scores.reduce((a, b) => a + b, 0) / scores.length
+                : 0;
+            return {
+                dia: day,
+                media: parseFloat(avg.toFixed(2))
+            };
+        });
+
+        // Heat map data (últimos 60 días)
+        const heatMapData = dates.slice(-60).map(date => {
+            const dayScores = scoresByDate[date];
+            const values = Object.values(dayScores);
+            const avg = values.length > 0
+                ? values.reduce((a, b) => a + b, 0) / values.length
+                : 0;
+            const dayOfWeek = new Date(date).getDay();
+            const weekNumber = Math.floor(dates.slice(-60).indexOf(date) / 7);
+            return {
+                date: date,
+                displayDate: new Date(date).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit'
+                }),
+                value: parseFloat(avg.toFixed(2)),
+                day: dayOfWeek,
+                week: weekNumber,
+                hasData: values.length > 0
+            };
+        });
+
+        return {
+            dailyAverage,
+            sectorProgress,
+            sectorComparison,
+            weeklyData,
+            heatMapData,
+            totalDays: dates.length,
+            currentStreak: calculateStreak(dates)
+        };
+    }, [scoresByDate, sectors, scores]);
+
+    // Calcular racha de días consecutivos con datos
+    function calculateStreak(sortedDates: string[]): number {
+        if (sortedDates.length === 0) return 0;
+
+        let streak = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = sortedDates.length - 1; i >= 0; i--) {
+            const date = new Date(sortedDates[i]);
+            date.setHours(0, 0, 0, 0);
+
+            const expectedDate = new Date(today);
+            expectedDate.setDate(today.getDate() - streak);
+
+            if (date.getTime() === expectedDate.getTime()) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    }
 
     // --- LocalStorage ---
     function loadConfig() {
@@ -174,14 +308,11 @@ export default function MentalWheelApp() {
             return {};
         }
     }
-    // La función saveScores se ha movido más arriba con tipos apropiados
 
     function genId() {
         return Math.random().toString(36).slice(2, 10);
     }
     function hslFor(i: number): string {
-        // Usar el ángulo dorado (~137.5°) para mejor distribución de colores
-        // Esto asegura que los colores estén bien distribuidos incluso con muchos sectores
         const goldenAngle = 137.508;
         const hue = Math.round((i * goldenAngle) % 360);
         return `hsl(${hue} 70% 50%)`;
@@ -193,7 +324,6 @@ export default function MentalWheelApp() {
         return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
     }
     function sectorPath(innerR: number, outerR: number, a0: number, a1: number): string {
-        // path para un anillo sectorial (entre innerR y outerR)
         const [x0i, y0i] = polar(cx, cy, innerR, a0);
         const [x0o, y0o] = polar(cx, cy, outerR, a0);
         const [x1o, y1o] = polar(cx, cy, outerR, a1);
@@ -217,10 +347,10 @@ export default function MentalWheelApp() {
         const dx = pt.x - cx;
         const dy = pt.y - cy;
         const dist = Math.hypot(dx, dy);
-        if (dist > radius) return; // fuera de la rueda
+        if (dist > radius) return;
 
-        const angle = toDeg(Math.atan2(dy, dx)); // -180..180, 0° derecha
-        const ang = normDeg(angle);            // 0..360
+        const angle = toDeg(Math.atan2(dy, dx));
+        const ang = normDeg(angle);
 
         const sector = sectorsWithAngles.find((s) => inSector(ang, s));
         if (!sector) return;
@@ -233,7 +363,6 @@ export default function MentalWheelApp() {
     }
 
     function handleSvgMove(e: React.MouseEvent<SVGSVGElement>) {
-        // Manejar pan
         if (isPanning && startPan) {
             const dx = e.clientX - startPan.x;
             const dy = e.clientY - startPan.y;
@@ -243,10 +372,9 @@ export default function MentalWheelApp() {
             setTranslateX((prev) => prev + dx);
             setTranslateY((prev) => prev + dy);
             setStartPan({ x: e.clientX, y: e.clientY });
-            return; // No mostrar hover mientras se hace pan
+            return;
         }
 
-        // Manejar hover info
         const pt = getSvgPoint(e);
         const dx = pt.x - cx;
         const dy = pt.y - cy;
@@ -277,13 +405,10 @@ export default function MentalWheelApp() {
         }
         const inv = screenCTM.inverse();
         const loc = pt.matrixTransform(inv);
-        
-        // Aplicar transformación inversa del zoom y pan
-        // La transformación es: translate(SIZE/2 + translateX, SIZE/2 + translateY) scale(scale) translate(-SIZE/2, -SIZE/2)
-        // La inversa es: translate(SIZE/2, SIZE/2) scale(1/scale) translate(-SIZE/2 - translateX, -SIZE/2 - translateY)
-        const transformedX = (loc.x - SIZE/2 - translateX) / scale + SIZE/2;
-        const transformedY = (loc.y - SIZE/2 - translateY) / scale + SIZE/2;
-        
+
+        const transformedX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
+        const transformedY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
+
         loc.x = transformedX;
         loc.y = transformedY;
         return loc;
@@ -360,13 +485,11 @@ export default function MentalWheelApp() {
             }
         };
         reader.readAsText(file);
-        // reset input
         evt.target.value = "";
     }
 
     // --- Render auxiliares ---
     function renderGrid() {
-        // círculos concéntricos + divisiones de sector
         const rings = Array.from({ length: RING_COUNT }, (_, i) => (
             <circle
                 key={`r-${i + 1}`}
@@ -379,7 +502,6 @@ export default function MentalWheelApp() {
             />
         ));
         const sectorLines = sectorsWithAngles.map((s) => {
-            // Las líneas del sector comienzan desde el centro
             const [x1, y1] = polar(cx, cy, radius, s.a0);
             return (
                 <line key={`l-${s.id}`} x1={cx} y1={cy} x2={x1} y2={y1} stroke={theme.svgGrid} />
@@ -429,24 +551,21 @@ export default function MentalWheelApp() {
     }
 
     function renderRingNumbers() {
-        // Números 1..10 escalados según su posición, solo visibles en pantallas grandes y con 10 o menos sectores
         if (sectors.length > 10) return null;
-        
+
         return Array.from({ length: RING_COUNT }, (_, i) => {
             const level = i + 1;
-            // Posicionar en el centro del anillo, no en el borde
             const r = (level - 0.5) * ringThickness;
-            const [tx, ty] = polar(cx, cy, r, 0); // 0° = derecha
-            // Escalar el tamaño del texto según el nivel (de 6px a 14px)
+            const [tx, ty] = polar(cx, cy, r, 0);
             const fontSize = 6 + (level / RING_COUNT) * 8;
             return (
-                <text 
-                    key={`n-${i}`} 
-                    x={tx} 
-                    y={ty} 
-                    fontSize={fontSize} 
-                    textAnchor="middle" 
-                    dominantBaseline="middle" 
+                <text
+                    key={`n-${i}`}
+                    x={tx}
+                    y={ty}
+                    fontSize={fontSize}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
                     fill={theme.svgText}
                     opacity={0.6}
                     className="hidden md:block"
@@ -547,24 +666,43 @@ export default function MentalWheelApp() {
         svgCenter: darkMode ? "hsl(0 0% 20%)" : "white",
         svgCenterBorder: darkMode ? "hsl(0 0% 40%)" : "hsl(0 0% 80%)",
         overlay: darkMode ? "bg-black/60" : "bg-black/40",
+        chartGrid: darkMode ? "#444" : "#e0e0e0",
+        chartText: darkMode ? "#aaa" : "#666",
     };
 
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`} style={{ margin: 0, padding: 0 }}>
-            {/* Botón para abrir drawer */}
-            <button
-                onClick={() => setDrawerOpen(true)}
-                className={`fixed top-4 right-4 z-40 rounded-lg ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
-                title="Configuración"
-            >
-                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-            </button>
+            {/* Botones flotantes */}
+            <div className="fixed top-4 right-4 z-40 flex gap-2">
+                {/* Botón de estadísticas */}
+                <button
+                    onClick={() => setStatsOpen(true)}
+                    className={`rounded-lg ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
+                    title="Estadísticas"
+                >
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 3v18h18" />
+                        <path d="M18 17V9" />
+                        <path d="M13 17V5" />
+                        <path d="M8 17v-3" />
+                    </svg>
+                </button>
 
-            {/* Botón de reset zoom - solo visible cuando hay zoom o pan */}
+                {/* Botón de configuración */}
+                <button
+                    onClick={() => setDrawerOpen(true)}
+                    className={`rounded-lg ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
+                    title="Configuración"
+                >
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
+                </button>
+            </div>
+
+            {/* Botón de reset zoom */}
             {(scale !== 1 || translateX !== 0 || translateY !== 0) && (
                 <button
                     onClick={resetZoom}
@@ -575,34 +713,64 @@ export default function MentalWheelApp() {
                 </button>
             )}
 
-            {/* Información flotante arriba a la izquierda */}
+            {/* Información flotante */}
             <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row gap-2 sm:gap-3 max-w-[calc(100%-120px)] sm:max-w-none">
-                {/* Card de promedio */}
                 <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
-                    <div className={`text-xs sm:text-sm ${theme.textMuted} mb-1 sm:mb-2`}>
+                    <div className={`text-xs sm:text-sm ${theme.textMuted}`}>
                         {hoverInfo ? (
                             <HoverText sectors={sectors} hoverInfo={hoverInfo} darkMode={darkMode} />
                         ) : (
                             <span>Media del día: <b className={`text-base sm:text-lg ${theme.text}`}>{avg}</b></span>
                         )}
                     </div>
-                    <div className={`text-[10px] sm:text-xs ${theme.textLight}`}>Click para puntuar</div>
                 </div>
 
-                {/* Card de fecha */}
                 <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
-                    <input
-                        type="date"
-                        value={dateStr}
-                        onChange={(e) => setDateStr(e.target.value)}
-                        className={`text-xs sm:text-sm border-0 bg-transparent p-0 cursor-pointer focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} rounded ${theme.text} mb-2 sm:mb-3`}
-                        style={{ fontFamily: 'inherit', colorScheme: darkMode ? 'dark' : 'light' }}
-                    />
-                    <div className={`text-[10px] sm:text-xs ${theme.textLight}`}>Día seleccionado</div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                const date = new Date(dateStr);
+                                date.setDate(date.getDate() - 1);
+                                setDateStr(formatDateInput(date));
+                            }}
+                            className={`${theme.button} rounded-md px-2 py-1 text-sm font-bold transition-colors`}
+                            title="Día anterior"
+                        >
+                            &lt;
+                        </button>
+
+                        <input
+                            type="date"
+                            value={dateStr}
+                            onChange={(e) => setDateStr(e.target.value)}
+                            className={`text-xs sm:text-sm border-0 bg-transparent p-0 cursor-pointer focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} rounded ${theme.text}`}
+                            style={{ fontFamily: 'inherit', colorScheme: darkMode ? 'dark' : 'light' }}
+                        />
+
+                        <button
+                            onClick={() => {
+                                const date = new Date(dateStr);
+                                date.setDate(date.getDate() + 1);
+                                setDateStr(formatDateInput(date));
+                            }}
+                            className={`${theme.button} rounded-md px-2 py-1 text-sm font-bold transition-colors`}
+                            title="Día siguiente"
+                        >
+                            &gt;
+                        </button>
+
+                        <button
+                            onClick={() => setDateStr(todayStr)}
+                            className={`${theme.buttonPrimary} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
+                            title="Ir a hoy"
+                        >
+                            Hoy
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Rueda principal - ocupa todo el viewport */}
+            {/* Rueda principal */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '80px 20px 20px 20px' }}>
                 <div className="w-full h-full max-h-full flex items-center justify-center">
                     <svg
@@ -622,27 +790,14 @@ export default function MentalWheelApp() {
                         style={{ maxWidth: '100%', maxHeight: '100%', cursor: isPanning ? 'grabbing' : 'grab' }}
                         preserveAspectRatio="xMidYMid meet"
                     >
-                        <g transform={`translate(${SIZE/2 + translateX} ${SIZE/2 + translateY}) scale(${scale}) translate(${-SIZE/2} ${-SIZE/2})`}>
-                        {/* fondo */}
-                        <circle cx={cx} cy={cy} r={radius} fill={theme.svgBg} />
-
-                        {/* sectores rellenados (valores) */}
-                        {renderFilledSectors()}
-
-                        {/* rejilla */}
-                        {renderGrid()}
-
-                        {/* labels */}
-                        {renderLabelsFixed()}
-
-                        {/* números de anillos */}
-                        {renderRingNumbers()}
-
-                        {/* hover visual */}
-                        {renderSectorHover()}
-
-                        {/* círculo central */}
-                        <circle cx={cx} cy={cy} r={ringThickness * 0.6} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
+                        <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>
+                            <circle cx={cx} cy={cy} r={radius} fill={theme.svgBg} />
+                            {renderFilledSectors()}
+                            {renderGrid()}
+                            {renderLabelsFixed()}
+                            {renderRingNumbers()}
+                            {renderSectorHover()}
+                            <circle cx={cx} cy={cy} r={ringThickness * 0.6} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
                         </g>
                     </svg>
                 </div>
@@ -653,6 +808,304 @@ export default function MentalWheelApp() {
                     Todos tus datos son almacenados localmente, de forma 100% privada y no se usan para nada.
                 </p>
             </div>
+
+            {/* Modal de Estadísticas */}
+            {statsOpen && (
+                <>
+                    <div
+                        className={`fixed inset-0 ${theme.overlay} z-50 transition-opacity`}
+                        onClick={() => setStatsOpen(false)}
+                    />
+                    <div className={`fixed inset-4 md:inset-8 lg:inset-16 ${theme.cardSolid} shadow-2xl z-50 rounded-2xl overflow-hidden flex flex-col`}>
+                        {/* Header del modal */}
+                        <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme.borderLight}`}>
+                            <div>
+                                <h2 className={`text-xl md:text-2xl font-bold ${theme.text}`}>📊 Estadísticas y Progreso</h2>
+                                <p className={`text-xs md:text-sm ${theme.textMuted} mt-1`}>
+                                    {statsData.totalDays} días registrados · Racha actual: {statsData.currentStreak} días
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setStatsOpen(false)}
+                                className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
+                            >
+                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Contenido con scroll */}
+                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+                            {statsData.dailyAverage.length === 0 ? (
+                                <div className={`text-center py-12 ${theme.textMuted}`}>
+                                    <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    <p className="text-lg">No hay datos suficientes aún</p>
+                                    <p className="text-sm mt-2">Comienza a registrar tus puntuaciones para ver estadísticas</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Gráfico 1: Media Diaria */}
+                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📈 Evolución de la Media Diaria</h3>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <AreaChart data={statsData.dailyAverage}>
+                                                <defs>
+                                                    <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                <XAxis
+                                                    dataKey="displayDate"
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <YAxis
+                                                    domain={[0, 10]}
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: darkMode ? '#262626' : '#fff',
+                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                        borderRadius: '8px'
+                                                    }}
+                                                />
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="media"
+                                                    stroke="#8884d8"
+                                                    fillOpacity={1}
+                                                    fill="url(#colorMedia)"
+                                                    strokeWidth={2}
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    {/* Gráfico 2: Progresión por Sector */}
+                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                            <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>📊 Progresión por Sector</h3>
+                                            <select
+                                                value={selectedSectorId}
+                                                onChange={(e) => setSelectedSectorId(e.target.value)}
+                                                className={`rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                            >
+                                                {sectors.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <LineChart data={statsData.sectorProgress(selectedSectorId)}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                <XAxis
+                                                    dataKey="displayDate"
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <YAxis
+                                                    domain={[0, 10]}
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: darkMode ? '#262626' : '#fff',
+                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                        borderRadius: '8px'
+                                                    }}
+                                                />
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="puntuacion"
+                                                    stroke={sectors.find(s => s.id === selectedSectorId)?.color || "#8884d8"}
+                                                    strokeWidth={3}
+                                                    dot={{ r: 4 }}
+                                                    activeDot={{ r: 6 }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    {/* Gráfico 3: Comparación de Sectores */}
+                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📊 Comparación: Actual vs Promedio Histórico</h3>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <BarChart data={statsData.sectorComparison}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                <XAxis
+                                                    dataKey="sector"
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '11px' }}
+                                                    angle={-45}
+                                                    textAnchor="end"
+                                                    height={80}
+                                                />
+                                                <YAxis
+                                                    domain={[0, 10]}
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: darkMode ? '#262626' : '#fff',
+                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                        borderRadius: '8px'
+                                                    }}
+                                                />
+                                                <Legend />
+                                                <Bar dataKey="actual" fill="#82ca9d" name="Puntuación Actual" />
+                                                <Bar dataKey="promedio" fill="#8884d8" name="Promedio Histórico" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    {/* Gráfico 4: Tendencia Semanal */}
+                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Promedio por Día de la Semana</h3>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <BarChart data={statsData.weeklyData}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                <XAxis
+                                                    dataKey="dia"
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <YAxis
+                                                    domain={[0, 10]}
+                                                    stroke={theme.chartText}
+                                                    style={{ fontSize: '12px' }}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: darkMode ? '#262626' : '#fff',
+                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                        borderRadius: '8px'
+                                                    }}
+                                                />
+                                                <Bar dataKey="media" fill="#ffc658" name="Media" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                        <p className={`text-xs ${theme.textMuted} mt-2 text-center`}>
+                                            ¿Qué días de la semana tienes mejor desempeño?
+                                        </p>
+                                    </div>
+
+                                    {/* Gráfico 5: Heat Map de Consistencia */}
+                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>🔥 Mapa de Calor - Últimos 60 Días</h3>
+                                        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                                            {statsData.heatMapData.map((day, index) => {
+                                                const intensity = day.hasData ? Math.round((day.value / 10) * 4) : 0;
+                                                const colors = darkMode
+                                                    ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
+                                                    : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
+                                                return (
+                                                    <div
+                                                        key={index}
+                                                        className="aspect-square rounded-sm relative group cursor-pointer"
+                                                        style={{ backgroundColor: colors[intensity] }}
+                                                        title={`${day.displayDate}: ${day.hasData ? day.value.toFixed(1) : 'Sin datos'}`}
+                                                    >
+                                                        <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${theme.cardSolid} px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border ${theme.border}`}>
+                                                            {day.displayDate}: {day.hasData ? day.value.toFixed(1) : 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="flex items-center justify-between mt-4 text-xs">
+                                            <span className={theme.textMuted}>Menos</span>
+                                            <div className="flex gap-1">
+                                                {[0, 1, 2, 3, 4].map(i => {
+                                                    const colors = darkMode
+                                                        ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
+                                                        : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="w-4 h-4 rounded-sm"
+                                                            style={{ backgroundColor: colors[i] }}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                            <span className={theme.textMuted}>Más</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Resumen de Insights */}
+                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>💡 Insights</h3>
+                                        <div className="space-y-2 text-sm">
+                                            {(() => {
+                                                const lastAvg = statsData.dailyAverage[statsData.dailyAverage.length - 1]?.media || 0;
+                                                const firstAvg = statsData.dailyAverage[0]?.media || 0;
+                                                const trend = lastAvg - firstAvg;
+
+                                                const bestSector = statsData.sectorComparison.reduce((prev, current) =>
+                                                    current.actual > prev.actual ? current : prev
+                                                );
+
+                                                const worstSector = statsData.sectorComparison.reduce((prev, current) =>
+                                                    current.actual < prev.actual ? current : prev
+                                                );
+
+                                                const bestDay = statsData.weeklyData.reduce((prev, current) =>
+                                                    current.media > prev.media ? current : prev
+                                                );
+
+                                                return (
+                                                    <>
+                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <p className={theme.text}>
+                                                                <span className="font-semibold">Tendencia general:</span>{' '}
+                                                                {trend > 0 ? (
+                                                                    <span className="text-green-500">↗ Mejorando (+{trend.toFixed(2)})</span>
+                                                                ) : trend < 0 ? (
+                                                                    <span className="text-red-500">↘ Descendiendo ({trend.toFixed(2)})</span>
+                                                                ) : (
+                                                                    <span className={theme.textMuted}>→ Estable</span>
+                                                                )}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <p className={theme.text}>
+                                                                <span className="font-semibold">Tu sector más fuerte:</span> {bestSector.sector} ({bestSector.actual}/10)
+                                                            </p>
+                                                        </div>
+
+                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <p className={theme.text}>
+                                                                <span className="font-semibold">Área de mejora:</span> {worstSector.sector} ({worstSector.actual}/10)
+                                                            </p>
+                                                        </div>
+
+                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <p className={theme.text}>
+                                                                <span className="font-semibold">Tu mejor día:</span> {bestDay.dia} ({bestDay.media.toFixed(2)}/10 promedio)
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* Overlay del drawer */}
             {drawerOpen && (
@@ -670,7 +1123,6 @@ export default function MentalWheelApp() {
                 }}
             >
                 <div className="p-6">
-                    {/* Header del drawer */}
                     <div className="flex items-center justify-between mb-6">
                         <h2 className={`text-2xl font-bold ${theme.text}`}>Configuración</h2>
                         <button
@@ -684,7 +1136,6 @@ export default function MentalWheelApp() {
                         </button>
                     </div>
 
-                    {/* Controles de acciones */}
                     <div className="mb-6 space-y-3">
                         <div className="flex gap-2">
                             <button onClick={resetDay} className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}>
@@ -703,7 +1154,6 @@ export default function MentalWheelApp() {
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
-                    {/* Gestión de sectores */}
                     <div>
                         <h3 className={`text-lg font-semibold mb-3 ${theme.text}`}>Sectores</h3>
                         <div className="mb-4 flex gap-2">
@@ -794,7 +1244,6 @@ export default function MentalWheelApp() {
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
-                    {/* Toggle de tema */}
                     <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
                         <div className="flex items-center justify-between">
                             <div>
@@ -849,10 +1298,8 @@ function HoverText({ sectors, hoverInfo, darkMode }: HoverTextProps) {
 
 // --- utilidades de color ---
 function rgbToHex(input: string): string {
-    // admite hsl() o #hex y normaliza a hex para el input color
     if (!input) return "#888888";
     if (input.startsWith("#")) return input;
-    // hsl(h s% l%) -> convertir a hex aproximado
     const match = input.match(/hsl\((\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\)/i);
     if (!match) return "#888888";
     const h = parseFloat(match[1]);
@@ -866,7 +1313,7 @@ function rgbToHex(input: string): string {
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     let r: number, g: number, b: number;
     if (s === 0) {
-        r = g = b = l; // achromático
+        r = g = b = l;
     } else {
         const hue2rgb = (p: number, q: number, t: number): number => {
             if (t < 0) t += 1;
