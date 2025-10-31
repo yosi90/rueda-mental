@@ -49,39 +49,28 @@ export function WheelChart({
     const ringThickness = radius / RING_COUNT;
 
     // Detectar sector y nivel desde coordenadas del mouse
-    // Usamos createSVGPoint + getScreenCTM inverse para mapear coords de pantalla a coords SVG
     const detectSectorAndLevel = (clientX: number, clientY: number, svgElement: SVGSVGElement) => {
-        try {
-            const pt = svgElement.createSVGPoint();
-            pt.x = clientX;
-            pt.y = clientY;
-            const screenCTM = svgElement.getScreenCTM();
-            if (!screenCTM) return null;
-            const inv = screenCTM.inverse();
-            const loc = pt.matrixTransform(inv);
+        const rect = svgElement.getBoundingClientRect();
+        const scaleAdjusted = scale || 1;
 
-            // Aplicar transformación inversa del zoom/pan que aplicamos en el <g>
-            // La transformación aplicada es: translate(SIZE/2 + translateX, SIZE/2 + translateY) scale(scale) translate(-SIZE/2, -SIZE/2)
-            const transformedX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
-            const transformedY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
+        // Ajustar por escala y traslación
+        const offsetX = (clientX - rect.left - translateX) / scaleAdjusted;
+        const offsetY = (clientY - rect.top - translateY) / scaleAdjusted;
 
-            const dx = transformedX - cx;
-            const dy = transformedY - cy;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+        const dx = offsetX - cx;
+        const dy = offsetY - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist > radius || dist < 0) return null;
+        if (dist > radius || dist < 0) return null;
 
-            const angleDeg = normDeg(toDeg(Math.atan2(dy, dx)));
-            const sector = sectorsWithAngles.find((s) => inSector(angleDeg, s));
-            if (!sector) return null;
+        const angleDeg = normDeg(toDeg(Math.atan2(dy, dx)));
+        const sector = sectorsWithAngles.find((s) => inSector(angleDeg, s));
 
-            const level = clamp(Math.ceil((radius - dist) / ringThickness), 0, RING_COUNT);
-            return { sectorId: sector.id, level };
-        } catch (err) {
-            // en caso de fallo en transformaciones, no bloquear la UI
-            console.error('detectSectorAndLevel error:', err);
-            return null;
-        }
+        if (!sector) return null;
+
+        const level = clamp(Math.ceil((radius - dist) / ringThickness), 0, RING_COUNT);
+
+        return { sectorId: sector.id, level };
     };
 
     const handleMouseMoveOnWheel = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -148,15 +137,14 @@ export function WheelChart({
 
     return (
         <svg
-            width="100%"
-            height="100%"
+            width={SIZE}
+            height={SIZE}
             viewBox={`0 0 ${SIZE} ${SIZE}`}
             style={{
-                maxWidth: `${SIZE}px`,
-                maxHeight: `${SIZE}px`,
+                transform: `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`,
+                transformOrigin: 'center center',
                 cursor: isClickingWheel ? 'grabbing' : 'grab',
                 touchAction: 'none',
-                display: 'block',
             }}
             onWheel={onWheel}
             onMouseDown={handleMouseDownOnWheel}
@@ -167,12 +155,9 @@ export function WheelChart({
             onTouchMove={handleTouchMoveOnWheel}
             onTouchEnd={handleTouchEndOnWheel}
         >
-            {/* Aplicamos zoom/pan dentro del SVG con un <g> para que la caja del SVG no se vea transformada por CSS */}
-            <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>
-                <WheelGrid darkMode={darkMode} />
-                <WheelSectors sectorsWithAngles={sectorsWithAngles} scores={scores} />
-                <WheelLabels sectorsWithAngles={sectorsWithAngles} darkMode={darkMode} />
-            </g>
+            <WheelGrid darkMode={darkMode} />
+            <WheelSectors sectorsWithAngles={sectorsWithAngles} scores={scores} />
+            <WheelLabels sectorsWithAngles={sectorsWithAngles} darkMode={darkMode} />
         </svg>
     );
 }
