@@ -1002,7 +1002,7 @@ export default function MentalWheelApp() {
                                     {/* Gráfico 5: Heat Map de Consistencia */}
                                     <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                         <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>🔥 Mapa de Calor - Últimos 60 Días</h3>
-                                        <div className="grid sm:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
+                                        <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
                                             {statsData.heatMapData.map((day, index) => {
                                                 const intensity = day.hasData ? Math.round((day.value / 10) * 4) : 0;
                                                 const colors = darkMode
