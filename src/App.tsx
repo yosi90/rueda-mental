@@ -989,7 +989,7 @@ export default function MentalWheelApp() {
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`} style={{ margin: 0, padding: 0 }}>
             {/* Botones flotantes */}
-            <div className="fixed top-4 right-4 z-40 flex gap-2">
+            <div className="fixed top-[17px] sm:top-4 right-5 sm:right-4 z-40 flex gap-2">
                 {/* Botón de estadísticas */}
                 {statsVisibility.enabled && (
                     <button
