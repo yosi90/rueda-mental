@@ -1025,82 +1025,132 @@ export default function MentalWheelApp() {
             {/* Menú contextual emergente */}
             {infoMenuContextual && (
                 <>
-                    {/* Capa transparente para cerrar el menú al hacer clic fuera */}
                     <div className="fixed inset-0 z-40" onClick={() => setInfoMenuContextual(null)} />
-                    {/* Contenedor del menú contextual */}
+
                     <div
-                        className={`fixed z-50 rounded-xl border ${theme.border} ${theme.inputAlt} shadow-lg`}
+                        className={`fixed z-50 w-[200px] sm:w-[300px] rounded-xl border ${theme.border} bg-neutral-800/90 backdrop-blur-sm p-4 shadow-xl`}
                         style={{ top: infoMenuContextual.y, left: infoMenuContextual.x }}
                     >
-                        <ul className="list-none m-0 p-0 flex flex-col divide-y divide-neutral-200 dark:divide-neutral-600">
-                            <li>
-                                <button
-                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
-                                    onClick={() => {
-                                        setScore(infoMenuContextual.idSector, 0); // Resetear valor del sector actual
-                                        setInfoMenuContextual(null);
-                                    }}
-                                >
-                                    Resetear valor
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
-                                    onClick={() => {
-                                        const valorActual = scores[infoMenuContextual.idSector] ?? 0;
-                                        const entrada = prompt("Introduzca manualmente un valor (0-10):", String(valorActual));
-                                        if (entrada !== null) {
-                                            const nuevoValor = parseInt(entrada);
-                                            if (!isNaN(nuevoValor)) {
-                                                setScore(infoMenuContextual.idSector, nuevoValor);
-                                            }
-                                        }
-                                        setInfoMenuContextual(null);
-                                    }}
-                                >
-                                    Establecer valor manualmente
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
-                                    onClick={() => {
-                                        const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
-                                        const nombreActual = sector ? sector.name : "";
-                                        const nuevoNombre = prompt("Cambiar nombre del sector:", nombreActual);
-                                        if (nuevoNombre !== null && nuevoNombre.trim() !== "") {
-                                            setSectors(prev => prev.map(x => x.id === infoMenuContextual.idSector
-                                                ? { ...x, name: nuevoNombre }
-                                                : x
-                                            ));
-                                        }
-                                        setInfoMenuContextual(null);
-                                    }}
-                                >
-                                    Cambiar nombre
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
-                                    onClick={() => {
-                                        // Al hacer clic, disparar el selector de color nativo
-                                        if (selectorColorRef.current) {
-                                            // Preseleccionar color actual del sector
-                                            const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
-                                            if (sector) selectorColorRef.current.value = rgbToHex(sector.color);
-                                            selectorColorRef.current.click();
-                                        }
-                                    }}
-                                >
-                                    Cambiar color
-                                </button>
-                            </li>
-                        </ul>
+                        {(() => {
+                            const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
+                            const valorActual = scores[infoMenuContextual.idSector] ?? 0;
+                            if (!sector) return null;
+
+                            const isMobile = window.innerWidth <= 768;
+
+                            return (
+                                <div className="flex flex-col gap-3">
+                                    {/* Fila principal: color, nombre, eliminar */}
+                                    <div className="flex items-center gap-2 mb-3 flex-wrap sm:flex-nowrap">
+                                        {/* Color */}
+                                        <input
+                                            type="color"
+                                            defaultValue={rgbToHex(sector.color)}
+                                            onChange={(e) => {
+                                                const nuevoColor = e.target.value;
+                                                setSectors(prev =>
+                                                    prev.map(s =>
+                                                        s.id === sector.id ? { ...s, color: nuevoColor } : s
+                                                    )
+                                                );
+                                            }}
+                                            className="h-4 w-4 sm:h-8 sm:w-8 cursor-pointer rounded-md border flex-shrink-0"
+                                        />
+
+                                        {/* Nombre */}
+                                        <input
+                                            type="text"
+                                            defaultValue={sector.name}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    const nombre = (e.target as HTMLInputElement).value;
+                                                    setSectors(prev =>
+                                                        prev.map(s =>
+                                                            s.id === sector.id ? { ...s, name: nombre } : s
+                                                        )
+                                                    );
+                                                    setInfoMenuContextual(null);
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                const nombre = e.target.value;
+                                                setSectors(prev =>
+                                                    prev.map(s =>
+                                                        s.id === sector.id ? { ...s, name: nombre } : s
+                                                    )
+                                                );
+                                            }}
+                                            className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-1 sm:px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                        />
+
+                                        {/* Eliminar */}
+                                        <button
+                                            title="Eliminar"
+                                            className={`rounded-md border ${theme.border} ${theme.button} px-1 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] sm:text-xs transition-colors flex-shrink-0`}
+                                            onClick={() => {
+                                                if (confirm("¿Eliminar este sector?")) {
+                                                    setSectors(prev => prev.filter(s => s.id !== sector.id));
+                                                    setInfoMenuContextual(null);
+                                                }
+                                            }}
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+
+                                    {/* Slider de puntuación */}
+                                    <div className="flex items-center gap-2">
+                                        <label className={`text-xs ${theme.textMuted} flex-shrink-0`}>Puntuación:</label>
+                                        {!isMobile &&
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={RING_COUNT}
+                                                defaultValue={valorActual}
+                                                onMouseUp={(e) => setScore(sector.id, (e.target as HTMLInputElement).value)}
+                                                className={`flex-1 min-w-0 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer
+                                                [&::-webkit-slider-thumb]:appearance-none
+                                                [&::-webkit-slider-thumb]:w-3
+                                                [&::-webkit-slider-thumb]:h-3
+                                                [&::-webkit-slider-thumb]:rounded-full
+                                                [&::-webkit-slider-thumb]:bg-blue-600
+                                                [&::-webkit-slider-thumb]:cursor-pointer
+                                                [&::-webkit-slider-thumb]:transition
+                                                [&::-webkit-slider-thumb]:hover:bg-blue-700
+                                                [&::-moz-range-thumb]:w-3
+                                                [&::-moz-range-thumb]:h-3
+                                                [&::-moz-range-thumb]:rounded-full
+                                                [&::-moz-range-thumb]:bg-blue-600`}
+                                            />}
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={10}
+                                            value={valorActual}
+                                            onChange={(e) => {
+                                                const nuevoValor = parseInt(e.target.value);
+                                                setScore(sector.id, nuevoValor);
+                                            }}
+                                            className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} flex-shrink-0`}
+                                        />
+                                    </div>
+
+                                    {/* Botón cerrar solo en móvil */}
+                                    {isMobile && (
+                                        <button
+                                            onClick={() => setInfoMenuContextual(null)}
+                                            className={`text-xs ${theme.buttonPrimary} px-3 py-1 rounded w-full`}
+                                        >
+                                            Cerrar
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </>
             )}
+
 
             {/* Input de color oculto para cambiar color de sector */}
             <input
