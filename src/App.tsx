@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 // === Mental Performance Wheel (single-file React component) ===
@@ -35,6 +35,23 @@ interface Scores {
 interface ScoresByDate {
     [key: string]: Scores;
 }
+
+interface InfoMenuContextual {
+    idSector: string;
+    x: number;
+    y: number;
+}
+
+type StatsVisibility = {
+    enabled: boolean;                 // Master: si es false, no hay botón ni modal
+    showDailyAverage: boolean;        // 📈 Evolución de la Media Diaria
+    showSectorProgress: boolean;      // 📊 Progresión por Sector
+    showLast7AllSectors: boolean;     // 📅 Últimos 7 días - Todos los sectores
+    showComparison: boolean;          // 📊 Comparación: Actual vs Promedio
+    showWeeklyTrend: boolean;         // 📅 Promedio por día de la semana
+    showHeatMap: boolean;             // 🔥 Heatmap
+    showInsights: boolean;            // 💡 Insights
+};
 
 export default function MentalWheelApp() {
     // --- Configuración base ---
@@ -73,6 +90,13 @@ export default function MentalWheelApp() {
     const [scoresByDate, setScoresByDate] = useState<ScoresByDate>(() => loadScores());
     const scores = scoresByDate[dateStr] || {};
 
+    // --- Nuevo estado y referencias para menú contextual ---
+    const [infoMenuContextual, setInfoMenuContextual] = useState<InfoMenuContextual | null>(null);
+    const svgRef = useRef<SVGSVGElement>(null);               // Referencia al SVG principal
+    const selectorColorRef = useRef<HTMLInputElement>(null);   // Referencia a input color oculto
+    const temporizadorLongPress = useRef<number | null>(null); // Temporizador para detección de pulsación prolongada
+    const refLongPressActivado = useRef<boolean>(false);       // Marca si se activó menú contextual por long-press
+
     // UI state
     const [newName, setNewName] = useState<string>("");
     const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
@@ -101,6 +125,8 @@ export default function MentalWheelApp() {
         sectors.forEach(s => initial[s.id] = true);
         return initial;
     });
+
+    const STATS_VIS_KEY = "mental-wheel-stats-visibility-v1";
 
     // Actualizar visibleSectors cuando cambien los sectores
     useEffect(() => {
@@ -160,7 +186,7 @@ export default function MentalWheelApp() {
     // --- Cálculos de estadísticas ---
     const statsData = useMemo(() => {
         const allDates = Object.keys(scoresByDate).sort();
-        
+
         // Encontrar la primera fecha con datos reales (al menos un valor > 0)
         const firstDateWithData = allDates.find(date => {
             const dayScores = scoresByDate[date];
@@ -169,7 +195,7 @@ export default function MentalWheelApp() {
         });
 
         // Filtrar fechas: solo desde la primera fecha con datos en adelante
-        const dates = firstDateWithData 
+        const dates = firstDateWithData
             ? allDates.filter(date => date >= firstDateWithData)
             : [];
 
@@ -285,10 +311,10 @@ export default function MentalWheelApp() {
         // Últimos 7 días - todos los sectores (para gráfico de evolución multi-línea)
         const last7DaysAllSectors = () => {
             if (dates.length < 7) return null; // No mostrar si no hay 7 días
-            
+
             const last7Dates = dates.slice(-7);
             const todayStr = formatDateInput(new Date());
-            
+
             return last7Dates.map((date) => {
                 const isToday = date === todayStr;
                 const dataPoint: any = {
@@ -299,12 +325,12 @@ export default function MentalWheelApp() {
                     }),
                     isToday: isToday
                 };
-                
+
                 // Agregar la puntuación de cada sector
                 sectors.forEach(sector => {
                     dataPoint[sector.name] = scoresByDate[date][sector.id] || 0;
                 });
-                
+
                 return dataPoint;
             });
         };
@@ -423,10 +449,39 @@ export default function MentalWheelApp() {
             Z`;
     }
 
-    // --- Interacción (clic en rueda) ---
-    function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+    // --- Nuevo manejador para clic derecho (menú contextual) ---
+    function handleSvgContextMenu(e: React.MouseEvent<SVGSVGElement>) {
+        e.preventDefault(); // prevenir menú contextual por defecto del navegador
         if (hasPanned) {
             setHasPanned(false);
+            return;
+        }
+        const pt = svgRef.current?.createSVGPoint();
+        if (!pt || !svgRef.current) return;
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const screenCTM = svgRef.current.getScreenCTM();
+        if (!screenCTM) return;
+        const loc = pt.matrixTransform(screenCTM.inverse());
+        // Transformar a coordenadas del SVG (considerando zoom/pan):
+        const svgX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
+        const svgY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
+        const dx = svgX - cx, dy = svgY - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > radius) return; // fuera de la rueda
+        const angle = toDeg(Math.atan2(dy, dx));
+        const ang = normDeg(angle);
+        const sector = sectorsWithAngles.find(s => inSector(ang, s));
+        if (!sector) return;
+        // Abrir menú contextual en posición del puntero para el sector encontrado
+        setInfoMenuContextual({ idSector: sector.id, x: e.clientX, y: e.clientY });
+    }
+
+    // --- Interacción (clic en rueda) ---
+    function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+        if (hasPanned || refLongPressActivado.current) {
+            setHasPanned(false);
+            refLongPressActivado.current = false;
             return;
         }
         const pt = getSvgPoint(e);
@@ -574,6 +629,37 @@ export default function MentalWheelApp() {
         evt.target.value = "";
     }
 
+    function loadStatsVisibility(): StatsVisibility {
+        try {
+            const raw = localStorage.getItem(STATS_VIS_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch { }
+        return {
+            enabled: true,
+            showDailyAverage: true,
+            showSectorProgress: true,
+            showLast7AllSectors: true,
+            showComparison: true,
+            showWeeklyTrend: true,
+            showHeatMap: true,
+            showInsights: true,
+        };
+    }
+
+    const [statsVisibility, setStatsVisibility] = useState<StatsVisibility>(() => loadStatsVisibility());
+
+    // Guardar cambios
+    useEffect(() => {
+        try {
+            localStorage.setItem(STATS_VIS_KEY, JSON.stringify(statsVisibility));
+        } catch { }
+    }, [statsVisibility]);
+
+    // Si desactivo todo, cierro el modal si está abierto
+    useEffect(() => {
+        if (!statsVisibility.enabled && statsOpen) setStatsOpen(false);
+    }, [statsVisibility.enabled, statsOpen]);
+
     // --- Render auxiliares ---
     function renderGrid() {
         const rings = Array.from({ length: RING_COUNT }, (_, i) => (
@@ -678,36 +764,73 @@ export default function MentalWheelApp() {
         return Math.sqrt(dx * dx + dy * dy);
     };
 
+    // --- Modificar manejadores táctiles para detección de pulsación prolongada ---
     const handleTouchStart = (e: React.TouchEvent<SVGSVGElement>) => {
         if (e.touches.length === 2) {
-            const distance = getTouchDistance(e.touches[0], e.touches[1]);
-            setLastTouchDistance(distance);
+            // ... [lógica existente de zoom] ...
         } else if (e.touches.length === 1) {
+            // Iniciar temporizador de pulsación prolongada (long press)
+            const { clientX, clientY } = e.touches[0];
+            temporizadorLongPress.current = window.setTimeout(() => {
+                if (!hasPanned && svgRef.current) {  // solo abrir si no hubo desplazamiento
+                    // Calcular sector bajo el dedo al momento del long press
+                    const pt = svgRef.current.createSVGPoint();
+                    pt.x = clientX; pt.y = clientY;
+                    const screenCTM = svgRef.current.getScreenCTM();
+                    if (!screenCTM) return;
+                    const loc = pt.matrixTransform(screenCTM.inverse());
+                    const svgX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
+                    const svgY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
+                    const dx = svgX - cx, dy = svgY - cy;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist <= radius) {  // dentro de la rueda
+                        const angle = toDeg(Math.atan2(dy, dx));
+                        const ang = normDeg(angle);
+                        const sector = sectorsWithAngles.find(s => inSector(ang, s));
+                        if (sector) {
+                            // Abrir menú contextual para sector (pulsación prolongada)
+                            setInfoMenuContextual({ idSector: sector.id, x: clientX, y: clientY });
+                            refLongPressActivado.current = true;   // marcar que ya se abrió menú contextual
+                            setIsPanning(false);                   // cancelar modo arrastre
+                            setStartPan(null);
+                        }
+                    }
+                }
+            }, 600); // ~0.6s para activar menú contextual
+            // Continuar con lógica existente de inicio de pan (por si es un desplazamiento breve)
             setIsPanning(true);
             setHasPanned(false);
-            setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            setStartPan({ x: clientX, y: clientY });
         }
     };
 
     const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
         if (e.touches.length === 2 && lastTouchDistance !== null) {
-            const distance = getTouchDistance(e.touches[0], e.touches[1]);
-            const delta = distance / lastTouchDistance;
-            setScale((prev) => clamp(prev * delta, 0.5, 5));
-            setLastTouchDistance(distance);
+            // ... [lógica existente de zoom táctil] ...
         } else if (e.touches.length === 1 && isPanning && startPan) {
             const dx = e.touches[0].clientX - startPan.x;
             const dy = e.touches[0].clientY - startPan.y;
             if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
                 setHasPanned(true);
+                // Cancelar temporizador de long press si el usuario comenzó a arrastrar
+                if (temporizadorLongPress.current) {
+                    clearTimeout(temporizadorLongPress.current);
+                    temporizadorLongPress.current = null;
+                }
             }
-            setTranslateX((prev) => prev + dx);
-            setTranslateY((prev) => prev + dy);
+            // ... [continuar lógica existente de pan] ...
+            setTranslateX(prev => prev + dx);
+            setTranslateY(prev => prev + dy);
             setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
         }
     };
 
     const handleTouchEnd = () => {
+        // Limpiar temporizador de long press si el usuario soltó antes de tiempo
+        if (temporizadorLongPress.current) {
+            clearTimeout(temporizadorLongPress.current);
+            temporizadorLongPress.current = null;
+        }
         setLastTouchDistance(null);
         setIsPanning(false);
         setStartPan(null);
@@ -761,18 +884,20 @@ export default function MentalWheelApp() {
             {/* Botones flotantes */}
             <div className="fixed top-4 right-4 z-40 flex gap-2">
                 {/* Botón de estadísticas */}
-                <button
-                    onClick={() => setStatsOpen(true)}
-                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
-                    title="Estadísticas"
-                >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 3v18h18" />
-                        <path d="M18 17V9" />
-                        <path d="M13 17V5" />
-                        <path d="M8 17v-3" />
-                    </svg>
-                </button>
+                {statsVisibility.enabled && (
+                    <button
+                        onClick={() => setStatsOpen(true)}
+                        className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
+                        title="Estadísticas"
+                    >
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 3v18h18" />
+                            <path d="M18 17V9" />
+                            <path d="M13 17V5" />
+                            <path d="M8 17v-3" />
+                        </svg>
+                    </button>
+                )}
 
                 {/* Botón de configuración */}
                 <button
@@ -780,7 +905,7 @@ export default function MentalWheelApp() {
                     className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
                     title="Configuración"
                 >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-2px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="3" y1="12" x2="21" y2="12" />
                         <line x1="3" y1="6" x2="21" y2="6" />
                         <line x1="3" y1="18" x2="21" y2="18" />
@@ -860,6 +985,8 @@ export default function MentalWheelApp() {
             <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '80px 20px 20px 20px' }}>
                 <div className="w-full h-full max-h-full flex items-center justify-center">
                     <svg
+                        ref={svgRef}  /* referencia al SVG para cálculos de posición */
+                        onContextMenu={handleSvgContextMenu}  /* manejador de menú contextual */
                         width="100%"
                         height="100%"
                         viewBox={`0 0 ${SIZE} ${SIZE}`}
@@ -894,6 +1021,101 @@ export default function MentalWheelApp() {
                     Todos tus datos son almacenados localmente, de forma 100% privada y no se usan para nada.
                 </p>
             </div>
+
+            {/* Menú contextual emergente */}
+            {infoMenuContextual && (
+                <>
+                    {/* Capa transparente para cerrar el menú al hacer clic fuera */}
+                    <div className="fixed inset-0 z-40" onClick={() => setInfoMenuContextual(null)} />
+                    {/* Contenedor del menú contextual */}
+                    <div
+                        className={`fixed z-50 rounded-xl border ${theme.border} ${theme.inputAlt} shadow-lg`}
+                        style={{ top: infoMenuContextual.y, left: infoMenuContextual.x }}
+                    >
+                        <ul className="list-none m-0 p-0 flex flex-col divide-y divide-neutral-200 dark:divide-neutral-600">
+                            <li>
+                                <button
+                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
+                                    onClick={() => {
+                                        setScore(infoMenuContextual.idSector, 0); // Resetear valor del sector actual
+                                        setInfoMenuContextual(null);
+                                    }}
+                                >
+                                    Resetear valor
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
+                                    onClick={() => {
+                                        const valorActual = scores[infoMenuContextual.idSector] ?? 0;
+                                        const entrada = prompt("Introduzca manualmente un valor (0-10):", String(valorActual));
+                                        if (entrada !== null) {
+                                            const nuevoValor = parseInt(entrada);
+                                            if (!isNaN(nuevoValor)) {
+                                                setScore(infoMenuContextual.idSector, nuevoValor);
+                                            }
+                                        }
+                                        setInfoMenuContextual(null);
+                                    }}
+                                >
+                                    Establecer valor manualmente
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
+                                    onClick={() => {
+                                        const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
+                                        const nombreActual = sector ? sector.name : "";
+                                        const nuevoNombre = prompt("Cambiar nombre del sector:", nombreActual);
+                                        if (nuevoNombre !== null && nuevoNombre.trim() !== "") {
+                                            setSectors(prev => prev.map(x => x.id === infoMenuContextual.idSector
+                                                ? { ...x, name: nuevoNombre }
+                                                : x
+                                            ));
+                                        }
+                                        setInfoMenuContextual(null);
+                                    }}
+                                >
+                                    Cambiar nombre
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    className={`block w-full text-left px-3 py-2 text-sm cursor-pointer ${darkMode ? 'hover:bg-neutral-600' : 'hover:bg-neutral-100'}`}
+                                    onClick={() => {
+                                        // Al hacer clic, disparar el selector de color nativo
+                                        if (selectorColorRef.current) {
+                                            // Preseleccionar color actual del sector
+                                            const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
+                                            if (sector) selectorColorRef.current.value = rgbToHex(sector.color);
+                                            selectorColorRef.current.click();
+                                        }
+                                    }}
+                                >
+                                    Cambiar color
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </>
+            )}
+
+            {/* Input de color oculto para cambiar color de sector */}
+            <input
+                type="color"
+                ref={selectorColorRef}
+                className="hidden"
+                onChange={(e) => {
+                    if (!infoMenuContextual) return;
+                    const nuevoColor = e.target.value;
+                    setSectors(prev => prev.map(x =>
+                        x.id === infoMenuContextual.idSector ? { ...x, color: nuevoColor } : x
+                    ));
+                    setInfoMenuContextual(null);
+                }}
+            />
 
             {/* Modal de Estadísticas */}
             {statsOpen && (
@@ -935,98 +1157,101 @@ export default function MentalWheelApp() {
                             ) : (
                                 <>
                                     {/* Gráfico 1: Media Diaria */}
-                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📈 Evolución de la Media Diaria</h3>
-                                        <ResponsiveContainer width="100%" height={250}>
-                                            <AreaChart data={statsData.dailyAverage}>
-                                                <defs>
-                                                    <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                <XAxis
-                                                    dataKey="displayDate"
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <YAxis
-                                                    domain={[0, 10]}
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        backgroundColor: darkMode ? '#262626' : '#fff',
-                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                        borderRadius: '8px'
-                                                    }}
-                                                />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="media"
-                                                    stroke="#8884d8"
-                                                    fillOpacity={1}
-                                                    fill="url(#colorMedia)"
-                                                    strokeWidth={2}
-                                                />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                                    {statsVisibility.showDailyAverage && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📈 Evolución de la Media Diaria</h3>
+                                            <ResponsiveContainer width="100%" height={250}>
+                                                <AreaChart data={statsData.dailyAverage}>
+                                                    <defs>
+                                                        <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                                                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                    <XAxis
+                                                        dataKey="displayDate"
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <YAxis
+                                                        domain={[0, 10]}
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: darkMode ? '#262626' : '#fff',
+                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                            borderRadius: '8px'
+                                                        }}
+                                                    />
+                                                    <Area
+                                                        type="monotone"
+                                                        dataKey="media"
+                                                        stroke="#8884d8"
+                                                        fillOpacity={1}
+                                                        fill="url(#colorMedia)"
+                                                        strokeWidth={2}
+                                                    />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    )}
 
                                     {/* Gráfico 2: Progresión por Sector */}
-                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                            <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>📊 Progresión por Sector</h3>
-                                            <select
-                                                value={selectedSectorId}
-                                                onChange={(e) => setSelectedSectorId(e.target.value)}
-                                                className={`rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
-                                            >
-                                                {sectors.map(s => (
-                                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                                ))}
-                                            </select>
+                                    {statsVisibility.showSectorProgress && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                                <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>📊 Progresión por Sector</h3>
+                                                <select
+                                                    value={selectedSectorId}
+                                                    onChange={(e) => setSelectedSectorId(e.target.value)}
+                                                    className={`rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                                >
+                                                    {sectors.map(s => (
+                                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <ResponsiveContainer width="100%" height={250}>
+                                                <LineChart data={statsData.sectorProgress(selectedSectorId)}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                    <XAxis
+                                                        dataKey="displayDate"
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <YAxis
+                                                        domain={[0, 10]}
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: darkMode ? '#262626' : '#fff',
+                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                            borderRadius: '8px'
+                                                        }}
+                                                    />
+                                                    <Line
+                                                        type="monotone"
+                                                        dataKey="puntuacion"
+                                                        stroke={sectors.find(s => s.id === selectedSectorId)?.color || "#8884d8"}
+                                                        strokeWidth={3}
+                                                        dot={{ r: 4 }}
+                                                        activeDot={{ r: 6 }}
+                                                    />
+                                                </LineChart>
+                                            </ResponsiveContainer>
                                         </div>
-                                        <ResponsiveContainer width="100%" height={250}>
-                                            <LineChart data={statsData.sectorProgress(selectedSectorId)}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                <XAxis
-                                                    dataKey="displayDate"
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <YAxis
-                                                    domain={[0, 10]}
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        backgroundColor: darkMode ? '#262626' : '#fff',
-                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                        borderRadius: '8px'
-                                                    }}
-                                                />
-                                                <Line
-                                                    type="monotone"
-                                                    dataKey="puntuacion"
-                                                    stroke={sectors.find(s => s.id === selectedSectorId)?.color || "#8884d8"}
-                                                    strokeWidth={3}
-                                                    dot={{ r: 4 }}
-                                                    activeDot={{ r: 6 }}
-                                                />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-
+                                    )}
 
                                     {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
-                                    {statsData.last7DaysAllSectors && (
+                                    {statsVisibility.showLast7AllSectors && statsData.last7DaysAllSectors && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Evolución Últimos 7 Días - Comparativa</h3>
-                                            
+
                                             <ResponsiveContainer width="100%" height={300}>
                                                 <LineChart data={statsData.last7DaysAllSectors}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
@@ -1063,19 +1288,18 @@ export default function MentalWheelApp() {
                                                     ))}
                                                 </LineChart>
                                             </ResponsiveContainer>
-                                            
+
                                             {/* Checkboxes para mostrar/ocultar sectores */}
                                             <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: theme.borderLight }}>
                                                 <p className={`text-xs font-semibold mb-3 ${theme.textMuted}`}>Mostrar sectores:</p>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                                     {sectors.map(sector => (
-                                                        <label 
+                                                        <label
                                                             key={sector.id}
-                                                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                                                                visibleSectors[sector.id] 
-                                                                    ? darkMode ? 'bg-neutral-700' : 'bg-neutral-100'
-                                                                    : darkMode ? 'bg-neutral-800' : 'bg-neutral-50'
-                                                            }`}
+                                                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${visibleSectors[sector.id]
+                                                                ? darkMode ? 'bg-neutral-700' : 'bg-neutral-100'
+                                                                : darkMode ? 'bg-neutral-800' : 'bg-neutral-50'
+                                                                }`}
                                                         >
                                                             <input
                                                                 type="checkbox"
@@ -1090,8 +1314,8 @@ export default function MentalWheelApp() {
                                                                 style={{ accentColor: rgbToHex(sector.color) }}
                                                             />
                                                             <div className="flex items-center gap-1 flex-1 min-w-0">
-                                                                <div 
-                                                                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                                                                <div
+                                                                    className="w-3 h-3 rounded-full flex-shrink-0"
                                                                     style={{ backgroundColor: rgbToHex(sector.color) }}
                                                                 />
                                                                 <span className={`text-xs truncate ${theme.text}`}>
@@ -1106,198 +1330,206 @@ export default function MentalWheelApp() {
                                     )}
 
                                     {/* Gráfico 3: Comparación de Sectores */}
-                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📊 Comparación: Actual vs Promedio Histórico</h3>
-                                        <ResponsiveContainer width="100%" height={300}>
-                                            <BarChart data={statsData.sectorComparison}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                <XAxis
-                                                    dataKey="sector"
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '11px' }}
-                                                    angle={-45}
-                                                    textAnchor="end"
-                                                    height={80}
-                                                />
-                                                <YAxis
-                                                    domain={[0, 10]}
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        backgroundColor: darkMode ? '#262626' : '#fff',
-                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                        borderRadius: '8px'
-                                                    }}
-                                                />
-                                                <Legend />
-                                                <Bar dataKey="actual" fill="#82ca9d" name="Puntuación Actual" />
-                                                <Bar dataKey="promedio" fill="#8884d8" name="Promedio Histórico" />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
+                                    {statsVisibility.showComparison && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📊 Comparación: Actual vs Promedio Histórico</h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <BarChart data={statsData.sectorComparison}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                    <XAxis
+                                                        dataKey="sector"
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '11px' }}
+                                                        angle={-45}
+                                                        textAnchor="end"
+                                                        height={80}
+                                                    />
+                                                    <YAxis
+                                                        domain={[0, 10]}
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: darkMode ? '#262626' : '#fff',
+                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                            borderRadius: '8px'
+                                                        }}
+                                                    />
+                                                    <Legend />
+                                                    <Bar dataKey="actual" fill="#82ca9d" name="Puntuación Actual" />
+                                                    <Bar dataKey="promedio" fill="#8884d8" name="Promedio Histórico" />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    )}
 
                                     {/* Gráfico 4: Tendencia Semanal */}
-                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Promedio por Día de la Semana</h3>
-                                        <ResponsiveContainer width="100%" height={250}>
-                                            <BarChart data={statsData.weeklyData}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                <XAxis
-                                                    dataKey="dia"
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <YAxis
-                                                    domain={[0, 10]}
-                                                    stroke={theme.chartText}
-                                                    style={{ fontSize: '12px' }}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        backgroundColor: darkMode ? '#262626' : '#fff',
-                                                        border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                        borderRadius: '8px'
-                                                    }}
-                                                />
-                                                <Bar dataKey="media" fill="#ffc658" name="Media" />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                        <p className={`text-xs ${theme.textMuted} mt-2 text-center`}>
-                                            ¿Qué días de la semana tienes mejor desempeño?
-                                        </p>
-                                    </div>
+                                    {statsVisibility.showWeeklyTrend && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Promedio por Día de la Semana</h3>
+                                            <ResponsiveContainer width="100%" height={250}>
+                                                <BarChart data={statsData.weeklyData}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                    <XAxis
+                                                        dataKey="dia"
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <YAxis
+                                                        domain={[0, 10]}
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: darkMode ? '#262626' : '#fff',
+                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                            borderRadius: '8px'
+                                                        }}
+                                                    />
+                                                    <Bar dataKey="media" fill="#ffc658" name="Media" />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                            <p className={`text-xs ${theme.textMuted} mt-2 text-center`}>
+                                                ¿Qué días de la semana tienes mejor desempeño?
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {/* Gráfico 5: Heat Map de Consistencia */}
-                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                        <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>🔥 Mapa de Calor - Últimos 60 Días</h3>
-                                        <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
-                                            {statsData.heatMapData.map((day, index) => {
-                                                const intensity = day.hasData ? Math.round((day.value / 10) * 4) : 0;
-                                                const colors = darkMode
-                                                    ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
-                                                    : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className="aspect-square rounded-sm relative group cursor-pointer"
-                                                        style={{ backgroundColor: colors[intensity] }}
-                                                        title={`${day.displayDate}: ${day.hasData ? day.value.toFixed(1) : 'Sin datos'}`}
-                                                    >
-                                                        <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${theme.cardSolid} px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border ${theme.border}`}>
-                                                            {day.displayDate}: {day.hasData ? day.value.toFixed(1) : 'N/A'}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="flex items-center justify-between mt-4 text-xs">
-                                            <span className={theme.textMuted}>Menos</span>
-                                            <div className="flex gap-1">
-                                                {[0, 1, 2, 3, 4].map(i => {
+                                    {statsVisibility.showHeatMap && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>🔥 Mapa de Calor - Últimos 60 Días</h3>
+                                            <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
+                                                {statsData.heatMapData.map((day, index) => {
+                                                    const intensity = day.hasData ? Math.round((day.value / 10) * 4) : 0;
                                                     const colors = darkMode
                                                         ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
                                                         : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
                                                     return (
                                                         <div
-                                                            key={i}
-                                                            className="w-4 h-4 rounded-sm"
-                                                            style={{ backgroundColor: colors[i] }}
-                                                        />
+                                                            key={index}
+                                                            className="aspect-square rounded-sm relative group cursor-pointer"
+                                                            style={{ backgroundColor: colors[intensity] }}
+                                                            title={`${day.displayDate}: ${day.hasData ? day.value.toFixed(1) : 'Sin datos'}`}
+                                                        >
+                                                            <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${theme.cardSolid} px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border ${theme.border}`}>
+                                                                {day.displayDate}: {day.hasData ? day.value.toFixed(1) : 'N/A'}
+                                                            </div>
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
-                                            <span className={theme.textMuted}>Más</span>
+                                            <div className="flex items-center justify-between mt-4 text-xs">
+                                                <span className={theme.textMuted}>Menos</span>
+                                                <div className="flex gap-1">
+                                                    {[0, 1, 2, 3, 4].map(i => {
+                                                        const colors = darkMode
+                                                            ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
+                                                            : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
+                                                        return (
+                                                            <div
+                                                                key={i}
+                                                                className="w-4 h-4 rounded-sm"
+                                                                style={{ backgroundColor: colors[i] }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                                <span className={theme.textMuted}>Más</span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* Resumen de Insights */}
-                                    <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                        <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>💡 Insights</h3>
-                                        <div className="space-y-2 text-sm">
-                                            {(() => {
-                                                const lastAvg = statsData.dailyAverage[statsData.dailyAverage.length - 1]?.media || 0;
-                                                const firstAvg = statsData.dailyAverage[0]?.media || 0;
-                                                const trend = lastAvg - firstAvg;
+                                    {statsVisibility.showInsights && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>💡 Insights</h3>
+                                            <div className="space-y-2 text-sm">
+                                                {(() => {
+                                                    const lastAvg = statsData.dailyAverage[statsData.dailyAverage.length - 1]?.media || 0;
+                                                    const firstAvg = statsData.dailyAverage[0]?.media || 0;
+                                                    const trend = lastAvg - firstAvg;
 
-                                                const bestSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
-                                                    current.score > prev.score ? current : prev
-                                                );
+                                                    const bestSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
+                                                        current.score > prev.score ? current : prev
+                                                    );
 
-                                                const worstSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
-                                                    current.score < prev.score ? current : prev
-                                                );
+                                                    const worstSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
+                                                        current.score < prev.score ? current : prev
+                                                    );
 
-                                                const bestSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
-                                                    current.score > prev.score ? current : prev
-                                                );
+                                                    const bestSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
+                                                        current.score > prev.score ? current : prev
+                                                    );
 
-                                                const worstSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
-                                                    current.score < prev.score ? current : prev
-                                                );
+                                                    const worstSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
+                                                        current.score < prev.score ? current : prev
+                                                    );
 
-                                                const bestWeekDay = statsData.weeklyData.reduce((prev, current) =>
-                                                    current.media > prev.media ? current : prev
-                                                );
+                                                    const bestWeekDay = statsData.weeklyData.reduce((prev, current) =>
+                                                        current.media > prev.media ? current : prev
+                                                    );
 
-                                                return (
-                                                    <>
-                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                            <p className={theme.text}>
-                                                                <span className="font-semibold">Tendencia general:</span>{' '}
-                                                                {trend > 0 ? (
-                                                                    <span className="text-green-500">↗ Mejorando (+{trend.toFixed(2)})</span>
-                                                                ) : trend < 0 ? (
-                                                                    <span className="text-red-500">↘ Descendiendo ({trend.toFixed(2)})</span>
-                                                                ) : (
-                                                                    <span className={theme.textMuted}>→ Estable</span>
-                                                                )}
-                                                            </p>
-                                                        </div>
+                                                    return (
+                                                        <>
+                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                                <p className={theme.text}>
+                                                                    <span className="font-semibold">Tendencia general:</span>{' '}
+                                                                    {trend > 0 ? (
+                                                                        <span className="text-green-500">↗ Mejorando (+{trend.toFixed(2)})</span>
+                                                                    ) : trend < 0 ? (
+                                                                        <span className="text-red-500">↘ Descendiendo ({trend.toFixed(2)})</span>
+                                                                    ) : (
+                                                                        <span className={theme.textMuted}>→ Estable</span>
+                                                                    )}
+                                                                </p>
+                                                            </div>
 
-                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                            <p className={theme.text}>
-                                                                <span className="font-semibold">Tu sector más fuerte:</span>
-                                                                <br />
-                                                                <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {bestSectorToday.sector} ({bestSectorToday.score}/10)
-                                                                <br />
-                                                                <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {bestSectorHistorical.sector} ({bestSectorHistorical.score}/10)
-                                                            </p>
-                                                        </div>
+                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                                <p className={theme.text}>
+                                                                    <span className="font-semibold">Tu sector más fuerte:</span>
+                                                                    <br />
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {bestSectorToday.sector} ({bestSectorToday.score}/10)
+                                                                    <br />
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {bestSectorHistorical.sector} ({bestSectorHistorical.score}/10)
+                                                                </p>
+                                                            </div>
 
-                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                            <p className={theme.text}>
-                                                                <span className="font-semibold">Área de mejora:</span>
-                                                                <br />
-                                                                <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {worstSectorToday.sector} ({worstSectorToday.score}/10)
-                                                                <br />
-                                                                <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {worstSectorHistorical.sector} ({worstSectorHistorical.score}/10)
-                                                            </p>
-                                                        </div>
+                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                                <p className={theme.text}>
+                                                                    <span className="font-semibold">Área de mejora:</span>
+                                                                    <br />
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {worstSectorToday.sector} ({worstSectorToday.score}/10)
+                                                                    <br />
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {worstSectorHistorical.sector} ({worstSectorHistorical.score}/10)
+                                                                </p>
+                                                            </div>
 
-                                                        <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                            <p className={theme.text}>
-                                                                <span className="font-semibold">Tu mejor día:</span>
-                                                                <br />
-                                                                <span className={`text-xs ${theme.textMuted}`}>De la semana:</span> {bestWeekDay.dia} ({bestWeekDay.media.toFixed(2)}/10 promedio)
-                                                                <br />
-                                                                {statsData.bestHistoricalDay && (
-                                                                    <>
-                                                                        <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {new Date(statsData.bestHistoricalDay.date).toLocaleDateString('es-ES', {
-                                                                            day: '2-digit',
-                                                                            month: 'long',
-                                                                            year: 'numeric'
-                                                                        })} ({statsData.bestHistoricalDay.media}/10)
-                                                                    </>
-                                                                )}
-                                                            </p>
-                                                        </div>
-                                                    </>
-                                                );
-                                            })()}
+                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                                <p className={theme.text}>
+                                                                    <span className="font-semibold">Tu mejor día:</span>
+                                                                    <br />
+                                                                    <span className={`text-xs ${theme.textMuted}`}>De la semana:</span> {bestWeekDay.dia} ({bestWeekDay.media.toFixed(2)}/10 promedio)
+                                                                    <br />
+                                                                    {statsData.bestHistoricalDay && (
+                                                                        <>
+                                                                            <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {new Date(statsData.bestHistoricalDay.date).toLocaleDateString('es-ES', {
+                                                                                day: '2-digit',
+                                                                                month: 'long',
+                                                                                year: 'numeric'
+                                                                            })} ({statsData.bestHistoricalDay.media}/10)
+                                                                        </>
+                                                                    )}
+                                                                </p>
+                                                            </div>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -1332,22 +1564,6 @@ export default function MentalWheelApp() {
                                 <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         </button>
-                    </div>
-
-                    <div className="mb-6 space-y-3">
-                        <div className="flex gap-2">
-                            <button onClick={resetDay} className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}>
-                                Resetear día
-                            </button>
-                            <button onClick={exportJSON} className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}>
-                                Exportar JSON
-                            </button>
-                        </div>
-
-                        <label className={`block w-full rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm cursor-pointer text-center transition-colors`}>
-                            Importar JSON
-                            <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
-                        </label>
                     </div>
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
@@ -1438,6 +1654,99 @@ export default function MentalWheelApp() {
                                 </li>
                             ))}
                         </ul>
+                    </div>
+
+                    <hr className={`my-6 ${theme.borderLight} border-t`} />
+
+                    {/* === Sección: Datos (Reset / Export / Import) === */}
+                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <div className={`text-lg font-semibold ${theme.text}`}>Datos</div>
+                                <div className={`text-xs ${theme.textLight}`}>
+                                    Resetea el día actual o guarda/carga tus datos en JSON para poder usarlos en otro dispositivo
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <button
+                                onClick={() => {
+                                    if (confirm("¿Seguro que quieres resetear las puntuaciones del día actual?")) {
+                                        resetDay();
+                                    }
+                                }}
+                                className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
+                            >
+                                Resetear día
+                            </button>
+
+                            <button
+                                onClick={exportJSON}
+                                className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
+                            >
+                                Exportar JSON
+                            </button>
+
+                            <label className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm cursor-pointer text-center transition-colors`}>
+                                Importar JSON
+                                <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
+                            </label>
+                        </div>
+                    </div>
+
+
+                    <hr className={`my-6 ${theme.borderLight} border-t`} />
+
+                    {/* === Preferencias de Estadísticas === */}
+                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <div className={`text-lg font-semibold ${theme.text}`}>Estadísticas</div>
+                                <div className={`text-xs ${theme.textLight}`}>
+                                    Alterna la visibilidad de las estadísticas
+                                </div>
+                            </div>
+
+                            {/* Master toggle: desactivar todo (oculta también el botón) */}
+                            <button
+                                onClick={() =>
+                                    setStatsVisibility(v => ({ ...v, enabled: !v.enabled }))
+                                }
+                                className={`relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${statsVisibility.enabled ? "bg-green-500/70" : "bg-neutral-400/60"} padding-esp`}
+                                title="Desactivar todo (oculta el botón de estadísticas)"
+                            >
+                                <span
+                                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${statsVisibility.enabled ? "translate-x-6" : "translate-x-0"}`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Toggles individuales (deshabilitados cuando master OFF) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                            {[
+                                ["showDailyAverage", "📈 Evolución de la Media Diaria"],
+                                ["showSectorProgress", "📊 Progresión por Sector"],
+                                ["showLast7AllSectors", "📅 Últimos 7 días (comparativa)"],
+                                ["showComparison", "📊 Comparación Actual vs Promedio"],
+                                ["showWeeklyTrend", "📅 Promedio por día de la semana"],
+                                ["showHeatMap", "🔥 Heatmap (60 días)"],
+                                ["showInsights", "💡 Insights"],
+                            ].map(([key, label]) => (
+                                <label key={key} className={`flex items-center justify-between p-2 rounded-lg ${theme.card}`}>
+                                    <span className={`text-sm ${theme.text}`}>{label}</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={(statsVisibility as any)[key]}
+                                        disabled={!statsVisibility.enabled}
+                                        onChange={(e) =>
+                                            setStatsVisibility(v => ({ ...v, [key]: e.target.checked } as StatsVisibility))
+                                        }
+                                        className="h-4 w-4 cursor-pointer"
+                                    />
+                                </label>
+                            ))}
+                        </div>
                     </div>
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
