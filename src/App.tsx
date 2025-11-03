@@ -191,6 +191,25 @@ export default function MentalWheelApp() {
             };
         });
 
+        // Sectores de HOY (independiente del día seleccionado)
+        const todayScores = scoresByDate[todayStr] || {};
+        const todaySectorScores = sectors.map(sector => ({
+            sector: sector.name,
+            score: todayScores[sector.id] || 0
+        }));
+
+        // Sectores históricos (promedio de todos los días)
+        const historicalSectorScores = sectors.map(sector => {
+            const allScores = dates.map(date => scoresByDate[date][sector.id] || 0).filter(s => s > 0);
+            const avg = allScores.length > 0
+                ? allScores.reduce((a, b) => a + b, 0) / allScores.length
+                : 0;
+            return {
+                sector: sector.name,
+                score: parseFloat(avg.toFixed(2))
+            };
+        });
+
         // Tendencia semanal
         const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         const weeklyData = weekDays.map((day, index) => {
@@ -227,12 +246,22 @@ export default function MentalWheelApp() {
             };
         });
 
+        // Mejor día histórico (día específico con mayor puntuación)
+        const bestHistoricalDay = dailyAverage.length > 0
+            ? dailyAverage.reduce((prev, current) =>
+                current.media > prev.media ? current : prev
+            )
+            : null;
+
         return {
+            todaySectorScores,
+            historicalSectorScores,
             dailyAverage,
             sectorProgress,
             sectorComparison,
             weeklyData,
             heatMapData,
+            bestHistoricalDay,
             totalDays: dates.length,
             currentStreak: calculateStreak(dates)
         };
@@ -1051,15 +1080,23 @@ export default function MentalWheelApp() {
                                                 const firstAvg = statsData.dailyAverage[0]?.media || 0;
                                                 const trend = lastAvg - firstAvg;
 
-                                                const bestSector = statsData.sectorComparison.reduce((prev, current) =>
-                                                    current.actual > prev.actual ? current : prev
+                                                const bestSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
+                                                    current.score > prev.score ? current : prev
                                                 );
 
-                                                const worstSector = statsData.sectorComparison.reduce((prev, current) =>
-                                                    current.actual < prev.actual ? current : prev
+                                                const worstSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
+                                                    current.score < prev.score ? current : prev
                                                 );
 
-                                                const bestDay = statsData.weeklyData.reduce((prev, current) =>
+                                                const bestSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
+                                                    current.score > prev.score ? current : prev
+                                                );
+
+                                                const worstSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
+                                                    current.score < prev.score ? current : prev
+                                                );
+
+                                                const bestWeekDay = statsData.weeklyData.reduce((prev, current) =>
                                                     current.media > prev.media ? current : prev
                                                 );
 
@@ -1080,19 +1117,39 @@ export default function MentalWheelApp() {
 
                                                         <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
                                                             <p className={theme.text}>
-                                                                <span className="font-semibold">Tu sector más fuerte:</span> {bestSector.sector} ({bestSector.actual}/10)
+                                                                <span className="font-semibold">Tu sector más fuerte:</span>
+                                                                <br />
+                                                                <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {bestSectorToday.sector} ({bestSectorToday.score}/10)
+                                                                <br />
+                                                                <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {bestSectorHistorical.sector} ({bestSectorHistorical.score}/10)
                                                             </p>
                                                         </div>
 
                                                         <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
                                                             <p className={theme.text}>
-                                                                <span className="font-semibold">Área de mejora:</span> {worstSector.sector} ({worstSector.actual}/10)
+                                                                <span className="font-semibold">Área de mejora:</span>
+                                                                <br />
+                                                                <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {worstSectorToday.sector} ({worstSectorToday.score}/10)
+                                                                <br />
+                                                                <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {worstSectorHistorical.sector} ({worstSectorHistorical.score}/10)
                                                             </p>
                                                         </div>
 
                                                         <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
                                                             <p className={theme.text}>
-                                                                <span className="font-semibold">Tu mejor día:</span> {bestDay.dia} ({bestDay.media.toFixed(2)}/10 promedio)
+                                                                <span className="font-semibold">Tu mejor día:</span>
+                                                                <br />
+                                                                <span className={`text-xs ${theme.textMuted}`}>De la semana:</span> {bestWeekDay.dia} ({bestWeekDay.media.toFixed(2)}/10 promedio)
+                                                                <br />
+                                                                {statsData.bestHistoricalDay && (
+                                                                    <>
+                                                                        <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {new Date(statsData.bestHistoricalDay.date).toLocaleDateString('es-ES', {
+                                                                            day: '2-digit',
+                                                                            month: 'long',
+                                                                            year: 'numeric'
+                                                                        })} ({statsData.bestHistoricalDay.media}/10)
+                                                                    </>
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </>
