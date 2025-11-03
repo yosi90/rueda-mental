@@ -42,6 +42,10 @@ interface InfoMenuContextual {
     y: number;
 }
 
+interface CommentsByDate {
+    [date: string]: { [sectorId: string]: string }; // un comentario por sector y día
+}
+
 type StatsVisibility = {
     enabled: boolean;                 // Master: si es false, no hay botón ni modal
     showDailyAverage: boolean;        // 📈 Evolución de la Media Diaria
@@ -89,6 +93,11 @@ export default function MentalWheelApp() {
     // scores: mapa { dateStr: { id: value } }
     const [scoresByDate, setScoresByDate] = useState<ScoresByDate>(() => loadScores());
     const scores = scoresByDate[dateStr] || {};
+
+    // Estado nuevo (junto al resto de useState)
+    const [commentsByDate, setCommentsByDate] = useState<CommentsByDate>(() => loadComments());
+    const commentTextRef = useRef<HTMLTextAreaElement>(null);
+
 
     // --- Nuevo estado y referencias para menú contextual ---
     const [infoMenuContextual, setInfoMenuContextual] = useState<InfoMenuContextual | null>(null);
@@ -462,6 +471,50 @@ export default function MentalWheelApp() {
         return `hsl(${hue} 70% 50%)`;
     }
 
+    function loadComments(): CommentsByDate {
+        try {
+            const raw = localStorage.getItem("mental-wheel-comments-v1");
+            return raw ? JSON.parse(raw) : {};
+        } catch {
+            return {};
+        }
+    }
+
+    function saveComments(data: CommentsByDate): void {
+        try {
+            localStorage.setItem("mental-wheel-comments-v1", JSON.stringify(data));
+        } catch (error) {
+            console.error("Error al guardar comentarios:", error);
+        }
+    }
+
+    useEffect(() => saveComments(commentsByDate), [commentsByDate]);
+
+    function getComment(date: string, sectorId: string): string {
+        return commentsByDate[date]?.[sectorId] ?? "";
+    }
+
+    function setComment(date: string, sectorId: string, text: string) {
+        setCommentsByDate(prev => ({
+            ...prev,
+            [date]: { ...(prev[date] ?? {}), [sectorId]: text }
+        }));
+    }
+
+    function deleteComment(date: string, sectorId: string) {
+        setCommentsByDate(prev => {
+            const day = { ...(prev[date] ?? {}) };
+            delete day[sectorId];
+            const copy = { ...prev };
+            if (Object.keys(day).length === 0) {
+                delete copy[date];
+            } else {
+                copy[date] = day;
+            }
+            return copy;
+        });
+    }
+
     // --- Geometría SVG ---
     function polar(cx: number, cy: number, r: number, angDeg: number): [number, number] {
         const rad = toRad(angDeg);
@@ -744,11 +797,33 @@ export default function MentalWheelApp() {
             const [tx, ty] = polar(cx, cy, radius + 24, s.mid);
             const cosv = Math.cos(toRad(s.mid));
             const anchor = cosv > 0.25 ? "start" : cosv < -0.25 ? "end" : "middle";
+
+            // ¿tiene comentario el día seleccionado?
+            const hasComment = !!getComment(dateStr, s.id);
+
             return (
                 <g key={`lab-${s.id}`}>
                     <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="middle" fill={theme.svgText}>
                         {s.name}
                     </text>
+
+                    {hasComment && (
+                        // pequeña “chincheta” al lado de la etiqueta
+                        <text
+                            x={tx + (anchor === "start" ? 10 : anchor === "end" ? -10 : 0)}
+                            y={ty - 10}
+                            fontSize={12}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fill={theme.svgText}
+                            aria-label="Tiene comentario"
+                            style={{ cursor: "help" }} // opcional, para mostrar el puntero de ayuda
+                        >
+                            <title>Tiene un comentario</title>
+                            📌
+                        </text>
+                    )}
+
                 </g>
             );
         });
@@ -1167,6 +1242,80 @@ export default function MentalWheelApp() {
                                             className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} flex-shrink-0`}
                                         />
                                     </div>
+
+                                    <hr className={`my-1 ${theme.borderLight} border-t`} />
+
+                                    {/* Comentario del día */}
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className={`text-xs ${theme.textMuted}`}>Comentario</label>
+
+                                            {/* Botón rápido para limpiar si ya hay comentario */}
+                                            {getComment(dateStr, sector.id) && (
+                                                <button
+                                                    className={`text-xs px-2 py-1 rounded ${theme.buttonPrimary}`}
+                                                    onClick={() => {
+                                                        deleteComment(dateStr, sector.id);
+                                                        // opcional: limpiar textarea si abierto
+                                                        if (commentTextRef.current) commentTextRef.current.value = "";
+                                                    }}
+                                                    title="Eliminar comentario del día"
+                                                >
+                                                    Borrar
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <textarea
+                                            ref={commentTextRef}
+                                            defaultValue={getComment(dateStr, sector.id)}
+                                            maxLength={100}
+                                            rows={3}
+                                            placeholder="Escribe tu comentario..."
+                                            className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                            onKeyDown={(e) => {
+                                                // Guardar con Ctrl+Enter / Cmd+Enter, Enter solo hace salto de línea
+                                                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                                                    const t = (e.target as HTMLTextAreaElement).value.trim();
+                                                    if (t.length > 0) setComment(dateStr, sector.id, t);
+                                                    else deleteComment(dateStr, sector.id);
+                                                    setInfoMenuContextual(null); // cerrar menú al guardar
+                                                }
+                                            }}
+                                        />
+
+                                        <div className="flex items-center justify-between">
+                                            {/* Contador de caracteres */}
+                                            <span className={`text-[10px] ${theme.textMuted}`}>
+                                                {(commentTextRef.current?.value?.length ?? getComment(dateStr, sector.id).length)}/100
+                                            </span>
+
+                                            <div className="flex gap-2">
+                                                <button
+                                                    className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.button}`}
+                                                    onClick={() => setInfoMenuContextual(null)}
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.buttonPrimary}`}
+                                                    onClick={() => {
+                                                        const t = (commentTextRef.current?.value ?? "").trim();
+                                                        if (t.length > 0) setComment(dateStr, sector.id, t);
+                                                        else deleteComment(dateStr, sector.id);
+                                                        setInfoMenuContextual(null);
+                                                    }}
+                                                >
+                                                    Guardar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Separador para el botón de cerrar */}
+                                    {isMobile && (
+                                        <hr className={`my-1 ${theme.borderLight} border-t`} />
+                                    )}
 
                                     {/* Botón cerrar solo en móvil */}
                                     {isMobile && (
