@@ -677,10 +677,10 @@ export default function MentalWheelApp() {
                 {/* Botón de estadísticas */}
                 <button
                     onClick={() => setStatsOpen(true)}
-                    className={`rounded-lg ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
+                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
                     title="Estadísticas"
                 >
-                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 3v18h18" />
                         <path d="M18 17V9" />
                         <path d="M13 17V5" />
@@ -691,10 +691,10 @@ export default function MentalWheelApp() {
                 {/* Botón de configuración */}
                 <button
                     onClick={() => setDrawerOpen(true)}
-                    className={`rounded-lg ${theme.buttonPrimary} p-3 shadow-lg transition-colors`}
+                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
                     title="Configuración"
                 >
-                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="3" y1="12" x2="21" y2="12" />
                         <line x1="3" y1="6" x2="21" y2="6" />
                         <line x1="3" y1="18" x2="21" y2="18" />
@@ -725,7 +725,7 @@ export default function MentalWheelApp() {
                     </div>
                 </div>
 
-                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 mt-5 sm:mt-0 shadow-lg`}>
+                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 mt-1 sm:mt-0 shadow-lg`}>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => {
