@@ -92,6 +92,7 @@ export default function MentalWheelApp() {
 
     // --- Nuevo estado y referencias para menú contextual ---
     const [infoMenuContextual, setInfoMenuContextual] = useState<InfoMenuContextual | null>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);               // Referencia al SVG principal
     const selectorColorRef = useRef<HTMLInputElement>(null);   // Referencia a input color oculto
     const temporizadorLongPress = useRef<number | null>(null); // Temporizador para detección de pulsación prolongada
@@ -166,6 +167,37 @@ export default function MentalWheelApp() {
             setSelectedSectorId(sectors[0].id);
         }
     }, [sectors, selectedSectorId]);
+
+    //Establecer la posición del menú contextual
+    useEffect(() => {
+        if (!infoMenuContextual || !menuRef.current) return;
+
+        const PADDING = 8; // margen de seguridad
+        const rect = menuRef.current.getBoundingClientRect();
+
+        let left = infoMenuContextual.x;
+        let top = infoMenuContextual.y;
+
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        // Si se sale por la derecha, muévelo a la izquierda del click
+        if (left + rect.width + PADDING > vw) {
+            left = Math.max(PADDING, vw - rect.width - PADDING);
+        }
+        // Si se sale por abajo, súbelo por encima
+        if (top + rect.height + PADDING > vh) {
+            top = Math.max(PADDING, vh - rect.height - PADDING);
+        }
+        // Si se sale por la izquierda/arriba, empuja dentro
+        if (left < PADDING) left = PADDING;
+        if (top < PADDING) top = PADDING;
+
+        if (left !== infoMenuContextual.x || top !== infoMenuContextual.y) {
+            setInfoMenuContextual({ ...infoMenuContextual, x: left, y: top });
+        }
+    }, [infoMenuContextual]);
+
 
     const sectorsWithAngles = useMemo(() => {
         const gapDeg = 2;
@@ -1028,8 +1060,9 @@ export default function MentalWheelApp() {
                     <div className="fixed inset-0 z-40" onClick={() => setInfoMenuContextual(null)} />
 
                     <div
+                        ref={menuRef}
                         className={`fixed z-50 w-[200px] sm:w-[300px] rounded-xl border ${theme.border} bg-neutral-800/90 backdrop-blur-sm p-4 shadow-xl`}
-                        style={{ top: infoMenuContextual.y, left: infoMenuContextual.x }}
+                        style={{ top: `${infoMenuContextual.y}px`, left: `${infoMenuContextual.x}px` }}
                     >
                         {(() => {
                             const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
