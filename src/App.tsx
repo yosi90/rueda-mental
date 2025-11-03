@@ -96,6 +96,23 @@ export default function MentalWheelApp() {
     const [startPan, setStartPan] = useState<{ x: number; y: number } | null>(null);
     const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
     const [hasPanned, setHasPanned] = useState<boolean>(false);
+    const [visibleSectors, setVisibleSectors] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {};
+        sectors.forEach(s => initial[s.id] = true);
+        return initial;
+    });
+
+    // Actualizar visibleSectors cuando cambien los sectores
+    useEffect(() => {
+        setVisibleSectors(prev => {
+            const updated: Record<string, boolean> = {};
+            sectors.forEach(s => {
+                updated[s.id] = prev[s.id] !== undefined ? prev[s.id] : true;
+            });
+            return updated;
+        });
+    }, [sectors]);
+
 
     // Guardar preferencia de tema
     useEffect(() => {
@@ -265,6 +282,33 @@ export default function MentalWheelApp() {
             )
             : null;
 
+        // Últimos 7 días - todos los sectores (para gráfico de evolución multi-línea)
+        const last7DaysAllSectors = () => {
+            if (dates.length < 7) return null; // No mostrar si no hay 7 días
+            
+            const last7Dates = dates.slice(-7);
+            const todayStr = formatDateInput(new Date());
+            
+            return last7Dates.map((date) => {
+                const isToday = date === todayStr;
+                const dataPoint: any = {
+                    date: date,
+                    displayDate: isToday ? 'Hoy' : new Date(date).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: 'short'
+                    }),
+                    isToday: isToday
+                };
+                
+                // Agregar la puntuación de cada sector
+                sectors.forEach(sector => {
+                    dataPoint[sector.name] = scoresByDate[date][sector.id] || 0;
+                });
+                
+                return dataPoint;
+            });
+        };
+
         return {
             todaySectorScores,
             historicalSectorScores,
@@ -274,6 +318,7 @@ export default function MentalWheelApp() {
             weeklyData,
             heatMapData,
             bestHistoricalDay,
+            last7DaysAllSectors: last7DaysAllSectors(),
             totalDays: dates.length,
             currentStreak: calculateStreak(dates)
         };
@@ -975,6 +1020,90 @@ export default function MentalWheelApp() {
                                             </LineChart>
                                         </ResponsiveContainer>
                                     </div>
+
+
+                                    {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
+                                    {statsData.last7DaysAllSectors && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Evolución Últimos 7 Días - Comparativa</h3>
+                                            
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <LineChart data={statsData.last7DaysAllSectors}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                    <XAxis
+                                                        dataKey="displayDate"
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <YAxis
+                                                        domain={[0, 10]}
+                                                        stroke={theme.chartText}
+                                                        style={{ fontSize: '12px' }}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: darkMode ? '#262626' : '#fff',
+                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
+                                                            borderRadius: '8px'
+                                                        }}
+                                                        formatter={(value: any, name: string) => [value, name]}
+                                                    />
+                                                    <Legend />
+                                                    {sectors.filter(s => visibleSectors[s.id]).map(sector => (
+                                                        <Line
+                                                            key={sector.id}
+                                                            type="monotone"
+                                                            dataKey={sector.name}
+                                                            stroke={rgbToHex(sector.color)}
+                                                            strokeWidth={2}
+                                                            dot={{ r: 4, fill: rgbToHex(sector.color) }}
+                                                            activeDot={{ r: 6 }}
+                                                            name={sector.name}
+                                                        />
+                                                    ))}
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                            
+                                            {/* Checkboxes para mostrar/ocultar sectores */}
+                                            <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: theme.borderLight }}>
+                                                <p className={`text-xs font-semibold mb-3 ${theme.textMuted}`}>Mostrar sectores:</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                                    {sectors.map(sector => (
+                                                        <label 
+                                                            key={sector.id}
+                                                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                                                                visibleSectors[sector.id] 
+                                                                    ? darkMode ? 'bg-neutral-700' : 'bg-neutral-100'
+                                                                    : darkMode ? 'bg-neutral-800' : 'bg-neutral-50'
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={visibleSectors[sector.id] || false}
+                                                                onChange={(e) => {
+                                                                    setVisibleSectors(prev => ({
+                                                                        ...prev,
+                                                                        [sector.id]: e.target.checked
+                                                                    }));
+                                                                }}
+                                                                className="w-4 h-4 cursor-pointer"
+                                                                style={{ accentColor: rgbToHex(sector.color) }}
+                                                            />
+                                                            <div className="flex items-center gap-1 flex-1 min-w-0">
+                                                                <div 
+                                                                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                                                                    style={{ backgroundColor: rgbToHex(sector.color) }}
+                                                                />
+                                                                <span className={`text-xs truncate ${theme.text}`}>
+                                                                    {sector.name}
+                                                                </span>
+                                                            </div>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Gráfico 3: Comparación de Sectores */}
                                     <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
