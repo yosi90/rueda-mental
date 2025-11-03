@@ -142,7 +142,19 @@ export default function MentalWheelApp() {
 
     // --- Cálculos de estadísticas ---
     const statsData = useMemo(() => {
-        const dates = Object.keys(scoresByDate).sort();
+        const allDates = Object.keys(scoresByDate).sort();
+        
+        // Encontrar la primera fecha con datos reales (al menos un valor > 0)
+        const firstDateWithData = allDates.find(date => {
+            const dayScores = scoresByDate[date];
+            const values = Object.values(dayScores);
+            return values.some(score => score > 0);
+        });
+
+        // Filtrar fechas: solo desde la primera fecha con datos en adelante
+        const dates = firstDateWithData 
+            ? allDates.filter(date => date >= firstDateWithData)
+            : [];
 
         // Media diaria
         const dailyAverage = dates.map(date => {
