@@ -98,7 +98,6 @@ export default function MentalWheelApp() {
     const [commentsByDate, setCommentsByDate] = useState<CommentsByDate>(() => loadComments());
     const commentTextRef = useRef<HTMLTextAreaElement>(null);
 
-
     // --- Nuevo estado y referencias para menú contextual ---
     const [infoMenuContextual, setInfoMenuContextual] = useState<InfoMenuContextual | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -106,6 +105,93 @@ export default function MentalWheelApp() {
     const selectorColorRef = useRef<HTMLInputElement>(null);   // Referencia a input color oculto
     const temporizadorLongPress = useRef<number | null>(null); // Temporizador para detección de pulsación prolongada
     const refLongPressActivado = useRef<boolean>(false);       // Marca si se activó menú contextual por long-press
+
+    // Estado para el tutorial interactivo (paso actual; 0 = no activo)
+    const [tutorialStep, setTutorialStep] = useState<number>(() => {
+        try {
+            // Si el tutorial ya se mostró antes (flag en localStorage), empieza inactivo
+            return localStorage.getItem("mental-wheel-tutorial-shown") ? 0 : 1;
+        } catch {
+            return 1;
+        }
+    });
+    // 1) Utilidad robusta
+    function prefersTouchUI(): boolean {
+        // ¿El sistema tiene puntos táctiles reales?
+        const hasTouchPoints = (navigator as any).maxTouchPoints > 0;
+
+        // ¿El puntero principal es "grueso" (táctil) y SIN hover?
+        const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+        const hoverNone = window.matchMedia?.('(hover: none)').matches ?? false;
+
+        // Heurística: solo consideramos “táctil” si cumple las tres
+        return Boolean(hasTouchPoints && coarse && hoverNone);
+    }
+
+    // 2) Estado inicial basado en heurística conservadora
+    const [isTouchDevice, setIsTouchDevice] = useState<boolean>(() => prefersTouchUI());
+
+    // 3) Ajuste dinámico según la primera interacción real del usuario
+    useEffect(() => {
+        // Recalcular si cambian las capacidades del dispositivo (dock/undock, monitores, etc.)
+        const updateFromMQ = () => setIsTouchDevice(prefersTouchUI());
+
+        const mqCoarse = window.matchMedia?.('(pointer: coarse)');
+        const mqHoverNone = window.matchMedia?.('(hover: none)');
+        mqCoarse?.addEventListener?.('change', updateFromMQ);
+        mqHoverNone?.addEventListener?.('change', updateFromMQ);
+
+        // Si el usuario usa mouse, forzamos modo no táctil; si usa touch, forzamos táctil.
+        const onPointerDown = (e: PointerEvent) => {
+            if (e.pointerType === 'touch') setIsTouchDevice(true);
+            else if (e.pointerType === 'mouse') setIsTouchDevice(false);
+        };
+        window.addEventListener('pointerdown', onPointerDown, { passive: true });
+
+        return () => {
+            mqCoarse?.removeEventListener?.('change', updateFromMQ);
+            mqHoverNone?.removeEventListener?.('change', updateFromMQ);
+            window.removeEventListener('pointerdown', onPointerDown);
+        };
+    }, []);
+
+    // Avanzar tutorial a paso 2 una vez que el usuario haya puntuado el primer sector
+    useEffect(() => {
+        if (tutorialStep === 1) {
+            const firstSectorId = sectors[3]?.id;
+            const todayScores = scoresByDate[dateStr] || {};
+            if (firstSectorId && todayScores[firstSectorId] !== undefined) {
+                setTutorialStep(2);
+            }
+        }
+    }, [scoresByDate, dateStr, tutorialStep]);
+
+    // Avanzar tutorial a paso 3 cuando se abra el menú contextual (clic derecho o long-press)
+    useEffect(() => {
+        if (tutorialStep === 2 && infoMenuContextual) {
+            setTutorialStep(3);
+        }
+    }, [infoMenuContextual, tutorialStep]);
+
+    // Avanzar tutorial a paso 4 cuando se cierre el menú contextual
+    useEffect(() => {
+        if (tutorialStep === 3 && infoMenuContextual === null) {
+            setTutorialStep(4);
+        }
+    }, [infoMenuContextual, tutorialStep]);
+
+    // Cuando se muestra el último paso (paso 4), marcar el tutorial como completado y ocultarlo después de unos segundos
+    useEffect(() => {
+        if (tutorialStep === 4) {
+            // Marcar en localStorage que el tutorial ya se mostró
+            try {
+                localStorage.setItem("mental-wheel-tutorial-shown", "true");
+            } catch { }
+            // Ocultar el mensaje final después de 5 segundos
+            const hideTimer = setTimeout(() => setTutorialStep(0), 10000);
+            return () => clearTimeout(hideTimer);
+        }
+    }, [tutorialStep]);
 
     // UI state
     const [newName, setNewName] = useState<string>("");
@@ -1136,11 +1222,57 @@ export default function MentalWheelApp() {
                 </div>
             </div>
 
-            <div className="fixed bottom-0 p-2 me-20">
-                <p className="text-xs text-center">
-                    Todos tus datos son almacenados localmente, de forma 100% privada y no se usan para nada.
-                </p>
-            </div>
+            {/* Tutorial interactivo paso a paso */}
+            {tutorialStep === 1 && (
+                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm`} style={{ top: '200px', left: '50%', transform: 'translateX(-50%)' }}>
+                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                        Bienvenido a Día a día.
+                    </p>
+                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                        Esta web te ayudará a llevar un histórico de tu desempeño diario en distintas áreas. Para comenzar, ¿Cómo crees que te ha ido hoy con <b>{sectors[3]?.name}</b>?
+                    </p>
+                    <p className={`text-xs text-center mt-4`}>
+                        Puntúa <b>{sectors[3]?.name}?</b> para seguir adelante.
+                    </p>
+                </div>
+            )}
+            {tutorialStep === 2 && (
+                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm`} style={{ top: '200px', left: '50%', transform: 'translateX(-50%)' }}>
+                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                        ¡Bien hecho!
+                    </p>
+                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                        Ahora, si {isTouchDevice ? "mantienes pulsado" : "haces clic derecho"} sobre el sector, podrás abrir su menú.
+                    </p>
+                    <p className={`text-xs text-center mt-4`}>
+                        Abré el menú de <b>{sectors[3]?.name}?</b> para seguir adelante.
+                    </p>
+                </div>
+            )}
+            {tutorialStep === 3 && (
+                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 `} style={{ top: '200px', left: '50%', transform: 'translateX(-50%)' }}>
+                    <p className={`${theme.text} text-sm sm:text-lg text-justify`}>
+                        Perfecto, Aquí podrás modificar su nombre y la puntuación, añadirle una nota para ese día y hasta eliminarlo.
+                    </p>
+                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                        Recuerda que puedes acceder también a la configuración general con el botón de arriba a la derecha y gestionar desde ahí todos los sectores. 
+                        Ahora puedes cerrar el menú {isTouchDevice ? "tocando fuera" : "haciendo clic fuera"} de él.
+                    </p>
+                    <p className={`text-xs text-center mt-4`}>
+                        {isTouchDevice ? "Pulsa fuera" : "haz clic fuera"} del menú para cerrarlo.
+                    </p>
+                </div>
+            )}
+            {tutorialStep === 4 && (
+                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2`}>
+                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                        ¡Enhorabuena!, has finalizado el tutorial.
+                    </p>
+                    <p className={`${theme.text} text-sm sm:text-base text-justify mt-3`}>
+                        Antes de que comienzes a usar la web, nos gustaría recordarte que tus datos se guardan únicamente en tu dispositivo, de manera 100% privada y solo se usan localmente para mostrarte estadísticas sobre tu rendimiento.
+                    </p>
+                </div>
+            )}
 
             {/* Menú contextual emergente */}
             {infoMenuContextual && (
@@ -2023,6 +2155,24 @@ export default function MentalWheelApp() {
                                         </svg>
                                     )}
                                 </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr className={`my-6 ${theme.borderLight} border-t`} />
+
+                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className={`text-sm font-medium ${theme.text}`}>Tutorial</div>
+                                <div className={`text-xs ${theme.textLight}`}>
+                                    Vuelve a ver la guía interactiva paso a paso de la aplicación.
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setTutorialStep(1)}
+                                className={`${theme.buttonPrimary} rounded-md px-3 py-2 text-sm font-semibold transition-colors`}>
+                                Reiniciar tutorial
                             </button>
                         </div>
                     </div>
