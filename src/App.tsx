@@ -1250,7 +1250,7 @@ export default function MentalWheelApp() {
                 </div>
             )}
             {tutorialStep === 3 && (
-                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 `} style={{ top: '200px', left: '50%', transform: 'translateX(-50%)' }}>
+                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 `} style={{ top: isTouchDevice ? '150px' : '200px', left: '50%', transform: 'translateX(-50%)' }}>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify`}>
                         Perfecto, Aquí podrás modificar su nombre y la puntuación, añadirle una nota para ese día y hasta eliminarlo.
                     </p>
