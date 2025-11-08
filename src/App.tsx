@@ -865,16 +865,25 @@ export default function MentalWheelApp() {
         setScale((prev) => clamp(prev * delta, 0.5, 5));
     };
 
-    // const getTouchDistance = (touch1: React.Touch, touch2: React.Touch): number => {
-    //     const dx = touch1.clientX - touch2.clientX;
-    //     const dy = touch1.clientY - touch2.clientY;
-    //     return Math.sqrt(dx * dx + dy * dy);
-    // };
+    const getTouchDistance = (touch1: React.Touch, touch2: React.Touch): number => {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
 
     // --- Modificar manejadores táctiles para detección de pulsación prolongada ---
     const handleTouchStart = (e: React.TouchEvent<SVGSVGElement>) => {
         if (e.touches.length === 2) {
-            // ... [lógica existente de zoom] ...
+            // Zoom con dos dedos
+            const distance = getTouchDistance(e.touches[0], e.touches[1]);
+            setLastTouchDistance(distance);
+            setIsPanning(false);
+            setStartPan(null);
+            // Cancelar temporizador de long press si existe
+            if (temporizadorLongPress.current) {
+                clearTimeout(temporizadorLongPress.current);
+                temporizadorLongPress.current = null;
+            }
         } else if (e.touches.length === 1) {
             // Iniciar temporizador de pulsación prolongada (long press)
             const { clientX, clientY } = e.touches[0];
@@ -913,7 +922,12 @@ export default function MentalWheelApp() {
 
     const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
         if (e.touches.length === 2 && lastTouchDistance !== null) {
-            // ... [lógica existente de zoom táctil] ...
+            // Zoom táctil con dos dedos
+            e.preventDefault();
+            const newDistance = getTouchDistance(e.touches[0], e.touches[1]);
+            const delta = newDistance / lastTouchDistance;
+            setScale((prev) => clamp(prev * delta, 0.5, 5));
+            setLastTouchDistance(newDistance);
         } else if (e.touches.length === 1 && isPanning && startPan) {
             const dx = e.touches[0].clientX - startPan.x;
             const dy = e.touches[0].clientY - startPan.y;
@@ -925,7 +939,6 @@ export default function MentalWheelApp() {
                     temporizadorLongPress.current = null;
                 }
             }
-            // ... [continuar lógica existente de pan] ...
             setTranslateX(prev => prev + dx);
             setTranslateY(prev => prev + dy);
             setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
@@ -1107,7 +1120,7 @@ export default function MentalWheelApp() {
                         onMouseDown={handleMouseDown}
                         onMouseUp={handleMouseUp}
                         className="select-none touch-none drop-shadow-2xl"
-                        style={{ maxWidth: '100%', maxHeight: '100%', cursor: isPanning ? 'grabbing' : 'grab' }}
+                        style={{ maxWidth: '100%', maxHeight: '100%', cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none' }}
                         preserveAspectRatio="xMidYMid meet"
                     >
                         <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>
