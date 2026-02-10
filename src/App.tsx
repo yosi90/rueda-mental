@@ -496,6 +496,32 @@ export default function MentalWheelApp() {
         month: "long",
         year: "numeric",
     });
+    const daysWithData = useMemo<ReadonlySet<string>>(() => {
+        const days = new Set<string>();
+
+        Object.entries(scoresByDate).forEach(([date, dayScores]) => {
+            if (Object.keys(dayScores).length > 0) {
+                days.add(date);
+            }
+        });
+
+        Object.entries(commentsByDate).forEach(([date, dayComments]) => {
+            const hasComment = Object.values(dayComments).some((text) => text.trim().length > 0);
+            if (hasComment) {
+                days.add(date);
+            }
+        });
+
+        Object.entries(dailySummaryByDate).forEach(([date, summary]) => {
+            const hasSummary = [summary.good, summary.bad, summary.howFacedBad]
+                .some((text) => text.trim().length > 0);
+            if (hasSummary) {
+                days.add(date);
+            }
+        });
+
+        return days;
+    }, [scoresByDate, commentsByDate, dailySummaryByDate]);
 
     // Colores según tema
     const theme: ThemeClasses = {
@@ -556,6 +582,7 @@ export default function MentalWheelApp() {
                 buttonPrimaryClass={theme.buttonPrimary}
                 darkMode={darkMode}
                 dateStr={dateStr}
+                locale={locale}
                 avg={avg}
                 hasHoverInfo={Boolean(hoverInfo)}
                 hoverInfoContent={hoverInfo ? (
@@ -580,9 +607,16 @@ export default function MentalWheelApp() {
                 }}
                 onToday={() => setDateStr(todayStr)}
                 onOpenSos={() => setSosOpen(true)}
+                todayStr={todayStr}
+                daysWithData={daysWithData}
             />
 
             {/* Rueda principal */}
+            {dateStr > todayStr && (
+                <div className="fixed top-22 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold shadow-lg animate-pulse">
+                    {t("app.futureDateWarning")}
+                </div>
+            )}
             <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '80px 20px 20px 20px' }}>
                 <div className="w-full h-full max-h-full flex items-center justify-center">
                     <svg

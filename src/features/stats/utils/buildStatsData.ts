@@ -61,7 +61,7 @@ export function buildStatsData({
     });
 
     const dates = firstDateWithData
-        ? allDates.filter((date) => date >= firstDateWithData)
+        ? allDates.filter((date) => date >= firstDateWithData && date <= todayStr)
         : [];
 
     const dailyAverage = dates.map((date) => {

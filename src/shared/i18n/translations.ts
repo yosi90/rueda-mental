@@ -24,7 +24,7 @@ export const LANGUAGE_DETAILS: Record<Language, LanguageDetails> = {
         code: "en",
         flag: "🇬🇧",
         name: "English",
-        locale: "en-GB",
+        locale: "en-US",
         weekDaysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
         todayLabel: "Today",
     },
@@ -65,9 +65,11 @@ const es = {
     "panel.prevDay": "Dia anterior",
     "panel.nextDay": "Dia siguiente",
     "panel.goToday": "Ir a hoy",
+    "panel.selectDate": "Seleccionar fecha",
 
     "app.resetZoom": "Resetear zoom",
     "app.invalidJson": "Archivo JSON no valido",
+    "app.futureDateWarning": "No es bueno vivir del manana",
 
     "settings.title": "Configuracion",
     "settings.quickSos.title": "Acceso rapido SOS",
@@ -244,9 +246,11 @@ const en: Record<keyof typeof es, string> = {
     "panel.prevDay": "Previous day",
     "panel.nextDay": "Next day",
     "panel.goToday": "Go to today",
+    "panel.selectDate": "Select date",
 
     "app.resetZoom": "Reset zoom",
     "app.invalidJson": "Invalid JSON file",
+    "app.futureDateWarning": "It is not good to live in tomorrow",
 
     "settings.title": "Settings",
     "settings.quickSos.title": "Quick SOS access",
@@ -423,9 +427,11 @@ const pt: Record<keyof typeof es, string> = {
     "panel.prevDay": "Dia anterior",
     "panel.nextDay": "Dia seguinte",
     "panel.goToday": "Ir para hoje",
+    "panel.selectDate": "Selecionar data",
 
     "app.resetZoom": "Repor zoom",
     "app.invalidJson": "Ficheiro JSON invalido",
+    "app.futureDateWarning": "Nao e bom viver no amanha",
 
     "settings.title": "Configuracoes",
     "settings.quickSos.title": "Acesso rapido SOS",
@@ -601,9 +607,11 @@ const de: Record<keyof typeof es, string> = {
     "panel.prevDay": "Vorheriger Tag",
     "panel.nextDay": "Nachster Tag",
     "panel.goToday": "Zu heute",
+    "panel.selectDate": "Datum auswaehlen",
 
     "app.resetZoom": "Zoom zurucksetzen",
     "app.invalidJson": "Ungueltige JSON-Datei",
+    "app.futureDateWarning": "Es ist nicht gut, im Morgen zu leben",
 
     "settings.title": "Einstellungen",
     "settings.quickSos.title": "Schneller SOS-Zugang",
