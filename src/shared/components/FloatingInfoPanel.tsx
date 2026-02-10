@@ -49,7 +49,7 @@ export function FloatingInfoPanel({
                 <div className="flex items-center gap-2">
                     <button
                         onClick={onPrevDay}
-                        className={`${buttonClass} rounded-md px-2 py-1 text-sm font-bold transition-colors`}
+                        className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
                         title="Día anterior"
                     >
                         &lt;
@@ -65,7 +65,7 @@ export function FloatingInfoPanel({
 
                     <button
                         onClick={onNextDay}
-                        className={`${buttonClass} rounded-md px-2 py-1 text-sm font-bold transition-colors`}
+                        className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
                         title="Día siguiente"
                     >
                         &gt;

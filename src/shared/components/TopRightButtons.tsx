@@ -14,11 +14,12 @@ export function TopRightButtons({
     onOpenSettings,
 }: TopRightButtonsProps) {
     return (
-        <div className="fixed top-[17px] sm:top-4 right-5 sm:right-4 z-40 flex gap-2">
+        <div className="fixed top-[17px] sm:top-4 right-5 sm:right-4 z-[45] flex gap-2">
             {showStatsButton && (
                 <button
+                    type="button"
                     onClick={onOpenStats}
-                    className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
+                    className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                     title="Estadísticas"
                 >
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -31,8 +32,9 @@ export function TopRightButtons({
             )}
 
             <button
+                type="button"
                 onClick={onOpenSummary}
-                className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
+                className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                 title="Resumen del día"
             >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -44,8 +46,9 @@ export function TopRightButtons({
             </button>
 
             <button
+                type="button"
                 onClick={onOpenSettings}
-                className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
+                className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                 title="Configuración"
             >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-2px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

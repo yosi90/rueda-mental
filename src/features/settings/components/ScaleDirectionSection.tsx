@@ -14,8 +14,8 @@ export function ScaleDirectionSection({
 }: ScaleDirectionSectionProps) {
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
-            <div className="flex items-center justify-between">
-                <div>
+            <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 pr-2">
                     <div className={`text-sm font-medium ${theme.text}`}>Invertir orden de numeración</div>
                     <div className={`text-xs ${theme.textLight}`}>
                         {isScaleInverted
@@ -25,7 +25,7 @@ export function ScaleDirectionSection({
                 </div>
                 <button
                     onClick={() => setIsScaleInverted((prev) => !prev)}
-                    className={`padding-esp relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${isScaleInverted ? "bg-neutral-600" : "bg-neutral-300"}`}
+                    className={`padding-esp flex-shrink-0 relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${isScaleInverted ? "bg-green-500/70" : "bg-neutral-400/60"}`}
                     title="Invertir numeración de tramos"
                 >
                     <span

@@ -38,6 +38,19 @@ h1 {
   line-height: 1.1;
 }
 
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input[type="date"],
+select {
+  cursor: pointer;
+}
+
 .padding-esp {
   padding: 2px 4px;
 }
