@@ -11,6 +11,9 @@ interface BuildStatsDataParams {
     todayStr: string;
     ringCount: number;
     isScaleInverted: boolean;
+    locale: string;
+    weekDaysShort: [string, string, string, string, string, string, string];
+    todayLabel: string;
 }
 
 function calculateStreak(sortedDates: string[]): number {
@@ -44,6 +47,9 @@ export function buildStatsData({
     todayStr,
     ringCount,
     isScaleInverted,
+    locale,
+    weekDaysShort,
+    todayLabel,
 }: BuildStatsDataParams): StatsData {
     const allDates = Object.keys(scoresByDate).sort();
     const mapScore = (score: number): number => toDisplayScore(score, ringCount, isScaleInverted);
@@ -67,7 +73,7 @@ export function buildStatsData({
         return {
             date,
             media: parseFloat(avg.toFixed(2)),
-            displayDate: new Date(date).toLocaleDateString("es-ES", {
+            displayDate: new Date(date).toLocaleDateString(locale, {
                 day: "2-digit",
                 month: "short",
             }),
@@ -80,7 +86,7 @@ export function buildStatsData({
             return {
                 date,
                 puntuacion: score,
-                displayDate: new Date(date).toLocaleDateString("es-ES", {
+                displayDate: new Date(date).toLocaleDateString(locale, {
                     day: "2-digit",
                     month: "short",
                 }),
@@ -122,8 +128,7 @@ export function buildStatsData({
         };
     });
 
-    const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    const weeklyData = weekDays.map((day, index) => {
+    const weeklyData = weekDaysShort.map((day, index) => {
         const daysData = dates.filter((date) => new Date(date).getDay() === index);
         const weekScores = daysData.flatMap((date) => Object.values(scoresByDate[date]).map(mapScore));
         const avg = weekScores.length > 0
@@ -145,7 +150,7 @@ export function buildStatsData({
         const weekNumber = Math.floor(dates.slice(-60).indexOf(date) / 7);
         return {
             date,
-            displayDate: new Date(date).toLocaleDateString("es-ES", {
+            displayDate: new Date(date).toLocaleDateString(locale, {
                 day: "2-digit",
                 month: "2-digit",
             }),
@@ -177,8 +182,8 @@ export function buildStatsData({
             const dataPoint: Last7AllSectorsPoint = {
                 date,
                 displayDate: isToday
-                    ? "Hoy"
-                    : new Date(date).toLocaleDateString("es-ES", {
+                    ? todayLabel
+                    : new Date(date).toLocaleDateString(locale, {
                         day: "2-digit",
                         month: "short",
                     }),

@@ -1,4 +1,5 @@
 import type { Dispatch, RefObject, SetStateAction } from "react";
+import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
@@ -43,6 +44,7 @@ export function SectorContextMenu({
     setComment,
     deleteComment,
 }: SectorContextMenuProps) {
+    const { t } = useI18n();
     if (!infoMenuContextual) return null;
 
     const sector = sectors.find((s) => s.id === infoMenuContextual.idSector);
@@ -101,10 +103,10 @@ export function SectorContextMenu({
                             />
 
                             <button
-                                title="Eliminar"
+                                title={t("sectorMenu.deleteTitle")}
                                 className={`rounded-md border ${theme.border} ${theme.button} px-1 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] sm:text-xs transition-colors flex-shrink-0`}
                                 onClick={() => {
-                                    if (confirm("¿Eliminar este sector?")) {
+                                    if (confirm(t("sectorMenu.deleteConfirm"))) {
                                         removeSector(sector.id);
                                         onClose();
                                     }
@@ -115,7 +117,7 @@ export function SectorContextMenu({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <label className={`text-xs ${theme.textMuted} flex-shrink-0`}>Puntuación:</label>
+                            <label className={`text-xs ${theme.textMuted} flex-shrink-0`}>{t("sectors.scoreLabel")}</label>
                             {!isMobile && (
                                 <input
                                     type="range"
@@ -155,7 +157,7 @@ export function SectorContextMenu({
 
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
-                                <label className={`text-xs ${theme.textMuted}`}>Comentario</label>
+                                <label className={`text-xs ${theme.textMuted}`}>{t("sectorMenu.comment")}</label>
 
                                 {getComment(dateStr, sector.id) && (
                                     <button
@@ -164,9 +166,9 @@ export function SectorContextMenu({
                                             deleteComment(dateStr, sector.id);
                                             if (commentTextRef.current) commentTextRef.current.value = "";
                                         }}
-                                        title="Eliminar comentario del día"
+                                        title={t("sectorMenu.deleteCommentTitle")}
                                     >
-                                        Borrar
+                                        {t("common.delete")}
                                     </button>
                                 )}
                             </div>
@@ -176,12 +178,12 @@ export function SectorContextMenu({
                                 defaultValue={getComment(dateStr, sector.id)}
                                 maxLength={100}
                                 rows={3}
-                                placeholder="Escribe tu comentario..."
+                                placeholder={t("sectorMenu.commentPlaceholder")}
                                 className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
                                 onKeyDown={(e) => {
                                     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                                        const t = (e.target as HTMLTextAreaElement).value.trim();
-                                        if (t.length > 0) setComment(dateStr, sector.id, t);
+                                        const text = (e.target as HTMLTextAreaElement).value.trim();
+                                        if (text.length > 0) setComment(dateStr, sector.id, text);
                                         else deleteComment(dateStr, sector.id);
                                         onClose();
                                     }
@@ -198,18 +200,18 @@ export function SectorContextMenu({
                                         className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.button}`}
                                         onClick={onClose}
                                     >
-                                        Cancelar
+                                        {t("common.cancel")}
                                     </button>
                                     <button
                                         className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.buttonPrimary}`}
                                         onClick={() => {
-                                            const t = (commentTextRef.current?.value ?? "").trim();
-                                            if (t.length > 0) setComment(dateStr, sector.id, t);
+                                            const text = (commentTextRef.current?.value ?? "").trim();
+                                            if (text.length > 0) setComment(dateStr, sector.id, text);
                                             else deleteComment(dateStr, sector.id);
                                             onClose();
                                         }}
                                     >
-                                        Guardar
+                                        {t("common.save")}
                                     </button>
                                 </div>
                             </div>
@@ -222,7 +224,7 @@ export function SectorContextMenu({
                                 onClick={onClose}
                                 className={`text-xs ${theme.buttonPrimary} px-3 py-1 rounded w-full`}
                             >
-                                Cerrar
+                                {t("sectorMenu.mobileClose")}
                             </button>
                         )}
                     </div>

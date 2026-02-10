@@ -15,6 +15,7 @@ const STORAGE_KEYS = {
     darkMode: "mental-wheel-dark-mode",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
+    language: "mental-wheel-language-v1",
 } as const;
 
 export function loadConfig(): Sector[] | null {
@@ -171,6 +172,23 @@ export function loadStatsVisibility(defaultValue: StatsVisibility): StatsVisibil
 export function saveStatsVisibility(statsVisibility: StatsVisibility): void {
     try {
         localStorage.setItem(STORAGE_KEYS.statsVisibility, JSON.stringify(statsVisibility));
+    } catch {
+        // noop
+    }
+}
+
+export function loadLanguage(defaultLanguage = "es"): string {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.language);
+        return raw || defaultLanguage;
+    } catch {
+        return defaultLanguage;
+    }
+}
+
+export function saveLanguage(language: string): void {
+    try {
+        localStorage.setItem(STORAGE_KEYS.language, language);
     } catch {
         // noop
     }

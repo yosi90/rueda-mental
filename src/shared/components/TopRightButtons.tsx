@@ -1,3 +1,5 @@
+import { useI18n } from "../i18n/I18nContext";
+
 interface TopRightButtonsProps {
     showStatsButton: boolean;
     buttonPrimaryClass: string;
@@ -13,6 +15,8 @@ export function TopRightButtons({
     onOpenSummary,
     onOpenSettings,
 }: TopRightButtonsProps) {
+    const { t } = useI18n();
+
     return (
         <div className="fixed top-[17px] sm:top-4 right-5 sm:right-4 z-[45] flex gap-2">
             {showStatsButton && (
@@ -20,7 +24,7 @@ export function TopRightButtons({
                     type="button"
                     onClick={onOpenStats}
                     className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
-                    title="Estadísticas"
+                    title={t("top.stats")}
                 >
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 3v18h18" />
@@ -35,7 +39,7 @@ export function TopRightButtons({
                 type="button"
                 onClick={onOpenSummary}
                 className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
-                title="Resumen del día"
+                title={t("top.summary")}
             >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="4" y="3" width="16" height="18" rx="2" />
@@ -49,7 +53,7 @@ export function TopRightButtons({
                 type="button"
                 onClick={onOpenSettings}
                 className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
-                title="Configuración"
+                title={t("top.settings")}
             >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-2px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="3" y1="12" x2="21" y2="12" />

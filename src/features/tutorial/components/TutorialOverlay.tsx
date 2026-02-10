@@ -1,4 +1,5 @@
 import type { ThemeClasses } from "../../../shared/types/theme";
+import { useI18n } from "../../../shared/i18n/I18nContext";
 
 interface TutorialOverlayProps {
     tutorialStep: number;
@@ -13,18 +14,21 @@ export function TutorialOverlay({
     tutorialSectorName,
     theme,
 }: TutorialOverlayProps) {
+    const { t } = useI18n();
+    const sectorName = tutorialSectorName ?? "...";
+
     return (
         <>
             {tutorialStep === 1 && (
                 <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        Bienvenido a Día a día.
+                        {t("tutorial.step1.title")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Esta web te ayudará a llevar un histórico de tu desempeño diario en distintas áreas. Para comenzar, ¿Cómo crees que te ha ido hoy con <b>{tutorialSectorName}</b>?
+                        {t("tutorial.step1.body")} <b>{sectorName}</b>?
                     </p>
                     <p className="text-xs text-center mt-4">
-                        Puntúa <b>{tutorialSectorName}?</b> para seguir adelante.
+                        {t("tutorial.step1.cta", { sectorName })}
                     </p>
                 </div>
             )}
@@ -32,13 +36,13 @@ export function TutorialOverlay({
             {tutorialStep === 2 && (
                 <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        ¡Bien hecho!
+                        {t("tutorial.step2.title")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Ahora, si {isTouchDevice ? "mantienes pulsado" : "haces clic derecho"} sobre el sector, podrás abrir su menú.
+                        {isTouchDevice ? t("tutorial.step2.bodyTouch") : t("tutorial.step2.bodyMouse")}
                     </p>
                     <p className="text-xs text-center mt-4">
-                        Abré el menú de <b>{tutorialSectorName}?</b> para seguir adelante.
+                        {t("tutorial.step2.cta", { sectorName })}
                     </p>
                 </div>
             )}
@@ -46,14 +50,13 @@ export function TutorialOverlay({
             {tutorialStep === 3 && (
                 <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2" style={{ top: isTouchDevice ? "150px" : "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify`}>
-                        Perfecto, aquí podrás modificar su nombre y la puntuación, añadirle una nota para ese día y hasta eliminarlo.
+                        {t("tutorial.step3.p1")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Recuerda que puedes acceder también a la configuración general con el botón de arriba a la derecha y gestionar desde ahí todos los sectores.
-                        Ahora puedes cerrar el menú {isTouchDevice ? "tocando fuera" : "haciendo clic fuera"} de él.
+                        {isTouchDevice ? t("tutorial.step3.p2Touch") : t("tutorial.step3.p2Mouse")}
                     </p>
                     <p className="text-xs text-center mt-4">
-                        {isTouchDevice ? "Pulsa fuera" : "haz clic fuera"} del menú para cerrarlo.
+                        {isTouchDevice ? t("tutorial.step3.ctaTouch") : t("tutorial.step3.ctaMouse")}
                     </p>
                 </div>
             )}
@@ -64,10 +67,10 @@ export function TutorialOverlay({
                     style={isTouchDevice ? { top: "84px", left: "50%", transform: "translateX(-50%)" } : { top: "84px", right: "16px" }}
                 >
                     <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        Seguimos.
+                        {t("tutorial.step4.title")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Ahora pulsa el botón de <b>Resumen del día</b> (arriba a la derecha) para abrir el panel donde podrás registrar cómo te fue hoy.
+                        {t("tutorial.step4.body")}
                     </p>
                     <div className="mt-4 flex justify-center">
                         <div className="inline-flex items-center gap-2 rounded-lg bg-white text-black p-2 sm:px-4 sm:py-2 shadow-lg border border-black/20">
@@ -77,11 +80,11 @@ export function TutorialOverlay({
                                 <line x1="8" y1="12" x2="16" y2="12" />
                                 <line x1="8" y1="16" x2="14" y2="16" />
                             </svg>
-                            <span className="text-xs sm:text-sm font-medium">Resumen del día</span>
+                            <span className="text-xs sm:text-sm font-medium">{t("tutorial.step4.buttonLabel")}</span>
                         </div>
                     </div>
                     <p className="text-xs text-center mt-4">
-                        Abre el resumen para continuar.
+                        {t("tutorial.step4.cta")}
                     </p>
                 </div>
             )}
@@ -92,13 +95,13 @@ export function TutorialOverlay({
                     style={{ top: isTouchDevice ? "86px" : "96px" }}
                 >
                     <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        Este es tu resumen diario.
+                        {t("tutorial.step5.title")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Aquí puedes guardar <b>lo bueno</b>, <b>lo malo</b> y <b>cómo afrontaste lo malo</b>. Se guarda automáticamente para la fecha seleccionada.
+                        {t("tutorial.step5.body1")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Para seguir, ciérralo con la equis, con el botón <b>Cerrar</b> o {isTouchDevice ? "tocando fuera de la ventana" : "haciendo clic fuera de la ventana"}.
+                        {isTouchDevice ? t("tutorial.step5.body2Touch") : t("tutorial.step5.body2Mouse")}
                     </p>
                 </div>
             )}
@@ -106,10 +109,10 @@ export function TutorialOverlay({
             {tutorialStep === 6 && (
                 <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2">
                     <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        ¡Enhorabuena! Has finalizado el tutorial.
+                        {t("tutorial.step6.title")}
                     </p>
                     <p className={`${theme.text} text-sm sm:text-base text-justify mt-3`}>
-                        Antes de que comiences a usar la web, recuerda que tus datos se guardan únicamente en tu dispositivo, de forma 100% privada y solo se usan localmente para mostrarte estadísticas sobre tu rendimiento.
+                        {t("tutorial.step6.body")}
                     </p>
                 </div>
             )}

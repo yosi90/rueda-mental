@@ -1,4 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "../../../shared/i18n/I18nContext";
+import type { TranslationKey } from "../../../shared/i18n/translations";
 import type { StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 
@@ -10,14 +12,14 @@ interface StatsVisibilitySectionProps {
 
 type StatsToggleKey = Exclude<keyof StatsVisibility, "enabled">;
 
-const STATS_VISIBILITY_OPTIONS: ReadonlyArray<{ key: StatsToggleKey; label: string }> = [
-    { key: "showDailyAverage", label: "📈 Evolución de la Media Diaria" },
-    { key: "showSectorProgress", label: "📊 Progresión por Sector" },
-    { key: "showLast7AllSectors", label: "📅 Últimos 7 días (comparativa)" },
-    { key: "showComparison", label: "📊 Comparación Actual vs Promedio" },
-    { key: "showWeeklyTrend", label: "📅 Promedio por día de la semana" },
-    { key: "showHeatMap", label: "🔥 Heatmap (60 días)" },
-    { key: "showInsights", label: "💡 Insights" },
+const STATS_VISIBILITY_OPTIONS: ReadonlyArray<{ key: StatsToggleKey; labelKey: TranslationKey }> = [
+    { key: "showDailyAverage", labelKey: "statsVisibility.dailyAverage" },
+    { key: "showSectorProgress", labelKey: "statsVisibility.sectorProgress" },
+    { key: "showLast7AllSectors", labelKey: "statsVisibility.last7" },
+    { key: "showComparison", labelKey: "statsVisibility.comparison" },
+    { key: "showWeeklyTrend", labelKey: "statsVisibility.weekly" },
+    { key: "showHeatMap", labelKey: "statsVisibility.heatmap" },
+    { key: "showInsights", labelKey: "statsVisibility.insights" },
 ] as const;
 
 export function StatsVisibilitySection({
@@ -25,13 +27,15 @@ export function StatsVisibilitySection({
     statsVisibility,
     setStatsVisibility,
 }: StatsVisibilitySectionProps) {
+    const { t } = useI18n();
+
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
             <div className="flex items-center justify-between mb-3">
                 <div>
-                    <div className={`text-lg font-semibold ${theme.text}`}>Estadísticas</div>
+                    <div className={`text-lg font-semibold ${theme.text}`}>{t("statsVisibility.title")}</div>
                     <div className={`text-xs ${theme.textLight}`}>
-                        Alterna la visibilidad de las estadísticas
+                        {t("statsVisibility.description")}
                     </div>
                 </div>
 
@@ -40,7 +44,7 @@ export function StatsVisibilitySection({
                         setStatsVisibility((v) => ({ ...v, enabled: !v.enabled }))
                     }
                     className={`relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${statsVisibility.enabled ? "bg-green-500/70" : "bg-neutral-400/60"} padding-esp`}
-                    title="Desactivar todo (oculta el botón de estadísticas)"
+                    title={t("statsVisibility.toggleTitle")}
                 >
                     <span
                         className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${statsVisibility.enabled ? "translate-x-6" : "translate-x-0"}`}
@@ -49,9 +53,9 @@ export function StatsVisibilitySection({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                {STATS_VISIBILITY_OPTIONS.map(({ key, label }) => (
+                {STATS_VISIBILITY_OPTIONS.map(({ key, labelKey }) => (
                     <label key={key} className={`flex items-center justify-between p-2 rounded-lg ${theme.card}`}>
-                        <span className={`text-sm ${theme.text}`}>{label}</span>
+                        <span className={`text-sm ${theme.text}`}>{t(labelKey)}</span>
                         <input
                             type="checkbox"
                             checked={statsVisibility[key]}

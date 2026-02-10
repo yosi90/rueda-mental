@@ -1,4 +1,5 @@
 import type { HoverInfo, Sector, SectorWithAngles } from "../../../shared/types/mentalWheel";
+import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 
@@ -60,6 +61,8 @@ export function WheelLayers({
     levelLabelRadius,
     theme,
 }: WheelLayersProps) {
+    const { t } = useI18n();
+
     const gridRings = Array.from({ length: ringCount }, (_, i) => (
         <circle
             key={`r-${i + 1}`}
@@ -106,10 +109,10 @@ export function WheelLayers({
                         textAnchor="middle"
                         dominantBaseline="middle"
                         fill={theme.svgText}
-                        aria-label="Tiene comentario"
+                        aria-label={t("wheel.hasCommentAria")}
                         style={{ cursor: "help" }}
                     >
-                        <title>Tiene un comentario</title>
+                        <title>{t("wheel.hasCommentTitle")}</title>
                         📌
                     </text>
                 )}

@@ -2,12 +2,14 @@ import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { DataSettingsSection } from "./DataSettingsSection";
+import { LanguageSection } from "./LanguageSection";
 import { LegalSection } from "./LegalSection";
 import { ScaleDirectionSection } from "./ScaleDirectionSection";
 import { SectorsSettingsSection } from "./SectorsSettingsSection";
 import { StatsVisibilitySection } from "./StatsVisibilitySection";
 import { ThemeSection } from "./ThemeSection";
 import { TutorialSection } from "./TutorialSection";
+import { useI18n } from "../../../shared/i18n/I18nContext";
 
 interface SettingsDrawerProps {
     drawerOpen: boolean;
@@ -33,6 +35,7 @@ interface SettingsDrawerProps {
     statsVisibility: StatsVisibility;
     setStatsVisibility: Dispatch<SetStateAction<StatsVisibility>>;
     onRestartTutorial: () => void;
+    onOpenSOS: () => void;
 }
 
 export function SettingsDrawer({
@@ -59,7 +62,10 @@ export function SettingsDrawer({
     statsVisibility,
     setStatsVisibility,
     onRestartTutorial,
+    onOpenSOS,
 }: SettingsDrawerProps) {
+    const { t } = useI18n();
+
     return (
         <>
             {drawerOpen && (
@@ -77,7 +83,7 @@ export function SettingsDrawer({
             >
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className={`text-2xl font-bold ${theme.text}`}>Configuración</h2>
+                        <h2 className={`text-2xl font-bold ${theme.text}`}>{t("settings.title")}</h2>
                         <button
                             onClick={onClose}
                             className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
@@ -88,6 +94,24 @@ export function SettingsDrawer({
                             </svg>
                         </button>
                     </div>
+
+                    <div className={`mb-6 p-4 rounded-xl border ${theme.border} sm:hidden`}>
+                        <div className={`text-sm font-semibold ${theme.text}`}>{t("settings.quickSos.title")}</div>
+                        <p className={`text-xs mt-1 ${theme.textLight}`}>
+                            {t("settings.quickSos.desc")}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={onOpenSOS}
+                            className={`mt-3 w-full rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 px-3 py-2 text-sm font-semibold transition-colors`}
+                        >
+                            {t("settings.quickSos.button")}
+                        </button>
+                    </div>
+
+                    <hr className={`my-6 ${theme.borderLight} border-t`} />
+
+                    <LanguageSection theme={theme} />
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 

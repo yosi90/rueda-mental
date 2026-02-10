@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { ThemeClasses } from "../../../shared/types/theme";
 
 interface DataSettingsSectionProps {
@@ -14,13 +15,15 @@ export function DataSettingsSection({
     exportJSON,
     importJSON,
 }: DataSettingsSectionProps) {
+    const { t } = useI18n();
+
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
             <div className="flex items-center justify-between mb-3">
                 <div>
-                    <div className={`text-lg font-semibold ${theme.text}`}>Datos</div>
+                    <div className={`text-lg font-semibold ${theme.text}`}>{t("data.title")}</div>
                     <div className={`text-xs ${theme.textLight}`}>
-                        Resetea el día actual o guarda/carga tus datos en JSON para poder usarlos en otro dispositivo
+                        {t("data.description")}
                     </div>
                 </div>
             </div>
@@ -28,24 +31,24 @@ export function DataSettingsSection({
             <div className="flex flex-col sm:flex-row gap-2">
                 <button
                     onClick={() => {
-                        if (confirm("¿Seguro que quieres resetear las puntuaciones del día actual?")) {
+                        if (confirm(t("data.confirmReset"))) {
                             resetDay();
                         }
                     }}
                     className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
                 >
-                    Resetear día
+                    {t("data.resetDay")}
                 </button>
 
                 <button
                     onClick={exportJSON}
                     className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
                 >
-                    Exportar JSON
+                    {t("data.exportJson")}
                 </button>
 
                 <label className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm cursor-pointer text-center transition-colors`}>
-                    Importar JSON
+                    {t("data.importJson")}
                     <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
                 </label>
             </div>

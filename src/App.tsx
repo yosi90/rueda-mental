@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { defaultSectors, genId, hslFor } from "./features/sectors/utils/sectorUtils";
+import { defaultSectors, genId, hslFor, translateDefaultSectorName } from "./features/sectors/utils/sectorUtils";
 import { SectorContextMenu } from "./features/sectors/components/SectorContextMenu";
 import { SettingsDrawer } from "./features/settings/components/SettingsDrawer";
+import { SOSModal } from "./features/support/components/SOSModal";
 import { SummaryModal } from "./features/summary/components/SummaryModal";
 import type { StatsData } from "./features/stats/types/stats";
 import { buildStatsData } from "./features/stats/utils/buildStatsData";
@@ -13,6 +14,8 @@ import { DEFAULT_STATS_VISIBILITY } from "./shared/constants/mentalWheel";
 import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
 import { TopRightButtons } from "./shared/components/TopRightButtons";
 import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
+import { useI18n } from "./shared/i18n/I18nContext";
+import { isLanguage } from "./shared/i18n/translations";
 import {
     hasTutorialBeenShown,
     loadComments,
@@ -60,6 +63,8 @@ const StatsModal = lazy(() =>
 );
 
 export default function MentalWheelApp() {
+    const { t, language, setLanguage, locale, languageDetails } = useI18n();
+
     // --- Configuración base ---
     const RING_COUNT = 10; // 0..10 (0 = sin nota)
     const SIZE = 520; // tamaño SVG
@@ -108,7 +113,7 @@ export default function MentalWheelApp() {
     // --- Estado ---
     const todayStr = formatDateInput(new Date());
     const [dateStr, setDateStr] = useState<string>(todayStr);
-    const [sectors, setSectors] = useState<Sector[]>(() => loadConfig() || defaultSectors());
+    const [sectors, setSectors] = useState<Sector[]>(() => loadConfig() || defaultSectors(language));
     // scores: mapa { dateStr: { id: value } }
     const [scoresByDate, setScoresByDate] = useState<ScoresByDate>(() => loadScores());
     const scores = useMemo<Record<string, number>>(
@@ -135,6 +140,7 @@ export default function MentalWheelApp() {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
     const [statsOpen, setStatsOpen] = useState<boolean>(false);
     const [summaryOpen, setSummaryOpen] = useState<boolean>(false);
+    const [sosOpen, setSosOpen] = useState<boolean>(false);
     const [selectedSectorId, setSelectedSectorId] = useState<string>("");
     const [darkMode, setDarkMode] = useState<boolean>(() => loadDarkMode());
     const [isScaleInverted, setIsScaleInverted] = useState<boolean>(() => loadScaleInverted());
@@ -169,6 +175,21 @@ export default function MentalWheelApp() {
     // Guardar preferencia de tema
     useEffect(() => saveDarkMode(darkMode), [darkMode]);
     useEffect(() => saveScaleInverted(isScaleInverted), [isScaleInverted]);
+
+    useEffect(() => {
+        setSectors((prev) => {
+            let changed = false;
+            const translated = prev.map((sector) => {
+                const translatedName = translateDefaultSectorName(sector.name, language);
+                if (translatedName && translatedName !== sector.name) {
+                    changed = true;
+                    return { ...sector, name: translatedName };
+                }
+                return sector;
+            });
+            return changed ? translated : prev;
+        });
+    }, [language]);
 
     // Guardar en localStorage cuando cambia config o datos
     useEffect(() => saveConfig(sectors), [sectors]);
@@ -249,8 +270,11 @@ export default function MentalWheelApp() {
             todayStr,
             ringCount: RING_COUNT,
             isScaleInverted,
+            locale,
+            weekDaysShort: languageDetails.weekDaysShort,
+            todayLabel: languageDetails.todayLabel,
         }),
-        [scoresByDate, sectors, scores, todayStr, isScaleInverted]
+        [scoresByDate, sectors, scores, todayStr, isScaleInverted, locale, languageDetails.weekDaysShort, languageDetails.todayLabel]
     );
 
     // --- Persistencia ---
@@ -372,6 +396,7 @@ export default function MentalWheelApp() {
             dailySummaryByDate,
             scaleInverted: isScaleInverted,
             darkMode,
+            language,
             tutorialShown: hasTutorialBeenShown(),
             statsVisibility,
         };
@@ -405,11 +430,12 @@ export default function MentalWheelApp() {
                 if (isObjectRecord(data.dailySummaryByDate)) setDailySummaryByDate(data.dailySummaryByDate as DailySummaryByDate);
                 if (typeof data.scaleInverted === "boolean") setIsScaleInverted(data.scaleInverted);
                 if (typeof data.darkMode === "boolean") setDarkMode(data.darkMode);
+                if (typeof data.language === "string" && isLanguage(data.language)) setLanguage(data.language);
                 if (typeof data.tutorialShown === "boolean") saveTutorialShown(data.tutorialShown);
                 const importedStatsVisibility = normalizeImportedStatsVisibility(data.statsVisibility);
                 if (importedStatsVisibility) setStatsVisibility(importedStatsVisibility);
             } catch (error) {
-                alert("Archivo JSON no válido");
+                alert(t("app.invalidJson"));
                 console.error("Error al importar JSON:", error);
             }
         };
@@ -464,7 +490,7 @@ export default function MentalWheelApp() {
         return acc + toDisplayScore(rawScore, RING_COUNT, isScaleInverted);
     }, 0);
     const avg = sectors.length ? (total / sectors.length).toFixed(2) : "0.00";
-    const summaryDateLabel = new Date(`${dateStr}T00:00:00`).toLocaleDateString("es-ES", {
+    const summaryDateLabel = new Date(`${dateStr}T00:00:00`).toLocaleDateString(locale, {
         weekday: "long",
         day: "2-digit",
         month: "long",
@@ -516,7 +542,7 @@ export default function MentalWheelApp() {
                 <button
                     onClick={resetZoom}
                     className={`fixed bottom-4 right-4 z-40 rounded-full ${theme.buttonPrimary} px-4 py-3 shadow-lg transition-colors text-sm font-medium`}
-                    title="Resetear zoom"
+                    title={t("app.resetZoom")}
                 >
                     🔍
                 </button>
@@ -553,6 +579,7 @@ export default function MentalWheelApp() {
                     setDateStr(formatDateInput(date));
                 }}
                 onToday={() => setDateStr(todayStr)}
+                onOpenSos={() => setSosOpen(true)}
             />
 
             {/* Rueda principal */}
@@ -654,6 +681,11 @@ export default function MentalWheelApp() {
                 darkMode={darkMode}
                 onChangeField={setDailySummaryField}
             />
+            <SOSModal
+                open={sosOpen}
+                onClose={() => setSosOpen(false)}
+                theme={theme}
+            />
             <Suspense fallback={null}>
                 {statsOpen && (
                     <StatsModal
@@ -698,6 +730,10 @@ export default function MentalWheelApp() {
                 statsVisibility={statsVisibility}
                 setStatsVisibility={setStatsVisibility}
                 onRestartTutorial={restartTutorial}
+                onOpenSOS={() => {
+                    setDrawerOpen(false);
+                    setSosOpen(true);
+                }}
             />
         </div>
     );

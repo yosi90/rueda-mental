@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { ThemeClasses } from "../../../shared/types/theme";
 
 interface ThemeSectionProps {
@@ -12,13 +13,15 @@ export function ThemeSection({
     darkMode,
     setDarkMode,
 }: ThemeSectionProps) {
+    const { t } = useI18n();
+
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
             <div className="flex items-center justify-between">
                 <div>
-                    <div className={`text-sm font-medium ${theme.text}`}>Tema</div>
+                    <div className={`text-sm font-medium ${theme.text}`}>{t("theme.title")}</div>
                     <div className={`text-xs ${theme.textLight}`}>
-                        {darkMode ? "Modo oscuro activado" : "Modo claro activado"}
+                        {darkMode ? t("theme.darkEnabled") : t("theme.lightEnabled")}
                     </div>
                 </div>
                 <button
