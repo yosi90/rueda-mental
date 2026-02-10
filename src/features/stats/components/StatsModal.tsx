@@ -3,6 +3,7 @@ import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Cartesia
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
+import { isBetterScore, toDisplayScore, toRawScore } from "../../../shared/utils/scoreScale";
 import type { StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
 
@@ -13,6 +14,8 @@ interface StatsModalProps {
     darkMode: boolean;
     statsData: StatsData;
     statsVisibility: StatsVisibility;
+    ringCount: number;
+    isScaleInverted: boolean;
     selectedSectorId: string;
     setSelectedSectorId: Dispatch<SetStateAction<string>>;
     sectors: Sector[];
@@ -27,12 +30,70 @@ export function StatsModal({
     darkMode,
     statsData,
     statsVisibility,
+    ringCount,
+    isScaleInverted,
     selectedSectorId,
     setSelectedSectorId,
     sectors,
     visibleSectors,
     setVisibleSectors,
 }: StatsModalProps) {
+    const yAxisDomain: [number, number] = [0, ringCount];
+    const nonZeroTodayScores = statsData.todaySectorScores.filter((item) => item.score > 0);
+    const todayScoresForInsights = nonZeroTodayScores.length > 0 ? nonZeroTodayScores : statsData.todaySectorScores;
+    const nonZeroHistoricalScores = statsData.historicalSectorScores.filter((item) => item.score > 0);
+    const historicalScoresForInsights = nonZeroHistoricalScores.length > 0 ? nonZeroHistoricalScores : statsData.historicalSectorScores;
+    const nonZeroWeeklyScores = statsData.weeklyData.filter((item) => item.media > 0);
+    const weeklyScoresForInsights = nonZeroWeeklyScores.length > 0 ? nonZeroWeeklyScores : statsData.weeklyData;
+    const scaleLabel = `/` + ringCount;
+    const toChartScore = (score: number): number => toRawScore(score, ringCount, isScaleInverted);
+    const formatChartAxisTick = (value: number): string => {
+        if (isScaleInverted && value <= 0) {
+            return String(ringCount);
+        }
+        const displayValue = toDisplayScore(value, ringCount, isScaleInverted);
+        return Number.isInteger(displayValue) ? String(displayValue) : displayValue.toFixed(1);
+    };
+    const formatChartTooltipValue = (value: number | string, name: string): [string | number, string] => {
+        if (typeof value !== "number") return [value, name];
+        const displayValue = toDisplayScore(value, ringCount, isScaleInverted);
+        const formattedValue = Number.isInteger(displayValue) ? displayValue : Number(displayValue.toFixed(2));
+        return [formattedValue, name];
+    };
+
+    const dailyAverageChartData = statsData.dailyAverage.map((point) => ({
+        ...point,
+        media: toChartScore(point.media),
+    }));
+
+    const sectorProgressChartData = statsData.sectorProgress(selectedSectorId).map((point) => ({
+        ...point,
+        puntuacion: toChartScore(point.puntuacion),
+    }));
+
+    const last7ChartData = statsData.last7DaysAllSectors?.map((point) => {
+        const convertedPoint = { ...point };
+        sectors.forEach((sector) => {
+            const key = getSectorSeriesKey(sector.id);
+            const value = point[key];
+            if (typeof value === "number") {
+                convertedPoint[key] = toChartScore(value);
+            }
+        });
+        return convertedPoint;
+    }) ?? null;
+
+    const sectorComparisonChartData = statsData.sectorComparison.map((point) => ({
+        ...point,
+        actual: toChartScore(point.actual),
+        promedio: toChartScore(point.promedio),
+    }));
+
+    const weeklyChartData = statsData.weeklyData.map((point) => ({
+        ...point,
+        media: toChartScore(point.media),
+    }));
+
     return (
         <>
             {/* Modal de Estadísticas */}
@@ -79,7 +140,7 @@ export function StatsModal({
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📈 Evolución de la Media Diaria</h3>
                                             <ResponsiveContainer width="100%" height={250}>
-                                                <AreaChart data={statsData.dailyAverage}>
+                                                <AreaChart data={dailyAverageChartData}>
                                                     <defs>
                                                         <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
                                                             <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
@@ -93,11 +154,13 @@ export function StatsModal({
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <YAxis
-                                                        domain={[0, 10]}
+                                                        domain={yAxisDomain}
+                                                        tickFormatter={formatChartAxisTick}
                                                         stroke={theme.chartText}
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <Tooltip
+                                                        formatter={formatChartTooltipValue}
                                                         contentStyle={{
                                                             backgroundColor: darkMode ? '#262626' : '#fff',
                                                             border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
@@ -133,7 +196,7 @@ export function StatsModal({
                                                 </select>
                                             </div>
                                             <ResponsiveContainer width="100%" height={250}>
-                                                <LineChart data={statsData.sectorProgress(selectedSectorId)}>
+                                                <LineChart data={sectorProgressChartData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
                                                     <XAxis
                                                         dataKey="displayDate"
@@ -141,11 +204,13 @@ export function StatsModal({
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <YAxis
-                                                        domain={[0, 10]}
+                                                        domain={yAxisDomain}
+                                                        tickFormatter={formatChartAxisTick}
                                                         stroke={theme.chartText}
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <Tooltip
+                                                        formatter={formatChartTooltipValue}
                                                         contentStyle={{
                                                             backgroundColor: darkMode ? '#262626' : '#fff',
                                                             border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
@@ -166,12 +231,12 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
-                                    {statsVisibility.showLast7AllSectors && statsData.last7DaysAllSectors && (
+                                    {statsVisibility.showLast7AllSectors && last7ChartData && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Evolución Últimos 7 Días - Comparativa</h3>
 
                                             <ResponsiveContainer width="100%" height={300}>
-                                                <LineChart data={statsData.last7DaysAllSectors}>
+                                                <LineChart data={last7ChartData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
                                                     <XAxis
                                                         dataKey="displayDate"
@@ -179,17 +244,18 @@ export function StatsModal({
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <YAxis
-                                                        domain={[0, 10]}
+                                                        domain={yAxisDomain}
+                                                        tickFormatter={formatChartAxisTick}
                                                         stroke={theme.chartText}
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <Tooltip
+                                                        formatter={formatChartTooltipValue}
                                                         contentStyle={{
                                                             backgroundColor: darkMode ? '#262626' : '#fff',
                                                             border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
                                                             borderRadius: '8px'
                                                         }}
-                                                        formatter={(value: number | string, name: string) => [value, name]}
                                                     />
                                                     <Legend />
                                                     {sectors.filter(s => visibleSectors[s.id]).map(sector => (
@@ -252,7 +318,7 @@ export function StatsModal({
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📊 Comparación: Actual vs Promedio Histórico</h3>
                                             <ResponsiveContainer width="100%" height={300}>
-                                                <BarChart data={statsData.sectorComparison}>
+                                                <BarChart data={sectorComparisonChartData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
                                                     <XAxis
                                                         dataKey="sector"
@@ -263,11 +329,13 @@ export function StatsModal({
                                                         height={80}
                                                     />
                                                     <YAxis
-                                                        domain={[0, 10]}
+                                                        domain={yAxisDomain}
+                                                        tickFormatter={formatChartAxisTick}
                                                         stroke={theme.chartText}
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <Tooltip
+                                                        formatter={formatChartTooltipValue}
                                                         contentStyle={{
                                                             backgroundColor: darkMode ? '#262626' : '#fff',
                                                             border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
@@ -287,7 +355,7 @@ export function StatsModal({
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Promedio por Día de la Semana</h3>
                                             <ResponsiveContainer width="100%" height={250}>
-                                                <BarChart data={statsData.weeklyData}>
+                                                <BarChart data={weeklyChartData}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
                                                     <XAxis
                                                         dataKey="dia"
@@ -295,11 +363,13 @@ export function StatsModal({
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <YAxis
-                                                        domain={[0, 10]}
+                                                        domain={yAxisDomain}
+                                                        tickFormatter={formatChartAxisTick}
                                                         stroke={theme.chartText}
                                                         style={{ fontSize: '12px' }}
                                                     />
                                                     <Tooltip
+                                                        formatter={formatChartTooltipValue}
                                                         contentStyle={{
                                                             backgroundColor: darkMode ? '#262626' : '#fff',
                                                             border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
@@ -321,7 +391,10 @@ export function StatsModal({
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>🔥 Mapa de Calor - Últimos 60 Días</h3>
                                             <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
                                                 {statsData.heatMapData.map((day, index) => {
-                                                    const intensity = day.hasData ? Math.round((day.value / 10) * 4) : 0;
+                                                    const scoreForIntensity = day.hasData
+                                                        ? toRawScore(day.value, ringCount, isScaleInverted)
+                                                        : 0;
+                                                    const intensity = day.hasData ? Math.round((scoreForIntensity / ringCount) * 4) : 0;
                                                     const colors = darkMode
                                                         ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
                                                         : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
@@ -340,7 +413,7 @@ export function StatsModal({
                                                 })}
                                             </div>
                                             <div className="flex items-center justify-between mt-4 text-xs">
-                                                <span className={theme.textMuted}>Menos</span>
+                                                <span className={theme.textMuted}>Peor</span>
                                                 <div className="flex gap-1">
                                                     {[0, 1, 2, 3, 4].map(i => {
                                                         const colors = darkMode
@@ -355,7 +428,7 @@ export function StatsModal({
                                                         );
                                                     })}
                                                 </div>
-                                                <span className={theme.textMuted}>Más</span>
+                                                <span className={theme.textMuted}>Mejor</span>
                                             </div>
                                         </div>
                                     )}
@@ -366,28 +439,41 @@ export function StatsModal({
                                             <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>💡 Insights</h3>
                                             <div className="space-y-2 text-sm">
                                                 {(() => {
-                                                    const lastAvg = statsData.dailyAverage[statsData.dailyAverage.length - 1]?.media || 0;
-                                                    const firstAvg = statsData.dailyAverage[0]?.media || 0;
-                                                    const trend = lastAvg - firstAvg;
+                                                    if (
+                                                        todayScoresForInsights.length === 0 ||
+                                                        historicalScoresForInsights.length === 0 ||
+                                                        weeklyScoresForInsights.length === 0
+                                                    ) {
+                                                        return (
+                                                            <div className={`p-3 rounded-lg ${darkMode ? "bg-neutral-700" : "bg-neutral-100"} ${theme.textMuted}`}>
+                                                                No hay datos suficientes para generar insights.
+                                                            </div>
+                                                        );
+                                                    }
 
-                                                    const bestSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
-                                                        current.score > prev.score ? current : prev
+                                                    const dailyAverageForTrend = statsData.dailyAverage.filter((item) => item.media > 0);
+                                                    const lastAvg = dailyAverageForTrend[dailyAverageForTrend.length - 1]?.media || 0;
+                                                    const firstAvg = dailyAverageForTrend[0]?.media || 0;
+                                                    const performanceTrend = isScaleInverted ? firstAvg - lastAvg : lastAvg - firstAvg;
+
+                                                    const bestSectorToday = todayScoresForInsights.reduce((prev, current) =>
+                                                        isBetterScore(current.score, prev.score, isScaleInverted) ? current : prev
                                                     );
 
-                                                    const worstSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
-                                                        current.score < prev.score ? current : prev
+                                                    const worstSectorToday = todayScoresForInsights.reduce((prev, current) =>
+                                                        isBetterScore(current.score, prev.score, !isScaleInverted) ? current : prev
                                                     );
 
-                                                    const bestSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
-                                                        current.score > prev.score ? current : prev
+                                                    const bestSectorHistorical = historicalScoresForInsights.reduce((prev, current) =>
+                                                        isBetterScore(current.score, prev.score, isScaleInverted) ? current : prev
                                                     );
 
-                                                    const worstSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
-                                                        current.score < prev.score ? current : prev
+                                                    const worstSectorHistorical = historicalScoresForInsights.reduce((prev, current) =>
+                                                        isBetterScore(current.score, prev.score, !isScaleInverted) ? current : prev
                                                     );
 
-                                                    const bestWeekDay = statsData.weeklyData.reduce((prev, current) =>
-                                                        current.media > prev.media ? current : prev
+                                                    const bestWeekDay = weeklyScoresForInsights.reduce((prev, current) =>
+                                                        isBetterScore(current.media, prev.media, isScaleInverted) ? current : prev
                                                     );
 
                                                     return (
@@ -395,10 +481,10 @@ export function StatsModal({
                                                             <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">Tendencia general:</span>{' '}
-                                                                    {trend > 0 ? (
-                                                                        <span className="text-green-500">↗ Mejorando (+{trend.toFixed(2)})</span>
-                                                                    ) : trend < 0 ? (
-                                                                        <span className="text-red-500">↘ Descendiendo ({trend.toFixed(2)})</span>
+                                                                    {performanceTrend > 0 ? (
+                                                                        <span className="text-green-500">↗ Mejorando (+{performanceTrend.toFixed(2)})</span>
+                                                                    ) : performanceTrend < 0 ? (
+                                                                        <span className="text-red-500">↘ Descendiendo ({performanceTrend.toFixed(2)})</span>
                                                                     ) : (
                                                                         <span className={theme.textMuted}>→ Estable</span>
                                                                     )}
@@ -409,9 +495,9 @@ export function StatsModal({
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">Tu sector más fuerte:</span>
                                                                     <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {bestSectorToday.sector} ({bestSectorToday.score}/10)
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {bestSectorToday.sector} ({bestSectorToday.score}{scaleLabel})
                                                                     <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {bestSectorHistorical.sector} ({bestSectorHistorical.score}/10)
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {bestSectorHistorical.sector} ({bestSectorHistorical.score}{scaleLabel})
                                                                 </p>
                                                             </div>
 
@@ -419,9 +505,9 @@ export function StatsModal({
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">Área de mejora:</span>
                                                                     <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {worstSectorToday.sector} ({worstSectorToday.score}/10)
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {worstSectorToday.sector} ({worstSectorToday.score}{scaleLabel})
                                                                     <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {worstSectorHistorical.sector} ({worstSectorHistorical.score}/10)
+                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {worstSectorHistorical.sector} ({worstSectorHistorical.score}{scaleLabel})
                                                                 </p>
                                                             </div>
 
@@ -429,7 +515,7 @@ export function StatsModal({
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">Tu mejor día:</span>
                                                                     <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>De la semana:</span> {bestWeekDay.dia} ({bestWeekDay.media.toFixed(2)}/10 promedio)
+                                                                    <span className={`text-xs ${theme.textMuted}`}>De la semana:</span> {bestWeekDay.dia} ({bestWeekDay.media.toFixed(2)}{scaleLabel} promedio)
                                                                     <br />
                                                                     {statsData.bestHistoricalDay && (
                                                                         <>
@@ -437,7 +523,7 @@ export function StatsModal({
                                                                                 day: '2-digit',
                                                                                 month: 'long',
                                                                                 year: 'numeric'
-                                                                            })} ({statsData.bestHistoricalDay.media}/10)
+                                                                            })} ({statsData.bestHistoricalDay.media}{scaleLabel})
                                                                         </>
                                                                     )}
                                                                 </p>

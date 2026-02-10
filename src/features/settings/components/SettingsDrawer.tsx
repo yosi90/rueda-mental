@@ -2,6 +2,7 @@ import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { DataSettingsSection } from "./DataSettingsSection";
+import { ScaleDirectionSection } from "./ScaleDirectionSection";
 import { SectorsSettingsSection } from "./SectorsSettingsSection";
 import { StatsVisibilitySection } from "./StatsVisibilitySection";
 import { ThemeSection } from "./ThemeSection";
@@ -23,6 +24,8 @@ interface SettingsDrawerProps {
     scores: Record<string, number>;
     ringCount: number;
     setScore: (id: string, val: string | number) => void;
+    isScaleInverted: boolean;
+    setIsScaleInverted: Dispatch<SetStateAction<boolean>>;
     resetDay: () => void;
     exportJSON: () => void;
     importJSON: (evt: ChangeEvent<HTMLInputElement>) => void;
@@ -47,6 +50,8 @@ export function SettingsDrawer({
     scores,
     ringCount,
     setScore,
+    isScaleInverted,
+    setIsScaleInverted,
     resetDay,
     exportJSON,
     importJSON,
@@ -98,6 +103,15 @@ export function SettingsDrawer({
                         scores={scores}
                         ringCount={ringCount}
                         setScore={setScore}
+                        isScaleInverted={isScaleInverted}
+                    />
+
+                    <hr className={`my-6 ${theme.borderLight} border-t`} />
+
+                    <ScaleDirectionSection
+                        theme={theme}
+                        isScaleInverted={isScaleInverted}
+                        setIsScaleInverted={setIsScaleInverted}
                     />
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />

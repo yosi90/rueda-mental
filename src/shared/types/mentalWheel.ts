@@ -62,6 +62,7 @@ export interface MentalWheelBackup {
     scoresByDate?: ScoresByDate;
     commentsByDate?: CommentsByDate;
     dailySummaryByDate?: DailySummaryByDate;
+    scaleInverted?: boolean;
     darkMode?: boolean;
     tutorialShown?: boolean;
     statsVisibility?: Partial<StatsVisibility>;

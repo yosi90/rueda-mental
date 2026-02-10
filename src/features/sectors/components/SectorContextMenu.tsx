@@ -2,6 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
+import { toDisplayScore } from "../../../shared/utils/scoreScale";
 
 interface SectorContextMenuProps {
     infoMenuContextual: InfoMenuContextual | null;
@@ -12,6 +13,7 @@ interface SectorContextMenuProps {
     scores: Record<string, number>;
     dateStr: string;
     ringCount: number;
+    isScaleInverted: boolean;
     commentTextRef: RefObject<HTMLTextAreaElement | null>;
     onClose: () => void;
     setSectors: Dispatch<SetStateAction<Sector[]>>;
@@ -31,6 +33,7 @@ export function SectorContextMenu({
     scores,
     dateStr,
     ringCount,
+    isScaleInverted,
     commentTextRef,
     onClose,
     setSectors,
@@ -43,7 +46,7 @@ export function SectorContextMenu({
     if (!infoMenuContextual) return null;
 
     const sector = sectors.find((s) => s.id === infoMenuContextual.idSector);
-    const valorActual = scores[infoMenuContextual.idSector] ?? 0;
+    const valorActual = toDisplayScore(scores[infoMenuContextual.idSector] ?? 0, ringCount, isScaleInverted);
     const isMobile = window.innerWidth <= 768;
 
     return (

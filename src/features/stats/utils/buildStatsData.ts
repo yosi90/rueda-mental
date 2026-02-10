@@ -1,4 +1,5 @@
 import type { Scores, ScoresByDate, Sector } from "../../../shared/types/mentalWheel";
+import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { formatDateInput } from "../../../shared/utils/date";
 import type { Last7AllSectorsPoint, StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "./sectorSeriesKey";
@@ -8,6 +9,8 @@ interface BuildStatsDataParams {
     sectors: Sector[];
     scores: Scores;
     todayStr: string;
+    ringCount: number;
+    isScaleInverted: boolean;
 }
 
 function calculateStreak(sortedDates: string[]): number {
@@ -34,8 +37,16 @@ function calculateStreak(sortedDates: string[]): number {
     return streak;
 }
 
-export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: BuildStatsDataParams): StatsData {
+export function buildStatsData({
+    scoresByDate,
+    sectors,
+    scores,
+    todayStr,
+    ringCount,
+    isScaleInverted,
+}: BuildStatsDataParams): StatsData {
     const allDates = Object.keys(scoresByDate).sort();
+    const mapScore = (score: number): number => toDisplayScore(score, ringCount, isScaleInverted);
 
     const firstDateWithData = allDates.find((date) => {
         const dayScores = scoresByDate[date];
@@ -49,7 +60,7 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
 
     const dailyAverage = dates.map((date) => {
         const dayScores = scoresByDate[date];
-        const values = Object.values(dayScores);
+        const values = Object.values(dayScores).map(mapScore);
         const avg = values.length > 0
             ? values.reduce((a, b) => a + b, 0) / values.length
             : 0;
@@ -65,7 +76,7 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
 
     const sectorProgress = (sectorId: string) => {
         return dates.map((date) => {
-            const score = scoresByDate[date][sectorId] || 0;
+            const score = mapScore(scoresByDate[date][sectorId] || 0);
             return {
                 date,
                 puntuacion: score,
@@ -78,11 +89,11 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
     };
 
     const sectorComparison = sectors.map((sector) => {
-        const allScores = dates.map((date) => scoresByDate[date][sector.id] || 0);
+        const allScores = dates.map((date) => mapScore(scoresByDate[date][sector.id] || 0));
         const avg = allScores.length > 0
             ? allScores.reduce((a, b) => a + b, 0) / allScores.length
             : 0;
-        const current = scores[sector.id] || 0;
+        const current = mapScore(scores[sector.id] || 0);
         return {
             sector: sector.name,
             actual: current,
@@ -94,11 +105,14 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
     const todayScores = scoresByDate[todayStr] || {};
     const todaySectorScores = sectors.map((sector) => ({
         sector: sector.name,
-        score: todayScores[sector.id] || 0,
+        score: mapScore(todayScores[sector.id] || 0),
     }));
 
     const historicalSectorScores = sectors.map((sector) => {
-        const allScores = dates.map((date) => scoresByDate[date][sector.id] || 0).filter((s) => s > 0);
+        const allScores = dates
+            .map((date) => scoresByDate[date][sector.id] || 0)
+            .filter((s) => s > 0)
+            .map(mapScore);
         const avg = allScores.length > 0
             ? allScores.reduce((a, b) => a + b, 0) / allScores.length
             : 0;
@@ -111,7 +125,7 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
     const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     const weeklyData = weekDays.map((day, index) => {
         const daysData = dates.filter((date) => new Date(date).getDay() === index);
-        const weekScores = daysData.flatMap((date) => Object.values(scoresByDate[date]));
+        const weekScores = daysData.flatMap((date) => Object.values(scoresByDate[date]).map(mapScore));
         const avg = weekScores.length > 0
             ? weekScores.reduce((a, b) => a + b, 0) / weekScores.length
             : 0;
@@ -123,7 +137,7 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
 
     const heatMapData = dates.slice(-60).map((date) => {
         const dayScores = scoresByDate[date];
-        const values = Object.values(dayScores);
+        const values = Object.values(dayScores).map(mapScore);
         const avg = values.length > 0
             ? values.reduce((a, b) => a + b, 0) / values.length
             : 0;
@@ -142,8 +156,14 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
         };
     });
 
-    const bestHistoricalDay = dailyAverage.length > 0
-        ? dailyAverage.reduce((prev, current) => (current.media > prev.media ? current : prev))
+    const daysWithAverage = dailyAverage.filter((day) => day.media > 0);
+
+    const bestHistoricalDay = daysWithAverage.length > 0
+        ? daysWithAverage.reduce((prev, current) => (
+            isScaleInverted
+                ? (current.media < prev.media ? current : prev)
+                : (current.media > prev.media ? current : prev)
+        ))
         : null;
 
     const last7DaysAllSectors = () => {
@@ -166,7 +186,7 @@ export function buildStatsData({ scoresByDate, sectors, scores, todayStr }: Buil
             };
 
             sectors.forEach((sector) => {
-                dataPoint[getSectorSeriesKey(sector.id)] = scoresByDate[date][sector.id] || 0;
+                dataPoint[getSectorSeriesKey(sector.id)] = mapScore(scoresByDate[date][sector.id] || 0);
             });
 
             return dataPoint;

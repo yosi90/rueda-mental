@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { Sector } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
+import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { rgbToHex } from "../../../shared/utils/color";
 
 interface SectorsSettingsSectionProps {
@@ -16,6 +17,7 @@ interface SectorsSettingsSectionProps {
     scores: Record<string, number>;
     ringCount: number;
     setScore: (id: string, val: string | number) => void;
+    isScaleInverted: boolean;
 }
 
 export function SectorsSettingsSection({
@@ -31,6 +33,7 @@ export function SectorsSettingsSection({
     scores,
     ringCount,
     setScore,
+    isScaleInverted,
 }: SectorsSettingsSectionProps) {
     return (
         <div>
@@ -49,8 +52,11 @@ export function SectorsSettingsSection({
             </div>
 
             <ul className="flex flex-col gap-3">
-                {sectors.map((s, i) => (
-                    <li key={s.id} className={`rounded-xl border ${theme.border} p-3 sm:p-4 ${theme.inputAlt}`}>
+                {sectors.map((s, i) => {
+                    const displayedScore = toDisplayScore(scores[s.id] ?? 0, ringCount, isScaleInverted);
+
+                    return (
+                        <li key={s.id} className={`rounded-xl border ${theme.border} p-3 sm:p-4 ${theme.inputAlt}`}>
                         <div className="flex items-center gap-2 mb-3 flex-wrap sm:flex-nowrap">
                             <input
                                 type="color"
@@ -102,7 +108,7 @@ export function SectorsSettingsSection({
                                     type="range"
                                     min={0}
                                     max={ringCount}
-                                    value={scores[s.id] ?? 0}
+                                    value={displayedScore}
                                     onChange={(e) => setScore(s.id, e.target.value)}
                                     className="flex-1 min-w-0"
                                 />
@@ -110,14 +116,15 @@ export function SectorsSettingsSection({
                                     type="number"
                                     min={0}
                                     max={ringCount}
-                                    value={scores[s.id] ?? 0}
+                                    value={displayedScore}
                                     onChange={(e) => setScore(s.id, e.target.value)}
                                     className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"} flex-shrink-0`}
                                 />
                             </div>
                         </div>
-                    </li>
-                ))}
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );

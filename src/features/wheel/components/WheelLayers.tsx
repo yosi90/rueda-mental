@@ -1,11 +1,13 @@
 import type { HoverInfo, Sector, SectorWithAngles } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
+import { toDisplayScore } from "../../../shared/utils/scoreScale";
 
 interface WheelLayersProps {
     cx: number;
     cy: number;
     radius: number;
     ringCount: number;
+    isScaleInverted: boolean;
     ringNumberFontSize: number;
     sectors: Sector[];
     sectorsWithAngles: SectorWithAngles[];
@@ -46,6 +48,7 @@ export function WheelLayers({
     cy,
     radius,
     ringCount,
+    isScaleInverted,
     ringNumberFontSize,
     sectors,
     sectorsWithAngles,
@@ -120,6 +123,7 @@ export function WheelLayers({
             const level = i + 1;
             const r = levelLabelRadius(level);
             const [tx, ty] = polar(cx, cy, r, 0);
+            const displayLevel = toDisplayScore(level, ringCount, isScaleInverted);
             return (
                 <text
                     key={`n-${i}`}
@@ -132,7 +136,7 @@ export function WheelLayers({
                     opacity={0.6}
                     className="hidden md:block"
                 >
-                    {level}
+                    {displayLevel}
                 </text>
             );
         });

@@ -17,6 +17,7 @@ import {
     hasTutorialBeenShown,
     loadComments,
     loadConfig,
+    loadScaleInverted,
     loadDailySummary,
     loadDarkMode,
     loadScores,
@@ -25,6 +26,7 @@ import {
     saveConfig,
     saveDailySummary,
     saveDarkMode,
+    saveScaleInverted,
     saveScores,
     saveStatsVisibility,
     saveTutorialShown,
@@ -43,6 +45,7 @@ import type {
 } from "./shared/types/mentalWheel";
 import type { ThemeClasses } from "./shared/types/theme";
 import { formatDateInput } from "./shared/utils/date";
+import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
 
 // === Mental Performance Wheel ===
 // - Añade/Quita sectores (aspectos de vida)
@@ -134,6 +137,7 @@ export default function MentalWheelApp() {
     const [summaryOpen, setSummaryOpen] = useState<boolean>(false);
     const [selectedSectorId, setSelectedSectorId] = useState<string>("");
     const [darkMode, setDarkMode] = useState<boolean>(() => loadDarkMode());
+    const [isScaleInverted, setIsScaleInverted] = useState<boolean>(() => loadScaleInverted());
     const [visibleSectors, setVisibleSectors] = useState<Record<string, boolean>>(() => {
         const initial: Record<string, boolean> = {};
         sectors.forEach(s => initial[s.id] = true);
@@ -164,6 +168,7 @@ export default function MentalWheelApp() {
 
     // Guardar preferencia de tema
     useEffect(() => saveDarkMode(darkMode), [darkMode]);
+    useEffect(() => saveScaleInverted(isScaleInverted), [isScaleInverted]);
 
     // Guardar en localStorage cuando cambia config o datos
     useEffect(() => saveConfig(sectors), [sectors]);
@@ -237,8 +242,15 @@ export default function MentalWheelApp() {
 
     // --- Cálculos de estadísticas ---
     const statsData = useMemo<StatsData>(
-        () => buildStatsData({ scoresByDate, sectors, scores, todayStr }),
-        [scoresByDate, sectors, scores, todayStr]
+        () => buildStatsData({
+            scoresByDate,
+            sectors,
+            scores,
+            todayStr,
+            ringCount: RING_COUNT,
+            isScaleInverted,
+        }),
+        [scoresByDate, sectors, scores, todayStr, isScaleInverted]
     );
 
     // --- Persistencia ---
@@ -333,7 +345,8 @@ export default function MentalWheelApp() {
         });
     }
     function setScore(id: string, val: string | number): void {
-        const level = clamp(Number(val) || 0, 0, RING_COUNT);
+        const displayLevel = clamp(Number(val) || 0, 0, RING_COUNT);
+        const level = toRawScore(displayLevel, RING_COUNT, isScaleInverted);
         setScoresByDate((prev) => ({ ...prev, [dateStr]: { ...prev[dateStr], [id]: level } }));
     }
     function resetDay() {
@@ -357,6 +370,7 @@ export default function MentalWheelApp() {
             scoresByDate,
             commentsByDate,
             dailySummaryByDate,
+            scaleInverted: isScaleInverted,
             darkMode,
             tutorialShown: hasTutorialBeenShown(),
             statsVisibility,
@@ -389,6 +403,7 @@ export default function MentalWheelApp() {
                 if (isObjectRecord(data.scoresByDate)) setScoresByDate(data.scoresByDate as ScoresByDate);
                 if (isObjectRecord(data.commentsByDate)) setCommentsByDate(data.commentsByDate as CommentsByDate);
                 if (isObjectRecord(data.dailySummaryByDate)) setDailySummaryByDate(data.dailySummaryByDate as DailySummaryByDate);
+                if (typeof data.scaleInverted === "boolean") setIsScaleInverted(data.scaleInverted);
                 if (typeof data.darkMode === "boolean") setDarkMode(data.darkMode);
                 if (typeof data.tutorialShown === "boolean") saveTutorialShown(data.tutorialShown);
                 const importedStatsVisibility = normalizeImportedStatsVisibility(data.statsVisibility);
@@ -444,7 +459,10 @@ export default function MentalWheelApp() {
         setInfoMenuContextual,
     });
 
-    const total = sectors.reduce((acc, s) => acc + (scores[s.id] || 0), 0);
+    const total = sectors.reduce((acc, s) => {
+        const rawScore = scores[s.id] || 0;
+        return acc + toDisplayScore(rawScore, RING_COUNT, isScaleInverted);
+    }, 0);
     const avg = sectors.length ? (total / sectors.length).toFixed(2) : "0.00";
     const summaryDateLabel = new Date(`${dateStr}T00:00:00`).toLocaleDateString("es-ES", {
         weekday: "long",
@@ -514,7 +532,15 @@ export default function MentalWheelApp() {
                 dateStr={dateStr}
                 avg={avg}
                 hasHoverInfo={Boolean(hoverInfo)}
-                hoverInfoContent={hoverInfo ? <HoverText sectors={sectors} hoverInfo={hoverInfo} darkMode={darkMode} /> : null}
+                hoverInfoContent={hoverInfo ? (
+                    <HoverText
+                        sectors={sectors}
+                        hoverInfo={hoverInfo}
+                        darkMode={darkMode}
+                        ringCount={RING_COUNT}
+                        isScaleInverted={isScaleInverted}
+                    />
+                ) : null}
                 onDateChange={setDateStr}
                 onPrevDay={() => {
                     const date = new Date(dateStr);
@@ -558,6 +584,7 @@ export default function MentalWheelApp() {
                                 cy={cy}
                                 radius={radius}
                                 ringCount={RING_COUNT}
+                                isScaleInverted={isScaleInverted}
                                 ringNumberFontSize={RING_NUMBER_FONT_SIZE}
                                 sectors={sectors}
                                 sectorsWithAngles={sectorsWithAngles}
@@ -591,6 +618,7 @@ export default function MentalWheelApp() {
                 scores={scores}
                 dateStr={dateStr}
                 ringCount={RING_COUNT}
+                isScaleInverted={isScaleInverted}
                 commentTextRef={commentTextRef}
                 onClose={() => setInfoMenuContextual(null)}
                 setSectors={setSectors}
@@ -635,6 +663,8 @@ export default function MentalWheelApp() {
                         darkMode={darkMode}
                         statsData={statsData}
                         statsVisibility={statsVisibility}
+                        ringCount={RING_COUNT}
+                        isScaleInverted={isScaleInverted}
                         selectedSectorId={selectedSectorId}
                         setSelectedSectorId={setSelectedSectorId}
                         sectors={sectors}
@@ -660,6 +690,8 @@ export default function MentalWheelApp() {
                 scores={scores}
                 ringCount={RING_COUNT}
                 setScore={setScore}
+                isScaleInverted={isScaleInverted}
+                setIsScaleInverted={setIsScaleInverted}
                 resetDay={resetDay}
                 exportJSON={exportJSON}
                 importJSON={importJSON}
@@ -675,14 +707,17 @@ interface HoverTextProps {
     sectors: Sector[];
     hoverInfo: HoverInfo;
     darkMode: boolean;
+    ringCount: number;
+    isScaleInverted: boolean;
 }
 
-function HoverText({ sectors, hoverInfo, darkMode }: HoverTextProps) {
+function HoverText({ sectors, hoverInfo, darkMode, ringCount, isScaleInverted }: HoverTextProps) {
     const s = sectors.find((x: Sector) => x.id === hoverInfo.sectorId);
     if (!s) return null;
+    const displayLevel = toDisplayScore(hoverInfo.level, ringCount, isScaleInverted);
     return (
         <span>
-            {s.name}: <b className={`text-base sm:text-lg ${darkMode ? 'text-neutral-100' : 'text-neutral-900'}`}>{hoverInfo.level}</b>
+            {s.name}: <b className={`text-base sm:text-lg ${darkMode ? 'text-neutral-100' : 'text-neutral-900'}`}>{displayLevel}</b>
         </span>
     );
 }

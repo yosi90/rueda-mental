@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
     scores: "mental-wheel-scores-v1",
     comments: "mental-wheel-comments-v1",
     dailySummary: "mental-wheel-daily-summary-v1",
+    scaleInverted: "mental-wheel-scale-inverted-v1",
     darkMode: "mental-wheel-dark-mode",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
@@ -81,6 +82,23 @@ export function saveDailySummary(data: DailySummaryByDate): void {
         localStorage.setItem(STORAGE_KEYS.dailySummary, JSON.stringify(data));
     } catch (error) {
         console.error("Error al guardar el resumen diario:", error);
+    }
+}
+
+export function loadScaleInverted(): boolean {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.scaleInverted);
+        return raw ? JSON.parse(raw) : false;
+    } catch {
+        return false;
+    }
+}
+
+export function saveScaleInverted(scaleInverted: boolean): void {
+    try {
+        localStorage.setItem(STORAGE_KEYS.scaleInverted, JSON.stringify(scaleInverted));
+    } catch (error) {
+        console.error("Error al guardar la dirección de escala:", error);
     }
 }
 
