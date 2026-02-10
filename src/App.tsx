@@ -1,61 +1,44 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { defaultSectors, genId, hslFor } from "./features/sectors/utils/sectorUtils";
+import { DEFAULT_STATS_VISIBILITY } from "./shared/constants/mentalWheel";
+import {
+    hasTutorialBeenShown,
+    loadComments,
+    loadConfig,
+    loadDailySummary,
+    loadDarkMode,
+    loadScores,
+    loadStatsVisibility,
+    markTutorialAsShown,
+    saveComments,
+    saveConfig,
+    saveDailySummary,
+    saveDarkMode,
+    saveScores,
+    saveStatsVisibility,
+} from "./shared/services/storage/mentalWheelStorage";
+import type {
+    CommentsByDate,
+    DailySummary,
+    DailySummaryByDate,
+    HoverInfo,
+    InfoMenuContextual,
+    ScoresByDate,
+    Sector,
+    SectorWithAngles,
+    StatsVisibility,
+} from "./shared/types/mentalWheel";
+import { rgbToHex } from "./shared/utils/color";
+import { formatDateInput } from "./shared/utils/date";
 
-// === Mental Performance Wheel (single-file React component) ===
+// === Mental Performance Wheel ===
 // - Añade/Quita sectores (aspectos de vida)
 // - Puntúa de 0 a 10 cada sector haciendo clic en la rueda o con slider
 // - Guarda automáticamente por día en localStorage
 // - Exporta/Importa JSON
 // - Modal de estadísticas y gráficos
 // - UI en español (ES)
-
-interface Sector {
-    id: string;
-    name: string;
-    color: string;
-}
-
-interface SectorWithAngles extends Sector {
-    a0: number;
-    a1: number;
-    mid: number;
-    a0n: number;
-    a1n: number;
-}
-
-interface HoverInfo {
-    sectorId: string;
-    level: number;
-}
-
-interface Scores {
-    [key: string]: number;
-}
-
-interface ScoresByDate {
-    [key: string]: Scores;
-}
-
-interface InfoMenuContextual {
-    idSector: string;
-    x: number;
-    y: number;
-}
-
-interface CommentsByDate {
-    [date: string]: { [sectorId: string]: string }; // un comentario por sector y día
-}
-
-type StatsVisibility = {
-    enabled: boolean;                 // Master: si es false, no hay botón ni modal
-    showDailyAverage: boolean;        // 📈 Evolución de la Media Diaria
-    showSectorProgress: boolean;      // 📊 Progresión por Sector
-    showLast7AllSectors: boolean;     // 📅 Últimos 7 días - Todos los sectores
-    showComparison: boolean;          // 📊 Comparación: Actual vs Promedio
-    showWeeklyTrend: boolean;         // 📅 Promedio por día de la semana
-    showHeatMap: boolean;             // 🔥 Heatmap
-    showInsights: boolean;            // 💡 Insights
-};
 
 export default function MentalWheelApp() {
     // --- Configuración base ---
@@ -64,19 +47,23 @@ export default function MentalWheelApp() {
     const PADDING = 70; // margen para etiquetas externas (aumentado para mejor visualización)
     const cx = SIZE / 2;
     const cy = SIZE / 2;
-    const radius = (SIZE / 2) - PADDING;
-    const ringThickness = radius / RING_COUNT;
+    const baseRadius = (SIZE / 2) - PADDING;
+    const ringThickness = baseRadius / RING_COUNT;
+    const centerDecorationRadius = ringThickness * 0.6;
+    const radius = centerDecorationRadius + (RING_COUNT * ringThickness);
+    const RING_NUMBER_FONT_SIZE = 13;
 
     // --- Helpers ---
     const clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
     const toRad = (deg: number): number => (deg * Math.PI) / 180;
     const toDeg = (rad: number): number => (rad * 180) / Math.PI;
-
-    const formatDateInput = (d: Date): string => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        return `${y}-${m}-${dd}`;
+    const levelOuterRadius = (level: number): number => (
+        level <= 0 ? 0 : centerDecorationRadius + (level * ringThickness)
+    );
+    const levelLabelRadius = (level: number): number => centerDecorationRadius + ((level - 0.5) * ringThickness);
+    const distanceToLevel = (dist: number): number => {
+        if (dist <= 0) return 0;
+        return clamp(Math.ceil((dist - centerDecorationRadius) / ringThickness), 1, RING_COUNT);
     };
 
     const normDeg = (d: number): number => ((d % 360) + 360) % 360; // 0..360
@@ -96,6 +83,7 @@ export default function MentalWheelApp() {
 
     // Estado nuevo (junto al resto de useState)
     const [commentsByDate, setCommentsByDate] = useState<CommentsByDate>(() => loadComments());
+    const [dailySummaryByDate, setDailySummaryByDate] = useState<DailySummaryByDate>(() => loadDailySummary());
     const commentTextRef = useRef<HTMLTextAreaElement>(null);
 
     // --- Nuevo estado y referencias para menú contextual ---
@@ -108,12 +96,8 @@ export default function MentalWheelApp() {
 
     // Estado para el tutorial interactivo (paso actual; 0 = no activo)
     const [tutorialStep, setTutorialStep] = useState<number>(() => {
-        try {
-            // Si el tutorial ya se mostró antes (flag en localStorage), empieza inactivo
-            return localStorage.getItem("mental-wheel-tutorial-shown") ? 0 : 1;
-        } catch {
-            return 1;
-        }
+        // Si el tutorial ya se mostró antes, empieza inactivo
+        return hasTutorialBeenShown() ? 0 : 1;
     });
     // 1) Utilidad robusta
     function prefersTouchUI(): boolean {
@@ -183,10 +167,7 @@ export default function MentalWheelApp() {
     // Cuando se muestra el último paso (paso 4), marcar el tutorial como completado y ocultarlo después de unos segundos
     useEffect(() => {
         if (tutorialStep === 4) {
-            // Marcar en localStorage que el tutorial ya se mostró
-            try {
-                localStorage.setItem("mental-wheel-tutorial-shown", "true");
-            } catch { }
+            markTutorialAsShown();
             // Ocultar el mensaje final después de 5 segundos
             const hideTimer = setTimeout(() => setTutorialStep(0), 10000);
             return () => clearTimeout(hideTimer);
@@ -198,15 +179,9 @@ export default function MentalWheelApp() {
     const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
     const [statsOpen, setStatsOpen] = useState<boolean>(false);
+    const [summaryOpen, setSummaryOpen] = useState<boolean>(false);
     const [selectedSectorId, setSelectedSectorId] = useState<string>("");
-    const [darkMode, setDarkMode] = useState<boolean>(() => {
-        try {
-            const saved = localStorage.getItem("mental-wheel-dark-mode");
-            return saved ? JSON.parse(saved) : false;
-        } catch {
-            return false;
-        }
-    });
+    const [darkMode, setDarkMode] = useState<boolean>(() => loadDarkMode());
 
     // Estado para zoom y pan del SVG
     const [scale, setScale] = useState<number>(1);
@@ -222,7 +197,8 @@ export default function MentalWheelApp() {
         return initial;
     });
 
-    const STATS_VIS_KEY = "mental-wheel-stats-visibility-v1";
+    const EMPTY_DAILY_SUMMARY: DailySummary = { good: "", bad: "", howFacedBad: "" };
+    const dailySummary = dailySummaryByDate[dateStr] ?? EMPTY_DAILY_SUMMARY;
 
     // Actualizar visibleSectors cuando cambien los sectores
     useEffect(() => {
@@ -237,13 +213,7 @@ export default function MentalWheelApp() {
 
 
     // Guardar preferencia de tema
-    useEffect(() => {
-        try {
-            localStorage.setItem("mental-wheel-dark-mode", JSON.stringify(darkMode));
-        } catch (error) {
-            console.error("Error al guardar el tema:", error);
-        }
-    }, [darkMode]);
+    useEffect(() => saveDarkMode(darkMode), [darkMode]);
 
     // Guardar en localStorage cuando cambia config o datos
     useEffect(() => saveConfig(sectors), [sectors]);
@@ -502,79 +472,23 @@ export default function MentalWheelApp() {
         return streak;
     }
 
-    // --- LocalStorage ---
-    function loadConfig() {
-        try {
-            const raw = localStorage.getItem("mental-wheel-config-v1");
-            return raw ? JSON.parse(raw) : null;
-        } catch {
-            return null;
-        }
-    }
-    function saveConfig(cfg: Sector[]): void {
-        try {
-            localStorage.setItem("mental-wheel-config-v1", JSON.stringify(cfg));
-        } catch (error) {
-            console.error("Error al guardar la configuración:", error);
-        }
-    }
-
-    function saveScores(data: ScoresByDate): void {
-        try {
-            localStorage.setItem("mental-wheel-scores-v1", JSON.stringify(data));
-        } catch (error) {
-            console.error("Error al guardar las puntuaciones:", error);
-        }
-    }
-    function defaultSectors() {
-        const names = [
-            "Familia",
-            "Amigos",
-            "Dinero",
-            "Amor",
-            "Trabajo",
-            "Salud",
-            "Ocio",
-            "Aprendizaje",
-        ];
-        return names.map((name, i) => ({ id: genId(), name, color: hslFor(i) }));
-    }
-    function loadScores() {
-        try {
-            const raw = localStorage.getItem("mental-wheel-scores-v1");
-            return raw ? JSON.parse(raw) : {};
-        } catch {
-            return {};
-        }
-    }
-
-    function genId() {
-        return Math.random().toString(36).slice(2, 10);
-    }
-    function hslFor(i: number): string {
-        const goldenAngle = 137.508;
-        const hue = Math.round((i * goldenAngle) % 360);
-        return `hsl(${hue} 70% 50%)`;
-    }
-
-    function loadComments(): CommentsByDate {
-        try {
-            const raw = localStorage.getItem("mental-wheel-comments-v1");
-            return raw ? JSON.parse(raw) : {};
-        } catch {
-            return {};
-        }
-    }
-
-    function saveComments(data: CommentsByDate): void {
-        try {
-            localStorage.setItem("mental-wheel-comments-v1", JSON.stringify(data));
-        } catch (error) {
-            console.error("Error al guardar comentarios:", error);
-        }
-    }
-
+    // --- Persistencia ---
     useEffect(() => saveComments(commentsByDate), [commentsByDate]);
+    useEffect(() => saveDailySummary(dailySummaryByDate), [dailySummaryByDate]);
+
+    function setDailySummaryField(field: keyof DailySummary, text: string): void {
+        setDailySummaryByDate((prev) => {
+            const current = prev[dateStr] ?? EMPTY_DAILY_SUMMARY;
+            const updated = { ...current, [field]: text };
+            const hasContent = Object.values(updated).some((value) => value.trim().length > 0);
+            if (!hasContent) {
+                const copy = { ...prev };
+                delete copy[dateStr];
+                return copy;
+            }
+            return { ...prev, [dateStr]: updated };
+        });
+    }
 
     function getComment(date: string, sectorId: string): string {
         return commentsByDate[date]?.[sectorId] ?? "";
@@ -667,7 +581,7 @@ export default function MentalWheelApp() {
         const sector = sectorsWithAngles.find((s) => inSector(ang, s));
         if (!sector) return;
 
-        const level = clamp(Math.ceil(dist / ringThickness), 0, RING_COUNT);
+        const level = distanceToLevel(dist);
         setScoresByDate((prev) => ({
             ...prev,
             [dateStr]: { ...prev[dateStr], [sector.id]: level },
@@ -702,7 +616,7 @@ export default function MentalWheelApp() {
             setHoverInfo(null);
             return;
         }
-        const level = clamp(Math.ceil(dist / ringThickness), 0, RING_COUNT);
+        const level = distanceToLevel(dist);
         setHoverInfo({ sectorId: sector.id, level });
     }
 
@@ -800,31 +714,12 @@ export default function MentalWheelApp() {
         evt.target.value = "";
     }
 
-    function loadStatsVisibility(): StatsVisibility {
-        try {
-            const raw = localStorage.getItem(STATS_VIS_KEY);
-            if (raw) return JSON.parse(raw);
-        } catch { }
-        return {
-            enabled: true,
-            showDailyAverage: true,
-            showSectorProgress: true,
-            showLast7AllSectors: true,
-            showComparison: true,
-            showWeeklyTrend: true,
-            showHeatMap: true,
-            showInsights: true,
-        };
-    }
-
-    const [statsVisibility, setStatsVisibility] = useState<StatsVisibility>(() => loadStatsVisibility());
+    const [statsVisibility, setStatsVisibility] = useState<StatsVisibility>(() =>
+        loadStatsVisibility(DEFAULT_STATS_VISIBILITY)
+    );
 
     // Guardar cambios
-    useEffect(() => {
-        try {
-            localStorage.setItem(STATS_VIS_KEY, JSON.stringify(statsVisibility));
-        } catch { }
-    }, [statsVisibility]);
+    useEffect(() => saveStatsVisibility(statsVisibility), [statsVisibility]);
 
     // Si desactivo todo, cierro el modal si está abierto
     useEffect(() => {
@@ -838,7 +733,7 @@ export default function MentalWheelApp() {
                 key={`r-${i + 1}`}
                 cx={cx}
                 cy={cy}
-                r={(i + 1) * ringThickness}
+                r={levelOuterRadius(i + 1)}
                 fill="none"
                 stroke={theme.svgGrid}
                 strokeDasharray="4 4"
@@ -862,7 +757,7 @@ export default function MentalWheelApp() {
         return sectorsWithAngles.map((s) => {
             const val = clamp(scores[s.id] ?? 0, 0, RING_COUNT);
             if (val <= 0) return null;
-            const path = sectorPath(0, val * ringThickness, s.a0, s.a1);
+            const path = sectorPath(0, levelOuterRadius(val), s.a0, s.a1);
             return (
                 <path key={`v-${s.id}`} d={path} fill={s.color} opacity={0.6} stroke={s.color} strokeOpacity={0.9} />
             );
@@ -873,7 +768,7 @@ export default function MentalWheelApp() {
         if (!hoverInfo) return null;
         const s = sectorsWithAngles.find((x) => x.id === hoverInfo.sectorId);
         if (!s) return null;
-        const r = hoverInfo.level * ringThickness;
+        const r = levelOuterRadius(hoverInfo.level);
         const p = sectorPath(0, r, s.a0, s.a1);
         return <path d={p} fill={s.color} opacity={0.2} pointerEvents="none" />;
     }
@@ -920,15 +815,14 @@ export default function MentalWheelApp() {
 
         return Array.from({ length: RING_COUNT }, (_, i) => {
             const level = i + 1;
-            const r = (level - 0.5) * ringThickness;
+            const r = levelLabelRadius(level);
             const [tx, ty] = polar(cx, cy, r, 0);
-            const fontSize = 6 + (level / RING_COUNT) * 8;
             return (
                 <text
                     key={`n-${i}`}
                     x={tx}
                     y={ty}
-                    fontSize={fontSize}
+                    fontSize={RING_NUMBER_FONT_SIZE}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill={theme.svgText}
@@ -943,6 +837,12 @@ export default function MentalWheelApp() {
 
     const total = sectors.reduce((acc, s) => acc + (scores[s.id] || 0), 0);
     const avg = sectors.length ? (total / sectors.length).toFixed(2) : "0.00";
+    const summaryDateLabel = new Date(`${dateStr}T00:00:00`).toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    });
 
     // === Funciones de zoom y pan ===
     const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
@@ -1092,7 +992,10 @@ export default function MentalWheelApp() {
                 {/* Botón de estadísticas */}
                 {statsVisibility.enabled && (
                     <button
-                        onClick={() => setStatsOpen(true)}
+                        onClick={() => {
+                            setSummaryOpen(false);
+                            setStatsOpen(true);
+                        }}
                         className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
                         title="Estadísticas"
                     >
@@ -1104,6 +1007,23 @@ export default function MentalWheelApp() {
                         </svg>
                     </button>
                 )}
+
+                {/* Botón de resumen diario */}
+                <button
+                    onClick={() => {
+                        setStatsOpen(false);
+                        setSummaryOpen(true);
+                    }}
+                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
+                    title="Resumen del día"
+                >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="4" y="3" width="16" height="18" rx="2" />
+                        <line x1="8" y1="8" x2="16" y2="8" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                        <line x1="8" y1="16" x2="14" y2="16" />
+                    </svg>
+                </button>
 
                 {/* Botón de configuración */}
                 <button
@@ -1216,7 +1136,7 @@ export default function MentalWheelApp() {
                             {renderLabelsFixed()}
                             {renderRingNumbers()}
                             {renderSectorHover()}
-                            <circle cx={cx} cy={cy} r={ringThickness * 0.6} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
+                            <circle cx={cx} cy={cy} r={centerDecorationRadius} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
                         </g>
                     </svg>
                 </div>
@@ -1493,6 +1413,84 @@ export default function MentalWheelApp() {
                     setInfoMenuContextual(null);
                 }}
             />
+
+            {/* Modal de Resumen Diario */}
+            {summaryOpen && (
+                <>
+                    <div
+                        className={`fixed inset-0 ${theme.overlay} z-50 transition-opacity`}
+                        onClick={() => setSummaryOpen(false)}
+                    />
+                    <div className={`fixed inset-4 sm:inset-8 md:inset-x-20 md:inset-y-12 lg:inset-x-40 lg:inset-y-16 ${theme.cardSolid} shadow-2xl z-50 rounded-2xl overflow-hidden flex flex-col`}>
+                        <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme.borderLight}`}>
+                            <div>
+                                <h2 className={`text-xl md:text-2xl font-bold ${theme.text}`}>Resumen de mi día</h2>
+                                <p className={`text-xs md:text-sm ${theme.textMuted} mt-1 capitalize`}>{summaryDateLabel}</p>
+                            </div>
+                            <button
+                                onClick={() => setSummaryOpen(false)}
+                                className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
+                                title="Cerrar resumen"
+                            >
+                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                            <div className={`rounded-xl border ${theme.border} p-4 md:p-5 ${theme.inputAlt} space-y-4`}>
+                                <p className={`text-xs sm:text-sm ${theme.textMuted}`}>
+                                    Este resumen se guarda automáticamente en tu dispositivo para la fecha seleccionada.
+                                </p>
+
+                                <div className="space-y-2">
+                                    <label className={`block text-sm font-semibold ${theme.text}`}>Lo bueno</label>
+                                    <textarea
+                                        value={dailySummary.good}
+                                        onChange={(e) => setDailySummaryField("good", e.target.value)}
+                                        rows={4}
+                                        placeholder="¿Qué salió bien hoy?"
+                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className={`block text-sm font-semibold ${theme.text}`}>Lo malo</label>
+                                    <textarea
+                                        value={dailySummary.bad}
+                                        onChange={(e) => setDailySummaryField("bad", e.target.value)}
+                                        rows={4}
+                                        placeholder="¿Qué no salió como esperabas?"
+                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className={`block text-sm font-semibold ${theme.text}`}>Cómo enfrenté lo malo</label>
+                                    <textarea
+                                        value={dailySummary.howFacedBad}
+                                        onChange={(e) => setDailySummaryField("howFacedBad", e.target.value)}
+                                        rows={4}
+                                        placeholder="¿Cómo lo afrontaste o cómo piensas afrontarlo?"
+                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={`p-4 md:px-6 md:pb-6 border-t ${theme.borderLight} flex justify-end`}>
+                            <button
+                                onClick={() => setSummaryOpen(false)}
+                                className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* Modal de Estadísticas */}
             {statsOpen && (
@@ -2196,40 +2194,4 @@ function HoverText({ sectors, hoverInfo, darkMode }: HoverTextProps) {
             {s.name}: <b className={`text-base sm:text-lg ${darkMode ? 'text-neutral-100' : 'text-neutral-900'}`}>{hoverInfo.level}</b>
         </span>
     );
-}
-
-// --- utilidades de color ---
-function rgbToHex(input: string): string {
-    if (!input) return "#888888";
-    if (input.startsWith("#")) return input;
-    const match = input.match(/hsl\((\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\)/i);
-    if (!match) return "#888888";
-    const h = parseFloat(match[1]);
-    const s = parseFloat(match[2]) / 100;
-    const l = parseFloat(match[3]) / 100;
-    const [r, g, b] = hslToRgb(h / 360, s, l);
-    const toHex = (v: number): string => v.toString(16).padStart(2, "0");
-    return `#${toHex(Math.round(r * 255))}${toHex(Math.round(g * 255))}${toHex(Math.round(b * 255))}`;
-}
-
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-    let r: number, g: number, b: number;
-    if (s === 0) {
-        r = g = b = l;
-    } else {
-        const hue2rgb = (p: number, q: number, t: number): number => {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
-    }
-    return [r, g, b];
 }
