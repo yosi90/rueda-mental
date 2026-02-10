@@ -2,6 +2,7 @@ import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { DataSettingsSection } from "./DataSettingsSection";
+import { LegalSection } from "./LegalSection";
 import { ScaleDirectionSection } from "./ScaleDirectionSection";
 import { SectorsSettingsSection } from "./SectorsSettingsSection";
 import { StatsVisibilitySection } from "./StatsVisibilitySection";
@@ -145,6 +146,10 @@ export function SettingsDrawer({
                         theme={theme}
                         onRestartTutorial={onRestartTutorial}
                     />
+
+                    <hr className={`my-6 ${theme.borderLight} border-t`} />
+
+                    <LegalSection theme={theme} />
                 </div>
             </div>
         </>
