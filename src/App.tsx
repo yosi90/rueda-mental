@@ -1,7 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { defaultSectors, genId, hslFor } from "./features/sectors/utils/sectorUtils";
+import { SectorContextMenu } from "./features/sectors/components/SectorContextMenu";
+import { SettingsDrawer } from "./features/settings/components/SettingsDrawer";
+import { SummaryModal } from "./features/summary/components/SummaryModal";
+import type { StatsData } from "./features/stats/types/stats";
+import { buildStatsData } from "./features/stats/utils/buildStatsData";
+import { TutorialOverlay } from "./features/tutorial/components/TutorialOverlay";
+import { useTutorialFlow } from "./features/tutorial/hooks/useTutorialFlow";
+import { WheelLayers } from "./features/wheel/components/WheelLayers";
+import { useWheelInteractions } from "./features/wheel/hooks/useWheelInteractions";
 import { DEFAULT_STATS_VISIBILITY } from "./shared/constants/mentalWheel";
+import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
+import { TopRightButtons } from "./shared/components/TopRightButtons";
+import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
 import {
     hasTutorialBeenShown,
     loadComments,
@@ -10,13 +21,13 @@ import {
     loadDarkMode,
     loadScores,
     loadStatsVisibility,
-    markTutorialAsShown,
     saveComments,
     saveConfig,
     saveDailySummary,
     saveDarkMode,
     saveScores,
     saveStatsVisibility,
+    saveTutorialShown,
 } from "./shared/services/storage/mentalWheelStorage";
 import type {
     CommentsByDate,
@@ -24,12 +35,13 @@ import type {
     DailySummaryByDate,
     HoverInfo,
     InfoMenuContextual,
+    MentalWheelBackup,
     ScoresByDate,
     Sector,
     SectorWithAngles,
     StatsVisibility,
 } from "./shared/types/mentalWheel";
-import { rgbToHex } from "./shared/utils/color";
+import type { ThemeClasses } from "./shared/types/theme";
 import { formatDateInput } from "./shared/utils/date";
 
 // === Mental Performance Wheel ===
@@ -39,6 +51,10 @@ import { formatDateInput } from "./shared/utils/date";
 // - Exporta/Importa JSON
 // - Modal de estadísticas y gráficos
 // - UI en español (ES)
+
+const StatsModal = lazy(() =>
+    import("./features/stats/components/StatsModal").then((module) => ({ default: module.StatsModal }))
+);
 
 export default function MentalWheelApp() {
     // --- Configuración base ---
@@ -55,8 +71,6 @@ export default function MentalWheelApp() {
 
     // --- Helpers ---
     const clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
-    const toRad = (deg: number): number => (deg * Math.PI) / 180;
-    const toDeg = (rad: number): number => (rad * 180) / Math.PI;
     const levelOuterRadius = (level: number): number => (
         level <= 0 ? 0 : centerDecorationRadius + (level * ringThickness)
     );
@@ -72,6 +86,21 @@ export default function MentalWheelApp() {
         return a0 <= a1 ? (ang >= a0 && ang <= a1)
             : (ang >= a0 || ang <= a1); // sector que cruza 360°
     };
+    const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === "object" && value !== null && !Array.isArray(value);
+    const normalizeImportedStatsVisibility = (value: unknown): StatsVisibility | null => {
+        if (!isObjectRecord(value)) return null;
+        return {
+            enabled: typeof value.enabled === "boolean" ? value.enabled : DEFAULT_STATS_VISIBILITY.enabled,
+            showDailyAverage: typeof value.showDailyAverage === "boolean" ? value.showDailyAverage : DEFAULT_STATS_VISIBILITY.showDailyAverage,
+            showSectorProgress: typeof value.showSectorProgress === "boolean" ? value.showSectorProgress : DEFAULT_STATS_VISIBILITY.showSectorProgress,
+            showLast7AllSectors: typeof value.showLast7AllSectors === "boolean" ? value.showLast7AllSectors : DEFAULT_STATS_VISIBILITY.showLast7AllSectors,
+            showComparison: typeof value.showComparison === "boolean" ? value.showComparison : DEFAULT_STATS_VISIBILITY.showComparison,
+            showWeeklyTrend: typeof value.showWeeklyTrend === "boolean" ? value.showWeeklyTrend : DEFAULT_STATS_VISIBILITY.showWeeklyTrend,
+            showHeatMap: typeof value.showHeatMap === "boolean" ? value.showHeatMap : DEFAULT_STATS_VISIBILITY.showHeatMap,
+            showInsights: typeof value.showInsights === "boolean" ? value.showInsights : DEFAULT_STATS_VISIBILITY.showInsights,
+        };
+    };
 
     // --- Estado ---
     const todayStr = formatDateInput(new Date());
@@ -79,7 +108,10 @@ export default function MentalWheelApp() {
     const [sectors, setSectors] = useState<Sector[]>(() => loadConfig() || defaultSectors());
     // scores: mapa { dateStr: { id: value } }
     const [scoresByDate, setScoresByDate] = useState<ScoresByDate>(() => loadScores());
-    const scores = scoresByDate[dateStr] || {};
+    const scores = useMemo<Record<string, number>>(
+        () => scoresByDate[dateStr] || {},
+        [scoresByDate, dateStr]
+    );
 
     // Estado nuevo (junto al resto de useState)
     const [commentsByDate, setCommentsByDate] = useState<CommentsByDate>(() => loadComments());
@@ -91,88 +123,8 @@ export default function MentalWheelApp() {
     const menuRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);               // Referencia al SVG principal
     const selectorColorRef = useRef<HTMLInputElement>(null);   // Referencia a input color oculto
-    const temporizadorLongPress = useRef<number | null>(null); // Temporizador para detección de pulsación prolongada
-    const refLongPressActivado = useRef<boolean>(false);       // Marca si se activó menú contextual por long-press
 
-    // Estado para el tutorial interactivo (paso actual; 0 = no activo)
-    const [tutorialStep, setTutorialStep] = useState<number>(() => {
-        // Si el tutorial ya se mostró antes, empieza inactivo
-        return hasTutorialBeenShown() ? 0 : 1;
-    });
-    // 1) Utilidad robusta
-    function prefersTouchUI(): boolean {
-        // ¿El sistema tiene puntos táctiles reales?
-        const hasTouchPoints = (navigator as any).maxTouchPoints > 0;
-
-        // ¿El puntero principal es "grueso" (táctil) y SIN hover?
-        const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-        const hoverNone = window.matchMedia?.('(hover: none)').matches ?? false;
-
-        // Heurística: solo consideramos “táctil” si cumple las tres
-        return Boolean(hasTouchPoints && coarse && hoverNone);
-    }
-
-    // 2) Estado inicial basado en heurística conservadora
-    const [isTouchDevice, setIsTouchDevice] = useState<boolean>(() => prefersTouchUI());
-
-    // 3) Ajuste dinámico según la primera interacción real del usuario
-    useEffect(() => {
-        // Recalcular si cambian las capacidades del dispositivo (dock/undock, monitores, etc.)
-        const updateFromMQ = () => setIsTouchDevice(prefersTouchUI());
-
-        const mqCoarse = window.matchMedia?.('(pointer: coarse)');
-        const mqHoverNone = window.matchMedia?.('(hover: none)');
-        mqCoarse?.addEventListener?.('change', updateFromMQ);
-        mqHoverNone?.addEventListener?.('change', updateFromMQ);
-
-        // Si el usuario usa mouse, forzamos modo no táctil; si usa touch, forzamos táctil.
-        const onPointerDown = (e: PointerEvent) => {
-            if (e.pointerType === 'touch') setIsTouchDevice(true);
-            else if (e.pointerType === 'mouse') setIsTouchDevice(false);
-        };
-        window.addEventListener('pointerdown', onPointerDown, { passive: true });
-
-        return () => {
-            mqCoarse?.removeEventListener?.('change', updateFromMQ);
-            mqHoverNone?.removeEventListener?.('change', updateFromMQ);
-            window.removeEventListener('pointerdown', onPointerDown);
-        };
-    }, []);
-
-    // Avanzar tutorial a paso 2 una vez que el usuario haya puntuado el primer sector
-    useEffect(() => {
-        if (tutorialStep === 1) {
-            const firstSectorId = sectors[3]?.id;
-            const todayScores = scoresByDate[dateStr] || {};
-            if (firstSectorId && todayScores[firstSectorId] !== undefined) {
-                setTutorialStep(2);
-            }
-        }
-    }, [scoresByDate, dateStr, tutorialStep]);
-
-    // Avanzar tutorial a paso 3 cuando se abra el menú contextual (clic derecho o long-press)
-    useEffect(() => {
-        if (tutorialStep === 2 && infoMenuContextual) {
-            setTutorialStep(3);
-        }
-    }, [infoMenuContextual, tutorialStep]);
-
-    // Avanzar tutorial a paso 4 cuando se cierre el menú contextual
-    useEffect(() => {
-        if (tutorialStep === 3 && infoMenuContextual === null) {
-            setTutorialStep(4);
-        }
-    }, [infoMenuContextual, tutorialStep]);
-
-    // Cuando se muestra el último paso (paso 4), marcar el tutorial como completado y ocultarlo después de unos segundos
-    useEffect(() => {
-        if (tutorialStep === 4) {
-            markTutorialAsShown();
-            // Ocultar el mensaje final después de 5 segundos
-            const hideTimer = setTimeout(() => setTutorialStep(0), 10000);
-            return () => clearTimeout(hideTimer);
-        }
-    }, [tutorialStep]);
+    const isTouchDevice = useTouchDeviceDetection();
 
     // UI state
     const [newName, setNewName] = useState<string>("");
@@ -182,19 +134,17 @@ export default function MentalWheelApp() {
     const [summaryOpen, setSummaryOpen] = useState<boolean>(false);
     const [selectedSectorId, setSelectedSectorId] = useState<string>("");
     const [darkMode, setDarkMode] = useState<boolean>(() => loadDarkMode());
-
-    // Estado para zoom y pan del SVG
-    const [scale, setScale] = useState<number>(1);
-    const [translateX, setTranslateX] = useState<number>(0);
-    const [translateY, setTranslateY] = useState<number>(0);
-    const [isPanning, setIsPanning] = useState<boolean>(false);
-    const [startPan, setStartPan] = useState<{ x: number; y: number } | null>(null);
-    const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
-    const [hasPanned, setHasPanned] = useState<boolean>(false);
     const [visibleSectors, setVisibleSectors] = useState<Record<string, boolean>>(() => {
         const initial: Record<string, boolean> = {};
         sectors.forEach(s => initial[s.id] = true);
         return initial;
+    });
+    const { tutorialStep, restartTutorial } = useTutorialFlow({
+        sectors,
+        scoresByDate,
+        dateStr,
+        infoMenuContextual,
+        summaryOpen,
     });
 
     const EMPTY_DAILY_SUMMARY: DailySummary = { good: "", bad: "", howFacedBad: "" };
@@ -226,9 +176,14 @@ export default function MentalWheelApp() {
         }
     }, [dateStr, scoresByDate]);
 
-    // Establecer el primer sector como seleccionado por defecto
+    // Mantener selección válida de sector para estadísticas
     useEffect(() => {
-        if (!selectedSectorId && sectors.length > 0) {
+        if (sectors.length === 0) {
+            if (selectedSectorId !== "") setSelectedSectorId("");
+            return;
+        }
+        const selectedStillExists = sectors.some((s) => s.id === selectedSectorId);
+        if (!selectedStillExists) {
             setSelectedSectorId(sectors[0].id);
         }
     }, [sectors, selectedSectorId]);
@@ -281,196 +236,10 @@ export default function MentalWheelApp() {
     }, [sectors]);
 
     // --- Cálculos de estadísticas ---
-    const statsData = useMemo(() => {
-        const allDates = Object.keys(scoresByDate).sort();
-
-        // Encontrar la primera fecha con datos reales (al menos un valor > 0)
-        const firstDateWithData = allDates.find(date => {
-            const dayScores = scoresByDate[date];
-            const values = Object.values(dayScores);
-            return values.some(score => score > 0);
-        });
-
-        // Filtrar fechas: solo desde la primera fecha con datos en adelante
-        const dates = firstDateWithData
-            ? allDates.filter(date => date >= firstDateWithData)
-            : [];
-
-        // Media diaria
-        const dailyAverage = dates.map(date => {
-            const dayScores = scoresByDate[date];
-            const values = Object.values(dayScores);
-            const avg = values.length > 0
-                ? values.reduce((a, b) => a + b, 0) / values.length
-                : 0;
-            return {
-                date: date,
-                media: parseFloat(avg.toFixed(2)),
-                displayDate: new Date(date).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: 'short'
-                })
-            };
-        });
-
-        // Progresión por sector
-        const sectorProgress = (sectorId: string) => {
-            return dates.map(date => {
-                const score = scoresByDate[date][sectorId] || 0;
-                return {
-                    date: date,
-                    puntuacion: score,
-                    displayDate: new Date(date).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: 'short'
-                    })
-                };
-            });
-        };
-
-        // Comparación de sectores (última vs promedio histórico)
-        const sectorComparison = sectors.map(sector => {
-            const allScores = dates.map(date => scoresByDate[date][sector.id] || 0);
-            const avg = allScores.length > 0
-                ? allScores.reduce((a, b) => a + b, 0) / allScores.length
-                : 0;
-            const current = scores[sector.id] || 0;
-            return {
-                sector: sector.name,
-                actual: current,
-                promedio: parseFloat(avg.toFixed(2)),
-                color: sector.color
-            };
-        });
-
-        // Sectores de HOY (independiente del día seleccionado)
-        const todayScores = scoresByDate[todayStr] || {};
-        const todaySectorScores = sectors.map(sector => ({
-            sector: sector.name,
-            score: todayScores[sector.id] || 0
-        }));
-
-        // Sectores históricos (promedio de todos los días)
-        const historicalSectorScores = sectors.map(sector => {
-            const allScores = dates.map(date => scoresByDate[date][sector.id] || 0).filter(s => s > 0);
-            const avg = allScores.length > 0
-                ? allScores.reduce((a, b) => a + b, 0) / allScores.length
-                : 0;
-            return {
-                sector: sector.name,
-                score: parseFloat(avg.toFixed(2))
-            };
-        });
-
-        // Tendencia semanal
-        const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        const weeklyData = weekDays.map((day, index) => {
-            const daysData = dates.filter(date => new Date(date).getDay() === index);
-            const scores = daysData.flatMap(date => Object.values(scoresByDate[date]));
-            const avg = scores.length > 0
-                ? scores.reduce((a, b) => a + b, 0) / scores.length
-                : 0;
-            return {
-                dia: day,
-                media: parseFloat(avg.toFixed(2))
-            };
-        });
-
-        // Heat map data (últimos 60 días)
-        const heatMapData = dates.slice(-60).map(date => {
-            const dayScores = scoresByDate[date];
-            const values = Object.values(dayScores);
-            const avg = values.length > 0
-                ? values.reduce((a, b) => a + b, 0) / values.length
-                : 0;
-            const dayOfWeek = new Date(date).getDay();
-            const weekNumber = Math.floor(dates.slice(-60).indexOf(date) / 7);
-            return {
-                date: date,
-                displayDate: new Date(date).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit'
-                }),
-                value: parseFloat(avg.toFixed(2)),
-                day: dayOfWeek,
-                week: weekNumber,
-                hasData: values.length > 0
-            };
-        });
-
-        // Mejor día histórico (día específico con mayor puntuación)
-        const bestHistoricalDay = dailyAverage.length > 0
-            ? dailyAverage.reduce((prev, current) =>
-                current.media > prev.media ? current : prev
-            )
-            : null;
-
-        // Últimos 7 días - todos los sectores (para gráfico de evolución multi-línea)
-        const last7DaysAllSectors = () => {
-            if (dates.length < 7) return null; // No mostrar si no hay 7 días
-
-            const last7Dates = dates.slice(-7);
-            const todayStr = formatDateInput(new Date());
-
-            return last7Dates.map((date) => {
-                const isToday = date === todayStr;
-                const dataPoint: any = {
-                    date: date,
-                    displayDate: isToday ? 'Hoy' : new Date(date).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: 'short'
-                    }),
-                    isToday: isToday
-                };
-
-                // Agregar la puntuación de cada sector
-                sectors.forEach(sector => {
-                    dataPoint[sector.name] = scoresByDate[date][sector.id] || 0;
-                });
-
-                return dataPoint;
-            });
-        };
-
-        return {
-            todaySectorScores,
-            historicalSectorScores,
-            dailyAverage,
-            sectorProgress,
-            sectorComparison,
-            weeklyData,
-            heatMapData,
-            bestHistoricalDay,
-            last7DaysAllSectors: last7DaysAllSectors(),
-            totalDays: dates.length,
-            currentStreak: calculateStreak(dates)
-        };
-    }, [scoresByDate, sectors, scores]);
-
-    // Calcular racha de días consecutivos con datos
-    function calculateStreak(sortedDates: string[]): number {
-        if (sortedDates.length === 0) return 0;
-
-        let streak = 0;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        for (let i = sortedDates.length - 1; i >= 0; i--) {
-            const date = new Date(sortedDates[i]);
-            date.setHours(0, 0, 0, 0);
-
-            const expectedDate = new Date(today);
-            expectedDate.setDate(today.getDate() - streak);
-
-            if (date.getTime() === expectedDate.getTime()) {
-                streak++;
-            } else {
-                break;
-            }
-        }
-
-        return streak;
-    }
+    const statsData = useMemo<StatsData>(
+        () => buildStatsData({ scoresByDate, sectors, scores, todayStr }),
+        [scoresByDate, sectors, scores, todayStr]
+    );
 
     // --- Persistencia ---
     useEffect(() => saveComments(commentsByDate), [commentsByDate]);
@@ -515,131 +284,6 @@ export default function MentalWheelApp() {
         });
     }
 
-    // --- Geometría SVG ---
-    function polar(cx: number, cy: number, r: number, angDeg: number): [number, number] {
-        const rad = toRad(angDeg);
-        return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
-    }
-    function sectorPath(innerR: number, outerR: number, a0: number, a1: number): string {
-        const [x0i, y0i] = polar(cx, cy, innerR, a0);
-        const [x0o, y0o] = polar(cx, cy, outerR, a0);
-        const [x1o, y1o] = polar(cx, cy, outerR, a1);
-        const [x1i, y1i] = polar(cx, cy, innerR, a1);
-        const large = a1 - a0 > 180 ? 1 : 0;
-        return `M ${x0i} ${y0i}
-            L ${x0o} ${y0o}
-            A ${outerR} ${outerR} 0 ${large} 1 ${x1o} ${y1o}
-            L ${x1i} ${y1i}
-            A ${innerR} ${innerR} 0 ${large} 0 ${x0i} ${y0i}
-            Z`;
-    }
-
-    // --- Nuevo manejador para clic derecho (menú contextual) ---
-    function handleSvgContextMenu(e: React.MouseEvent<SVGSVGElement>) {
-        e.preventDefault(); // prevenir menú contextual por defecto del navegador
-        if (hasPanned) {
-            setHasPanned(false);
-            return;
-        }
-        const pt = svgRef.current?.createSVGPoint();
-        if (!pt || !svgRef.current) return;
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const screenCTM = svgRef.current.getScreenCTM();
-        if (!screenCTM) return;
-        const loc = pt.matrixTransform(screenCTM.inverse());
-        // Transformar a coordenadas del SVG (considerando zoom/pan):
-        const svgX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
-        const svgY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
-        const dx = svgX - cx, dy = svgY - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist > radius) return; // fuera de la rueda
-        const angle = toDeg(Math.atan2(dy, dx));
-        const ang = normDeg(angle);
-        const sector = sectorsWithAngles.find(s => inSector(ang, s));
-        if (!sector) return;
-        // Abrir menú contextual en posición del puntero para el sector encontrado
-        setInfoMenuContextual({ idSector: sector.id, x: e.clientX, y: e.clientY });
-    }
-
-    // --- Interacción (clic en rueda) ---
-    function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
-        if (hasPanned || refLongPressActivado.current) {
-            setHasPanned(false);
-            refLongPressActivado.current = false;
-            return;
-        }
-        const pt = getSvgPoint(e);
-        const dx = pt.x - cx;
-        const dy = pt.y - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist > radius) return;
-
-        const angle = toDeg(Math.atan2(dy, dx));
-        const ang = normDeg(angle);
-
-        const sector = sectorsWithAngles.find((s) => inSector(ang, s));
-        if (!sector) return;
-
-        const level = distanceToLevel(dist);
-        setScoresByDate((prev) => ({
-            ...prev,
-            [dateStr]: { ...prev[dateStr], [sector.id]: level },
-        }));
-    }
-
-    function handleSvgMove(e: React.MouseEvent<SVGSVGElement>) {
-        if (isPanning && startPan) {
-            const dx = e.clientX - startPan.x;
-            const dy = e.clientY - startPan.y;
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                setHasPanned(true);
-            }
-            setTranslateX((prev) => prev + dx);
-            setTranslateY((prev) => prev + dy);
-            setStartPan({ x: e.clientX, y: e.clientY });
-            return;
-        }
-
-        const pt = getSvgPoint(e);
-        const dx = pt.x - cx;
-        const dy = pt.y - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist > radius) {
-            setHoverInfo(null);
-            return;
-        }
-        const angle = toDeg(Math.atan2(dy, dx));
-        const ang = normDeg(angle);
-        const sector = sectorsWithAngles.find((s) => inSector(ang, s));
-        if (!sector) {
-            setHoverInfo(null);
-            return;
-        }
-        const level = distanceToLevel(dist);
-        setHoverInfo({ sectorId: sector.id, level });
-    }
-
-    function getSvgPoint(evt: React.MouseEvent<SVGSVGElement>): DOMPoint {
-        const svg = evt.currentTarget;
-        const pt = svg.createSVGPoint();
-        pt.x = evt.clientX;
-        pt.y = evt.clientY;
-        const screenCTM = svg.getScreenCTM();
-        if (!screenCTM) {
-            throw new Error("Failed to get screen CTM");
-        }
-        const inv = screenCTM.inverse();
-        const loc = pt.matrixTransform(inv);
-
-        const transformedX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
-        const transformedY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
-
-        loc.x = transformedX;
-        loc.y = transformedY;
-        return loc;
-    }
-
     // --- UI Ops ---
     function addSector() {
         const name = newName.trim() || `Sector ${sectors.length + 1}`;
@@ -650,14 +294,32 @@ export default function MentalWheelApp() {
     function removeSector(id: string): void {
         setSectors((prev) => prev.filter((s) => s.id !== id));
         setScoresByDate((prev) => {
-            const copy = { ...prev };
-            for (const d of Object.keys(copy)) {
-                const day = { ...copy[d] };
-                delete day[id];
-                copy[d] = day;
+            const cleaned: ScoresByDate = {};
+            for (const date in prev) {
+                const dayScores = { ...prev[date] };
+                delete dayScores[id];
+                cleaned[date] = dayScores;
             }
+            return cleaned;
+        });
+        setCommentsByDate((prev) => {
+            const cleaned: CommentsByDate = {};
+            for (const date in prev) {
+                const dayComments = { ...prev[date] };
+                delete dayComments[id];
+                if (Object.keys(dayComments).length > 0) {
+                    cleaned[date] = dayComments;
+                }
+            }
+            return cleaned;
+        });
+        setVisibleSectors((prev) => {
+            if (!(id in prev)) return prev;
+            const copy = { ...prev };
+            delete copy[id];
             return copy;
         });
+        setSelectedSectorId((prev) => (prev === id ? "" : prev));
     }
     function moveSector(id: string, dir: number): void {
         setSectors((prev) => {
@@ -676,13 +338,33 @@ export default function MentalWheelApp() {
     }
     function resetDay() {
         setScoresByDate((prev) => ({ ...prev, [dateStr]: {} }));
+        setCommentsByDate((prev) => {
+            const copy = { ...prev };
+            delete copy[dateStr];
+            return copy;
+        });
+        setDailySummaryByDate((prev) => {
+            const copy = { ...prev };
+            delete copy[dateStr];
+            return copy;
+        });
     }
 
     function exportJSON() {
+        const backup: MentalWheelBackup = {
+            version: 2,
+            config: sectors,
+            scoresByDate,
+            commentsByDate,
+            dailySummaryByDate,
+            darkMode,
+            tutorialShown: hasTutorialBeenShown(),
+            statsVisibility,
+        };
         const blob = new Blob(
             [
                 JSON.stringify(
-                    { config: sectors, scoresByDate },
+                    backup,
                     null,
                     2
                 ),
@@ -702,9 +384,15 @@ export default function MentalWheelApp() {
         const reader = new FileReader();
         reader.onload = () => {
             try {
-                const data = JSON.parse(String(reader.result));
-                if (data.config && Array.isArray(data.config)) setSectors(data.config);
-                if (data.scoresByDate && typeof data.scoresByDate === "object") setScoresByDate(data.scoresByDate);
+                const data: MentalWheelBackup = JSON.parse(String(reader.result));
+                if (Array.isArray(data.config)) setSectors(data.config);
+                if (isObjectRecord(data.scoresByDate)) setScoresByDate(data.scoresByDate as ScoresByDate);
+                if (isObjectRecord(data.commentsByDate)) setCommentsByDate(data.commentsByDate as CommentsByDate);
+                if (isObjectRecord(data.dailySummaryByDate)) setDailySummaryByDate(data.dailySummaryByDate as DailySummaryByDate);
+                if (typeof data.darkMode === "boolean") setDarkMode(data.darkMode);
+                if (typeof data.tutorialShown === "boolean") saveTutorialShown(data.tutorialShown);
+                const importedStatsVisibility = normalizeImportedStatsVisibility(data.statsVisibility);
+                if (importedStatsVisibility) setStatsVisibility(importedStatsVisibility);
             } catch (error) {
                 alert("Archivo JSON no válido");
                 console.error("Error al importar JSON:", error);
@@ -726,114 +414,35 @@ export default function MentalWheelApp() {
         if (!statsVisibility.enabled && statsOpen) setStatsOpen(false);
     }, [statsVisibility.enabled, statsOpen]);
 
-    // --- Render auxiliares ---
-    function renderGrid() {
-        const rings = Array.from({ length: RING_COUNT }, (_, i) => (
-            <circle
-                key={`r-${i + 1}`}
-                cx={cx}
-                cy={cy}
-                r={levelOuterRadius(i + 1)}
-                fill="none"
-                stroke={theme.svgGrid}
-                strokeDasharray="4 4"
-            />
-        ));
-        const sectorLines = sectorsWithAngles.map((s) => {
-            const [x1, y1] = polar(cx, cy, radius, s.a0);
-            return (
-                <line key={`l-${s.id}`} x1={cx} y1={cy} x2={x1} y2={y1} stroke={theme.svgGrid} />
-            );
-        });
-        return (
-            <g>
-                {rings}
-                {sectorLines}
-            </g>
-        );
-    }
-
-    function renderFilledSectors() {
-        return sectorsWithAngles.map((s) => {
-            const val = clamp(scores[s.id] ?? 0, 0, RING_COUNT);
-            if (val <= 0) return null;
-            const path = sectorPath(0, levelOuterRadius(val), s.a0, s.a1);
-            return (
-                <path key={`v-${s.id}`} d={path} fill={s.color} opacity={0.6} stroke={s.color} strokeOpacity={0.9} />
-            );
-        });
-    }
-
-    function renderSectorHover() {
-        if (!hoverInfo) return null;
-        const s = sectorsWithAngles.find((x) => x.id === hoverInfo.sectorId);
-        if (!s) return null;
-        const r = levelOuterRadius(hoverInfo.level);
-        const p = sectorPath(0, r, s.a0, s.a1);
-        return <path d={p} fill={s.color} opacity={0.2} pointerEvents="none" />;
-    }
-
-    function renderLabelsFixed() {
-        return sectorsWithAngles.map((s) => {
-            const [tx, ty] = polar(cx, cy, radius + 24, s.mid);
-            const cosv = Math.cos(toRad(s.mid));
-            const anchor = cosv > 0.25 ? "start" : cosv < -0.25 ? "end" : "middle";
-
-            // ¿tiene comentario el día seleccionado?
-            const hasComment = !!getComment(dateStr, s.id);
-
-            return (
-                <g key={`lab-${s.id}`}>
-                    <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="middle" fill={theme.svgText}>
-                        {s.name}
-                    </text>
-
-                    {hasComment && (
-                        // pequeña “chincheta” al lado de la etiqueta
-                        <text
-                            x={tx + (anchor === "start" ? 10 : anchor === "end" ? -10 : 0)}
-                            y={ty - 10}
-                            fontSize={12}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            fill={theme.svgText}
-                            aria-label="Tiene comentario"
-                            style={{ cursor: "help" }} // opcional, para mostrar el puntero de ayuda
-                        >
-                            <title>Tiene un comentario</title>
-                            📌
-                        </text>
-                    )}
-
-                </g>
-            );
-        });
-    }
-
-    function renderRingNumbers() {
-        if (sectors.length > 10) return null;
-
-        return Array.from({ length: RING_COUNT }, (_, i) => {
-            const level = i + 1;
-            const r = levelLabelRadius(level);
-            const [tx, ty] = polar(cx, cy, r, 0);
-            return (
-                <text
-                    key={`n-${i}`}
-                    x={tx}
-                    y={ty}
-                    fontSize={RING_NUMBER_FONT_SIZE}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill={theme.svgText}
-                    opacity={0.6}
-                    className="hidden md:block"
-                >
-                    {level}
-                </text>
-            );
-        });
-    }
+    const {
+        scale,
+        translateX,
+        translateY,
+        isPanning,
+        handleSvgContextMenu,
+        handleSvgClick,
+        handleSvgMove,
+        handleWheel,
+        handleTouchStart,
+        handleTouchMove,
+        handleTouchEnd,
+        handleMouseDown,
+        handleMouseUp,
+        resetZoom,
+    } = useWheelInteractions({
+        svgRef,
+        size: SIZE,
+        cx,
+        cy,
+        radius,
+        sectorsWithAngles,
+        dateStr,
+        inSector,
+        distanceToLevel,
+        setScoresByDate,
+        setHoverInfo,
+        setInfoMenuContextual,
+    });
 
     const total = sectors.reduce((acc, s) => acc + (scores[s.id] || 0), 0);
     const avg = sectors.length ? (total / sectors.length).toFixed(2) : "0.00";
@@ -844,125 +453,8 @@ export default function MentalWheelApp() {
         year: "numeric",
     });
 
-    // === Funciones de zoom y pan ===
-    const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        setScale((prev) => clamp(prev * delta, 0.5, 5));
-    };
-
-    const getTouchDistance = (touch1: React.Touch, touch2: React.Touch): number => {
-        const dx = touch1.clientX - touch2.clientX;
-        const dy = touch1.clientY - touch2.clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    // --- Modificar manejadores táctiles para detección de pulsación prolongada ---
-    const handleTouchStart = (e: React.TouchEvent<SVGSVGElement>) => {
-        if (e.touches.length === 2) {
-            // Zoom con dos dedos
-            const distance = getTouchDistance(e.touches[0], e.touches[1]);
-            setLastTouchDistance(distance);
-            setIsPanning(false);
-            setStartPan(null);
-            // Cancelar temporizador de long press si existe
-            if (temporizadorLongPress.current) {
-                clearTimeout(temporizadorLongPress.current);
-                temporizadorLongPress.current = null;
-            }
-        } else if (e.touches.length === 1) {
-            // Iniciar temporizador de pulsación prolongada (long press)
-            const { clientX, clientY } = e.touches[0];
-            temporizadorLongPress.current = window.setTimeout(() => {
-                if (!hasPanned && svgRef.current) {  // solo abrir si no hubo desplazamiento
-                    // Calcular sector bajo el dedo al momento del long press
-                    const pt = svgRef.current.createSVGPoint();
-                    pt.x = clientX; pt.y = clientY;
-                    const screenCTM = svgRef.current.getScreenCTM();
-                    if (!screenCTM) return;
-                    const loc = pt.matrixTransform(screenCTM.inverse());
-                    const svgX = (loc.x - SIZE / 2 - translateX) / scale + SIZE / 2;
-                    const svgY = (loc.y - SIZE / 2 - translateY) / scale + SIZE / 2;
-                    const dx = svgX - cx, dy = svgY - cy;
-                    const dist = Math.hypot(dx, dy);
-                    if (dist <= radius) {  // dentro de la rueda
-                        const angle = toDeg(Math.atan2(dy, dx));
-                        const ang = normDeg(angle);
-                        const sector = sectorsWithAngles.find(s => inSector(ang, s));
-                        if (sector) {
-                            // Abrir menú contextual para sector (pulsación prolongada)
-                            setInfoMenuContextual({ idSector: sector.id, x: clientX, y: clientY });
-                            refLongPressActivado.current = true;   // marcar que ya se abrió menú contextual
-                            setIsPanning(false);                   // cancelar modo arrastre
-                            setStartPan(null);
-                        }
-                    }
-                }
-            }, 600); // ~0.6s para activar menú contextual
-            // Continuar con lógica existente de inicio de pan (por si es un desplazamiento breve)
-            setIsPanning(true);
-            setHasPanned(false);
-            setStartPan({ x: clientX, y: clientY });
-        }
-    };
-
-    const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
-        if (e.touches.length === 2 && lastTouchDistance !== null) {
-            // Zoom táctil con dos dedos
-            e.preventDefault();
-            const newDistance = getTouchDistance(e.touches[0], e.touches[1]);
-            const delta = newDistance / lastTouchDistance;
-            setScale((prev) => clamp(prev * delta, 0.5, 5));
-            setLastTouchDistance(newDistance);
-        } else if (e.touches.length === 1 && isPanning && startPan) {
-            const dx = e.touches[0].clientX - startPan.x;
-            const dy = e.touches[0].clientY - startPan.y;
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                setHasPanned(true);
-                // Cancelar temporizador de long press si el usuario comenzó a arrastrar
-                if (temporizadorLongPress.current) {
-                    clearTimeout(temporizadorLongPress.current);
-                    temporizadorLongPress.current = null;
-                }
-            }
-            setTranslateX(prev => prev + dx);
-            setTranslateY(prev => prev + dy);
-            setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-        }
-    };
-
-    const handleTouchEnd = () => {
-        // Limpiar temporizador de long press si el usuario soltó antes de tiempo
-        if (temporizadorLongPress.current) {
-            clearTimeout(temporizadorLongPress.current);
-            temporizadorLongPress.current = null;
-        }
-        setLastTouchDistance(null);
-        setIsPanning(false);
-        setStartPan(null);
-    };
-
-    const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
-        if (e.button === 0) {
-            setIsPanning(true);
-            setHasPanned(false);
-            setStartPan({ x: e.clientX, y: e.clientY });
-        }
-    };
-
-    const handleMouseUp = () => {
-        setIsPanning(false);
-        setStartPan(null);
-    };
-
-    const resetZoom = () => {
-        setScale(1);
-        setTranslateX(0);
-        setTranslateY(0);
-    };
-
     // Colores según tema
-    const theme = {
+    const theme: ThemeClasses = {
         bg: darkMode ? "bg-neutral-600" : "bg-neutral-300",
         card: darkMode ? "bg-neutral-800/90" : "bg-white/90",
         cardSolid: darkMode ? "bg-neutral-800" : "bg-white",
@@ -987,57 +479,19 @@ export default function MentalWheelApp() {
 
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`} style={{ margin: 0, padding: 0 }}>
-            {/* Botones flotantes */}
-            <div className="fixed top-[17px] sm:top-4 right-5 sm:right-4 z-40 flex gap-2">
-                {/* Botón de estadísticas */}
-                {statsVisibility.enabled && (
-                    <button
-                        onClick={() => {
-                            setSummaryOpen(false);
-                            setStatsOpen(true);
-                        }}
-                        className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
-                        title="Estadísticas"
-                    >
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 3v18h18" />
-                            <path d="M18 17V9" />
-                            <path d="M13 17V5" />
-                            <path d="M8 17v-3" />
-                        </svg>
-                    </button>
-                )}
-
-                {/* Botón de resumen diario */}
-                <button
-                    onClick={() => {
-                        setStatsOpen(false);
-                        setSummaryOpen(true);
-                    }}
-                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
-                    title="Resumen del día"
-                >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="4" y="3" width="16" height="18" rx="2" />
-                        <line x1="8" y1="8" x2="16" y2="8" />
-                        <line x1="8" y1="12" x2="16" y2="12" />
-                        <line x1="8" y1="16" x2="14" y2="16" />
-                    </svg>
-                </button>
-
-                {/* Botón de configuración */}
-                <button
-                    onClick={() => setDrawerOpen(true)}
-                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors`}
-                    title="Configuración"
-                >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-2px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
-                </button>
-            </div>
+            <TopRightButtons
+                showStatsButton={statsVisibility.enabled}
+                buttonPrimaryClass={theme.buttonPrimary}
+                onOpenStats={() => {
+                    setSummaryOpen(false);
+                    setStatsOpen(true);
+                }}
+                onOpenSummary={() => {
+                    setStatsOpen(false);
+                    setSummaryOpen(true);
+                }}
+                onOpenSettings={() => setDrawerOpen(true)}
+            />
 
             {/* Botón de reset zoom */}
             {(scale !== 1 || translateX !== 0 || translateY !== 0) && (
@@ -1050,62 +504,30 @@ export default function MentalWheelApp() {
                 </button>
             )}
 
-            {/* Información flotante */}
-            <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg w-fit min-w-40 sm: min-w-none`}>
-                    <div className={`text-xs sm:text-sm ${theme.textMuted}`}>
-                        {hoverInfo ? (
-                            <HoverText sectors={sectors} hoverInfo={hoverInfo} darkMode={darkMode} />
-                        ) : (
-                            <span>Media del día: <b className={`text-base sm:text-lg ${theme.text}`}>{avg}</b></span>
-                        )}
-                    </div>
-                </div>
-
-                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 mt-1 sm:mt-0 shadow-lg`}>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => {
-                                const date = new Date(dateStr);
-                                date.setDate(date.getDate() - 1);
-                                setDateStr(formatDateInput(date));
-                            }}
-                            className={`${theme.button} rounded-md px-2 py-1 text-sm font-bold transition-colors`}
-                            title="Día anterior"
-                        >
-                            &lt;
-                        </button>
-
-                        <input
-                            type="date"
-                            value={dateStr}
-                            onChange={(e) => setDateStr(e.target.value)}
-                            className={`text-xs sm:text-sm border-0 bg-transparent p-0 cursor-pointer focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} rounded ${theme.text}`}
-                            style={{ fontFamily: 'inherit', colorScheme: darkMode ? 'dark' : 'light' }}
-                        />
-
-                        <button
-                            onClick={() => {
-                                const date = new Date(dateStr);
-                                date.setDate(date.getDate() + 1);
-                                setDateStr(formatDateInput(date));
-                            }}
-                            className={`${theme.button} rounded-md px-2 py-1 text-sm font-bold transition-colors`}
-                            title="Día siguiente"
-                        >
-                            &gt;
-                        </button>
-
-                        <button
-                            onClick={() => setDateStr(todayStr)}
-                            className={`${theme.buttonPrimary} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
-                            title="Ir a hoy"
-                        >
-                            Hoy
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <FloatingInfoPanel
+                cardClass={theme.card}
+                textMutedClass={theme.textMuted}
+                textClass={theme.text}
+                buttonClass={theme.button}
+                buttonPrimaryClass={theme.buttonPrimary}
+                darkMode={darkMode}
+                dateStr={dateStr}
+                avg={avg}
+                hasHoverInfo={Boolean(hoverInfo)}
+                hoverInfoContent={hoverInfo ? <HoverText sectors={sectors} hoverInfo={hoverInfo} darkMode={darkMode} /> : null}
+                onDateChange={setDateStr}
+                onPrevDay={() => {
+                    const date = new Date(dateStr);
+                    date.setDate(date.getDate() - 1);
+                    setDateStr(formatDateInput(date));
+                }}
+                onNextDay={() => {
+                    const date = new Date(dateStr);
+                    date.setDate(date.getDate() + 1);
+                    setDateStr(formatDateInput(date));
+                }}
+                onToday={() => setDateStr(todayStr)}
+            />
 
             {/* Rueda principal */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '80px 20px 20px 20px' }}>
@@ -1131,272 +553,53 @@ export default function MentalWheelApp() {
                     >
                         <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>
                             <circle cx={cx} cy={cy} r={radius} fill={theme.svgBg} />
-                            {renderFilledSectors()}
-                            {renderGrid()}
-                            {renderLabelsFixed()}
-                            {renderRingNumbers()}
-                            {renderSectorHover()}
+                            <WheelLayers
+                                cx={cx}
+                                cy={cy}
+                                radius={radius}
+                                ringCount={RING_COUNT}
+                                ringNumberFontSize={RING_NUMBER_FONT_SIZE}
+                                sectors={sectors}
+                                sectorsWithAngles={sectorsWithAngles}
+                                scores={scores}
+                                hoverInfo={hoverInfo}
+                                dateStr={dateStr}
+                                getComment={getComment}
+                                levelOuterRadius={levelOuterRadius}
+                                levelLabelRadius={levelLabelRadius}
+                                theme={{ svgGrid: theme.svgGrid, svgText: theme.svgText }}
+                            />
                             <circle cx={cx} cy={cy} r={centerDecorationRadius} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
                         </g>
                     </svg>
                 </div>
             </div>
 
-            {/* Tutorial interactivo paso a paso */}
-            {tutorialStep === 1 && (
-                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm`} style={{ top: '200px', left: '50%', transform: 'translateX(-50%)' }}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        Bienvenido a Día a día.
-                    </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Esta web te ayudará a llevar un histórico de tu desempeño diario en distintas áreas. Para comenzar, ¿Cómo crees que te ha ido hoy con <b>{sectors[3]?.name}</b>?
-                    </p>
-                    <p className={`text-xs text-center mt-4`}>
-                        Puntúa <b>{sectors[3]?.name}?</b> para seguir adelante.
-                    </p>
-                </div>
-            )}
-            {tutorialStep === 2 && (
-                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm`} style={{ top: '200px', left: '50%', transform: 'translateX(-50%)' }}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        ¡Bien hecho!
-                    </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Ahora, si {isTouchDevice ? "mantienes pulsado" : "haces clic derecho"} sobre el sector, podrás abrir su menú.
-                    </p>
-                    <p className={`text-xs text-center mt-4`}>
-                        Abré el menú de <b>{sectors[3]?.name}?</b> para seguir adelante.
-                    </p>
-                </div>
-            )}
-            {tutorialStep === 3 && (
-                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 `} style={{ top: isTouchDevice ? '150px' : '200px', left: '50%', transform: 'translateX(-50%)' }}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify`}>
-                        Perfecto, Aquí podrás modificar su nombre y la puntuación, añadirle una nota para ese día y hasta eliminarlo.
-                    </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
-                        Recuerda que puedes acceder también a la configuración general con el botón de arriba a la derecha y gestionar desde ahí todos los sectores. 
-                        Ahora puedes cerrar el menú {isTouchDevice ? "tocando fuera" : "haciendo clic fuera"} de él.
-                    </p>
-                    <p className={`text-xs text-center mt-4`}>
-                        {isTouchDevice ? "Pulsa fuera" : "haz clic fuera"} del menú para cerrarlo.
-                    </p>
-                </div>
-            )}
-            {tutorialStep === 4 && (
-                <div className={`fixed z-50 pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2`}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
-                        ¡Enhorabuena!, has finalizado el tutorial.
-                    </p>
-                    <p className={`${theme.text} text-sm sm:text-base text-justify mt-3`}>
-                        Antes de que comienzes a usar la web, nos gustaría recordarte que tus datos se guardan únicamente en tu dispositivo, de manera 100% privada y solo se usan localmente para mostrarte estadísticas sobre tu rendimiento.
-                    </p>
-                </div>
-            )}
+            <TutorialOverlay
+                tutorialStep={tutorialStep}
+                isTouchDevice={isTouchDevice}
+                tutorialSectorName={sectors[3]?.name}
+                theme={theme}
+            />
 
-            {/* Menú contextual emergente */}
-            {infoMenuContextual && (
-                <>
-                    <div className="fixed inset-0 z-40" onClick={() => setInfoMenuContextual(null)} />
-
-                    <div
-                        ref={menuRef}
-                        className={`fixed z-50 w-[200px] sm:w-[300px] rounded-xl border ${theme.border} bg-neutral-800/90 backdrop-blur-sm p-4 shadow-xl`}
-                        style={{ top: `${infoMenuContextual.y}px`, left: `${infoMenuContextual.x}px` }}
-                    >
-                        {(() => {
-                            const sector = sectors.find(s => s.id === infoMenuContextual.idSector);
-                            const valorActual = scores[infoMenuContextual.idSector] ?? 0;
-                            if (!sector) return null;
-
-                            const isMobile = window.innerWidth <= 768;
-
-                            return (
-                                <div className="flex flex-col gap-3">
-                                    {/* Fila principal: color, nombre, eliminar */}
-                                    <div className="flex items-center gap-2 mb-3 flex-wrap sm:flex-nowrap">
-                                        {/* Color */}
-                                        <input
-                                            type="color"
-                                            defaultValue={rgbToHex(sector.color)}
-                                            onChange={(e) => {
-                                                const nuevoColor = e.target.value;
-                                                setSectors(prev =>
-                                                    prev.map(s =>
-                                                        s.id === sector.id ? { ...s, color: nuevoColor } : s
-                                                    )
-                                                );
-                                            }}
-                                            className="h-4 w-4 sm:h-8 sm:w-8 cursor-pointer rounded-md border flex-shrink-0"
-                                        />
-
-                                        {/* Nombre */}
-                                        <input
-                                            type="text"
-                                            defaultValue={sector.name}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter") {
-                                                    const nombre = (e.target as HTMLInputElement).value;
-                                                    setSectors(prev =>
-                                                        prev.map(s =>
-                                                            s.id === sector.id ? { ...s, name: nombre } : s
-                                                        )
-                                                    );
-                                                    setInfoMenuContextual(null);
-                                                }
-                                            }}
-                                            onBlur={(e) => {
-                                                const nombre = e.target.value;
-                                                setSectors(prev =>
-                                                    prev.map(s =>
-                                                        s.id === sector.id ? { ...s, name: nombre } : s
-                                                    )
-                                                );
-                                            }}
-                                            className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-1 sm:px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
-                                        />
-
-                                        {/* Eliminar */}
-                                        <button
-                                            title="Eliminar"
-                                            className={`rounded-md border ${theme.border} ${theme.button} px-1 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] sm:text-xs transition-colors flex-shrink-0`}
-                                            onClick={() => {
-                                                if (confirm("¿Eliminar este sector?")) {
-                                                    setSectors(prev => prev.filter(s => s.id !== sector.id));
-                                                    setInfoMenuContextual(null);
-                                                }
-                                            }}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-
-                                    {/* Slider de puntuación */}
-                                    <div className="flex items-center gap-2">
-                                        <label className={`text-xs ${theme.textMuted} flex-shrink-0`}>Puntuación:</label>
-                                        {!isMobile &&
-                                            <input
-                                                type="range"
-                                                min={0}
-                                                max={RING_COUNT}
-                                                defaultValue={valorActual}
-                                                onMouseUp={(e) => setScore(sector.id, (e.target as HTMLInputElement).value)}
-                                                className={`flex-1 min-w-0 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer
-                                                [&::-webkit-slider-thumb]:appearance-none
-                                                [&::-webkit-slider-thumb]:w-3
-                                                [&::-webkit-slider-thumb]:h-3
-                                                [&::-webkit-slider-thumb]:rounded-full
-                                                [&::-webkit-slider-thumb]:bg-blue-600
-                                                [&::-webkit-slider-thumb]:cursor-pointer
-                                                [&::-webkit-slider-thumb]:transition
-                                                [&::-webkit-slider-thumb]:hover:bg-blue-700
-                                                [&::-moz-range-thumb]:w-3
-                                                [&::-moz-range-thumb]:h-3
-                                                [&::-moz-range-thumb]:rounded-full
-                                                [&::-moz-range-thumb]:bg-blue-600`}
-                                            />}
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            max={10}
-                                            value={valorActual}
-                                            onChange={(e) => {
-                                                const nuevoValor = parseInt(e.target.value);
-                                                setScore(sector.id, nuevoValor);
-                                            }}
-                                            className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} flex-shrink-0`}
-                                        />
-                                    </div>
-
-                                    <hr className={`my-1 ${theme.borderLight} border-t`} />
-
-                                    {/* Comentario del día */}
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center justify-between">
-                                            <label className={`text-xs ${theme.textMuted}`}>Comentario</label>
-
-                                            {/* Botón rápido para limpiar si ya hay comentario */}
-                                            {getComment(dateStr, sector.id) && (
-                                                <button
-                                                    className={`text-xs px-2 py-1 rounded ${theme.buttonPrimary}`}
-                                                    onClick={() => {
-                                                        deleteComment(dateStr, sector.id);
-                                                        // opcional: limpiar textarea si abierto
-                                                        if (commentTextRef.current) commentTextRef.current.value = "";
-                                                    }}
-                                                    title="Eliminar comentario del día"
-                                                >
-                                                    Borrar
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <textarea
-                                            ref={commentTextRef}
-                                            defaultValue={getComment(dateStr, sector.id)}
-                                            maxLength={100}
-                                            rows={3}
-                                            placeholder="Escribe tu comentario..."
-                                            className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
-                                            onKeyDown={(e) => {
-                                                // Guardar con Ctrl+Enter / Cmd+Enter, Enter solo hace salto de línea
-                                                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                                                    const t = (e.target as HTMLTextAreaElement).value.trim();
-                                                    if (t.length > 0) setComment(dateStr, sector.id, t);
-                                                    else deleteComment(dateStr, sector.id);
-                                                    setInfoMenuContextual(null); // cerrar menú al guardar
-                                                }
-                                            }}
-                                        />
-
-                                        <div className="flex items-center justify-between">
-                                            {/* Contador de caracteres */}
-                                            <span className={`text-[10px] ${theme.textMuted}`}>
-                                                {(commentTextRef.current?.value?.length ?? getComment(dateStr, sector.id).length)}/100
-                                            </span>
-
-                                            <div className="flex gap-2">
-                                                <button
-                                                    className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.button}`}
-                                                    onClick={() => setInfoMenuContextual(null)}
-                                                >
-                                                    Cancelar
-                                                </button>
-                                                <button
-                                                    className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.buttonPrimary}`}
-                                                    onClick={() => {
-                                                        const t = (commentTextRef.current?.value ?? "").trim();
-                                                        if (t.length > 0) setComment(dateStr, sector.id, t);
-                                                        else deleteComment(dateStr, sector.id);
-                                                        setInfoMenuContextual(null);
-                                                    }}
-                                                >
-                                                    Guardar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Separador para el botón de cerrar */}
-                                    {isMobile && (
-                                        <hr className={`my-1 ${theme.borderLight} border-t`} />
-                                    )}
-
-                                    {/* Botón cerrar solo en móvil */}
-                                    {isMobile && (
-                                        <button
-                                            onClick={() => setInfoMenuContextual(null)}
-                                            className={`text-xs ${theme.buttonPrimary} px-3 py-1 rounded w-full`}
-                                        >
-                                            Cerrar
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })()}
-                    </div>
-                </>
-            )}
+            <SectorContextMenu
+                infoMenuContextual={infoMenuContextual}
+                menuRef={menuRef}
+                theme={theme}
+                darkMode={darkMode}
+                sectors={sectors}
+                scores={scores}
+                dateStr={dateStr}
+                ringCount={RING_COUNT}
+                commentTextRef={commentTextRef}
+                onClose={() => setInfoMenuContextual(null)}
+                setSectors={setSectors}
+                removeSector={removeSector}
+                setScore={setScore}
+                getComment={getComment}
+                setComment={setComment}
+                deleteComment={deleteComment}
+            />
 
 
             {/* Input de color oculto para cambiar color de sector */}
@@ -1414,768 +617,56 @@ export default function MentalWheelApp() {
                 }}
             />
 
-            {/* Modal de Resumen Diario */}
-            {summaryOpen && (
-                <>
-                    <div
-                        className={`fixed inset-0 ${theme.overlay} z-50 transition-opacity`}
-                        onClick={() => setSummaryOpen(false)}
+            <SummaryModal
+                open={summaryOpen}
+                onClose={() => setSummaryOpen(false)}
+                theme={theme}
+                summaryDateLabel={summaryDateLabel}
+                dailySummary={dailySummary}
+                darkMode={darkMode}
+                onChangeField={setDailySummaryField}
+            />
+            <Suspense fallback={null}>
+                {statsOpen && (
+                    <StatsModal
+                        statsOpen={statsOpen}
+                        setStatsOpen={setStatsOpen}
+                        theme={theme}
+                        darkMode={darkMode}
+                        statsData={statsData}
+                        statsVisibility={statsVisibility}
+                        selectedSectorId={selectedSectorId}
+                        setSelectedSectorId={setSelectedSectorId}
+                        sectors={sectors}
+                        visibleSectors={visibleSectors}
+                        setVisibleSectors={setVisibleSectors}
                     />
-                    <div className={`fixed inset-4 sm:inset-8 md:inset-x-20 md:inset-y-12 lg:inset-x-40 lg:inset-y-16 ${theme.cardSolid} shadow-2xl z-50 rounded-2xl overflow-hidden flex flex-col`}>
-                        <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme.borderLight}`}>
-                            <div>
-                                <h2 className={`text-xl md:text-2xl font-bold ${theme.text}`}>Resumen de mi día</h2>
-                                <p className={`text-xs md:text-sm ${theme.textMuted} mt-1 capitalize`}>{summaryDateLabel}</p>
-                            </div>
-                            <button
-                                onClick={() => setSummaryOpen(false)}
-                                className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
-                                title="Cerrar resumen"
-                            >
-                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
+                )}
+            </Suspense>
 
-                        <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                            <div className={`rounded-xl border ${theme.border} p-4 md:p-5 ${theme.inputAlt} space-y-4`}>
-                                <p className={`text-xs sm:text-sm ${theme.textMuted}`}>
-                                    Este resumen se guarda automáticamente en tu dispositivo para la fecha seleccionada.
-                                </p>
-
-                                <div className="space-y-2">
-                                    <label className={`block text-sm font-semibold ${theme.text}`}>Lo bueno</label>
-                                    <textarea
-                                        value={dailySummary.good}
-                                        onChange={(e) => setDailySummaryField("good", e.target.value)}
-                                        rows={4}
-                                        placeholder="¿Qué salió bien hoy?"
-                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className={`block text-sm font-semibold ${theme.text}`}>Lo malo</label>
-                                    <textarea
-                                        value={dailySummary.bad}
-                                        onChange={(e) => setDailySummaryField("bad", e.target.value)}
-                                        rows={4}
-                                        placeholder="¿Qué no salió como esperabas?"
-                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className={`block text-sm font-semibold ${theme.text}`}>Cómo enfrenté lo malo</label>
-                                    <textarea
-                                        value={dailySummary.howFacedBad}
-                                        onChange={(e) => setDailySummaryField("howFacedBad", e.target.value)}
-                                        rows={4}
-                                        placeholder="¿Cómo lo afrontaste o cómo piensas afrontarlo?"
-                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={`p-4 md:px-6 md:pb-6 border-t ${theme.borderLight} flex justify-end`}>
-                            <button
-                                onClick={() => setSummaryOpen(false)}
-                                className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}
-                            >
-                                Cerrar
-                            </button>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Modal de Estadísticas */}
-            {statsOpen && (
-                <>
-                    <div
-                        className={`fixed inset-0 ${theme.overlay} z-50 transition-opacity`}
-                        onClick={() => setStatsOpen(false)}
-                    />
-                    <div className={`fixed inset-4 md:inset-8 lg:inset-16 ${theme.cardSolid} shadow-2xl z-50 rounded-2xl overflow-hidden flex flex-col`}>
-                        {/* Header del modal */}
-                        <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme.borderLight}`}>
-                            <div>
-                                <h2 className={`text-xl md:text-2xl font-bold ${theme.text}`}>📊 Estadísticas y Progreso</h2>
-                                <p className={`text-xs md:text-sm ${theme.textMuted} mt-1`}>
-                                    {statsData.totalDays} días registrados · Racha actual: {statsData.currentStreak} días
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setStatsOpen(false)}
-                                className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
-                            >
-                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Contenido con scroll */}
-                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                            {statsData.dailyAverage.length === 0 ? (
-                                <div className={`text-center py-12 ${theme.textMuted}`}>
-                                    <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                    <p className="text-lg">No hay datos suficientes aún</p>
-                                    <p className="text-sm mt-2">Comienza a registrar tus puntuaciones para ver estadísticas</p>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Gráfico 1: Media Diaria */}
-                                    {statsVisibility.showDailyAverage && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📈 Evolución de la Media Diaria</h3>
-                                            <ResponsiveContainer width="100%" height={250}>
-                                                <AreaChart data={statsData.dailyAverage}>
-                                                    <defs>
-                                                        <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                    <XAxis
-                                                        dataKey="displayDate"
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <YAxis
-                                                        domain={[0, 10]}
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <Tooltip
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
-                                                    />
-                                                    <Area
-                                                        type="monotone"
-                                                        dataKey="media"
-                                                        stroke="#8884d8"
-                                                        fillOpacity={1}
-                                                        fill="url(#colorMedia)"
-                                                        strokeWidth={2}
-                                                    />
-                                                </AreaChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-
-                                    {/* Gráfico 2: Progresión por Sector */}
-                                    {statsVisibility.showSectorProgress && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                                <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>📊 Progresión por Sector</h3>
-                                                <select
-                                                    value={selectedSectorId}
-                                                    onChange={(e) => setSelectedSectorId(e.target.value)}
-                                                    className={`rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
-                                                >
-                                                    {sectors.map(s => (
-                                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <ResponsiveContainer width="100%" height={250}>
-                                                <LineChart data={statsData.sectorProgress(selectedSectorId)}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                    <XAxis
-                                                        dataKey="displayDate"
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <YAxis
-                                                        domain={[0, 10]}
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <Tooltip
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
-                                                    />
-                                                    <Line
-                                                        type="monotone"
-                                                        dataKey="puntuacion"
-                                                        stroke={sectors.find(s => s.id === selectedSectorId)?.color || "#8884d8"}
-                                                        strokeWidth={3}
-                                                        dot={{ r: 4 }}
-                                                        activeDot={{ r: 6 }}
-                                                    />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-
-                                    {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
-                                    {statsVisibility.showLast7AllSectors && statsData.last7DaysAllSectors && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Evolución Últimos 7 Días - Comparativa</h3>
-
-                                            <ResponsiveContainer width="100%" height={300}>
-                                                <LineChart data={statsData.last7DaysAllSectors}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                    <XAxis
-                                                        dataKey="displayDate"
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <YAxis
-                                                        domain={[0, 10]}
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <Tooltip
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
-                                                        formatter={(value: any, name: string) => [value, name]}
-                                                    />
-                                                    <Legend />
-                                                    {sectors.filter(s => visibleSectors[s.id]).map(sector => (
-                                                        <Line
-                                                            key={sector.id}
-                                                            type="monotone"
-                                                            dataKey={sector.name}
-                                                            stroke={rgbToHex(sector.color)}
-                                                            strokeWidth={2}
-                                                            dot={{ r: 4, fill: rgbToHex(sector.color) }}
-                                                            activeDot={{ r: 6 }}
-                                                            name={sector.name}
-                                                        />
-                                                    ))}
-                                                </LineChart>
-                                            </ResponsiveContainer>
-
-                                            {/* Checkboxes para mostrar/ocultar sectores */}
-                                            <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: theme.borderLight }}>
-                                                <p className={`text-xs font-semibold mb-3 ${theme.textMuted}`}>Mostrar sectores:</p>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                                                    {sectors.map(sector => (
-                                                        <label
-                                                            key={sector.id}
-                                                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${visibleSectors[sector.id]
-                                                                ? darkMode ? 'bg-neutral-700' : 'bg-neutral-100'
-                                                                : darkMode ? 'bg-neutral-800' : 'bg-neutral-50'
-                                                                }`}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={visibleSectors[sector.id] || false}
-                                                                onChange={(e) => {
-                                                                    setVisibleSectors(prev => ({
-                                                                        ...prev,
-                                                                        [sector.id]: e.target.checked
-                                                                    }));
-                                                                }}
-                                                                className="w-4 h-4 cursor-pointer"
-                                                                style={{ accentColor: rgbToHex(sector.color) }}
-                                                            />
-                                                            <div className="flex items-center gap-1 flex-1 min-w-0">
-                                                                <div
-                                                                    className="w-3 h-3 rounded-full flex-shrink-0"
-                                                                    style={{ backgroundColor: rgbToHex(sector.color) }}
-                                                                />
-                                                                <span className={`text-xs truncate ${theme.text}`}>
-                                                                    {sector.name}
-                                                                </span>
-                                                            </div>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Gráfico 3: Comparación de Sectores */}
-                                    {statsVisibility.showComparison && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📊 Comparación: Actual vs Promedio Histórico</h3>
-                                            <ResponsiveContainer width="100%" height={300}>
-                                                <BarChart data={statsData.sectorComparison}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                    <XAxis
-                                                        dataKey="sector"
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '11px' }}
-                                                        angle={-45}
-                                                        textAnchor="end"
-                                                        height={80}
-                                                    />
-                                                    <YAxis
-                                                        domain={[0, 10]}
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <Tooltip
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
-                                                    />
-                                                    <Legend />
-                                                    <Bar dataKey="actual" fill="#82ca9d" name="Puntuación Actual" />
-                                                    <Bar dataKey="promedio" fill="#8884d8" name="Promedio Histórico" />
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-
-                                    {/* Gráfico 4: Tendencia Semanal */}
-                                    {statsVisibility.showWeeklyTrend && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>📅 Promedio por Día de la Semana</h3>
-                                            <ResponsiveContainer width="100%" height={250}>
-                                                <BarChart data={statsData.weeklyData}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
-                                                    <XAxis
-                                                        dataKey="dia"
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <YAxis
-                                                        domain={[0, 10]}
-                                                        stroke={theme.chartText}
-                                                        style={{ fontSize: '12px' }}
-                                                    />
-                                                    <Tooltip
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
-                                                    />
-                                                    <Bar dataKey="media" fill="#ffc658" name="Media" />
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                            <p className={`text-xs ${theme.textMuted} mt-2 text-center`}>
-                                                ¿Qué días de la semana tienes mejor desempeño?
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Gráfico 5: Heat Map de Consistencia */}
-                                    {statsVisibility.showHeatMap && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>🔥 Mapa de Calor - Últimos 60 Días</h3>
-                                            <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
-                                                {statsData.heatMapData.map((day, index) => {
-                                                    const intensity = day.hasData ? Math.round((day.value / 10) * 4) : 0;
-                                                    const colors = darkMode
-                                                        ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
-                                                        : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
-                                                    return (
-                                                        <div
-                                                            key={index}
-                                                            className="aspect-square rounded-sm relative group cursor-pointer"
-                                                            style={{ backgroundColor: colors[intensity] }}
-                                                            title={`${day.displayDate}: ${day.hasData ? day.value.toFixed(1) : 'Sin datos'}`}
-                                                        >
-                                                            <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${theme.cardSolid} px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border ${theme.border}`}>
-                                                                {day.displayDate}: {day.hasData ? day.value.toFixed(1) : 'N/A'}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <div className="flex items-center justify-between mt-4 text-xs">
-                                                <span className={theme.textMuted}>Menos</span>
-                                                <div className="flex gap-1">
-                                                    {[0, 1, 2, 3, 4].map(i => {
-                                                        const colors = darkMode
-                                                            ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
-                                                            : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
-                                                        return (
-                                                            <div
-                                                                key={i}
-                                                                className="w-4 h-4 rounded-sm"
-                                                                style={{ backgroundColor: colors[i] }}
-                                                            />
-                                                        );
-                                                    })}
-                                                </div>
-                                                <span className={theme.textMuted}>Más</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Resumen de Insights */}
-                                    {statsVisibility.showInsights && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>💡 Insights</h3>
-                                            <div className="space-y-2 text-sm">
-                                                {(() => {
-                                                    const lastAvg = statsData.dailyAverage[statsData.dailyAverage.length - 1]?.media || 0;
-                                                    const firstAvg = statsData.dailyAverage[0]?.media || 0;
-                                                    const trend = lastAvg - firstAvg;
-
-                                                    const bestSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
-                                                        current.score > prev.score ? current : prev
-                                                    );
-
-                                                    const worstSectorToday = statsData.todaySectorScores.reduce((prev, current) =>
-                                                        current.score < prev.score ? current : prev
-                                                    );
-
-                                                    const bestSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
-                                                        current.score > prev.score ? current : prev
-                                                    );
-
-                                                    const worstSectorHistorical = statsData.historicalSectorScores.reduce((prev, current) =>
-                                                        current.score < prev.score ? current : prev
-                                                    );
-
-                                                    const bestWeekDay = statsData.weeklyData.reduce((prev, current) =>
-                                                        current.media > prev.media ? current : prev
-                                                    );
-
-                                                    return (
-                                                        <>
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                                <p className={theme.text}>
-                                                                    <span className="font-semibold">Tendencia general:</span>{' '}
-                                                                    {trend > 0 ? (
-                                                                        <span className="text-green-500">↗ Mejorando (+{trend.toFixed(2)})</span>
-                                                                    ) : trend < 0 ? (
-                                                                        <span className="text-red-500">↘ Descendiendo ({trend.toFixed(2)})</span>
-                                                                    ) : (
-                                                                        <span className={theme.textMuted}>→ Estable</span>
-                                                                    )}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                                <p className={theme.text}>
-                                                                    <span className="font-semibold">Tu sector más fuerte:</span>
-                                                                    <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {bestSectorToday.sector} ({bestSectorToday.score}/10)
-                                                                    <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {bestSectorHistorical.sector} ({bestSectorHistorical.score}/10)
-                                                                </p>
-                                                            </div>
-
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                                <p className={theme.text}>
-                                                                    <span className="font-semibold">Área de mejora:</span>
-                                                                    <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Hoy:</span> {worstSectorToday.sector} ({worstSectorToday.score}/10)
-                                                                    <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {worstSectorHistorical.sector} ({worstSectorHistorical.score}/10)
-                                                                </p>
-                                                            </div>
-
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
-                                                                <p className={theme.text}>
-                                                                    <span className="font-semibold">Tu mejor día:</span>
-                                                                    <br />
-                                                                    <span className={`text-xs ${theme.textMuted}`}>De la semana:</span> {bestWeekDay.dia} ({bestWeekDay.media.toFixed(2)}/10 promedio)
-                                                                    <br />
-                                                                    {statsData.bestHistoricalDay && (
-                                                                        <>
-                                                                            <span className={`text-xs ${theme.textMuted}`}>Histórico:</span> {new Date(statsData.bestHistoricalDay.date).toLocaleDateString('es-ES', {
-                                                                                day: '2-digit',
-                                                                                month: 'long',
-                                                                                year: 'numeric'
-                                                                            })} ({statsData.bestHistoricalDay.media}/10)
-                                                                        </>
-                                                                    )}
-                                                                </p>
-                                                            </div>
-                                                        </>
-                                                    );
-                                                })()}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Overlay del drawer */}
-            {drawerOpen && (
-                <div
-                    className={`fixed inset-0 ${theme.overlay} z-40 transition-opacity`}
-                    onClick={() => setDrawerOpen(false)}
-                />
-            )}
-
-            {/* Drawer lateral */}
-            <div
-                className={`fixed top-0 right-0 h-full w-full max-w-lg ${theme.cardSolid} shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto`}
-                style={{
-                    transform: drawerOpen ? "translateX(0)" : "translateX(100%)"
-                }}
-            >
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className={`text-2xl font-bold ${theme.text}`}>Configuración</h2>
-                        <button
-                            onClick={() => setDrawerOpen(false)}
-                            className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
-                        >
-                            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <div>
-                        <h3 className={`text-lg font-semibold mb-3 ${theme.text}`}>Sectores</h3>
-                        <div className="mb-4 flex gap-2">
-                            <input
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                placeholder="Nombre del sector"
-                                className={`flex-1 rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
-                                onKeyPress={(e) => e.key === 'Enter' && addSector()}
-                            />
-                            <button onClick={addSector} className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}>
-                                Añadir
-                            </button>
-                        </div>
-
-                        <ul className="flex flex-col gap-3">
-                            {sectors.map((s, i) => (
-                                <li key={s.id} className={`rounded-xl border ${theme.border} p-3 sm:p-4 ${theme.inputAlt}`}>
-                                    <div className="flex items-center gap-2 mb-3 flex-wrap sm:flex-nowrap">
-                                        <input
-                                            type="color"
-                                            value={rgbToHex(s.color)}
-                                            onChange={(e) =>
-                                                setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, color: e.target.value } : x)))
-                                            }
-                                            title="Color"
-                                            className="h-6 w-6 sm:h-8 sm:w-8 cursor-pointer rounded-md border flex-shrink-0"
-                                        />
-                                        <input
-                                            value={s.name}
-                                            onChange={(e) =>
-                                                setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)))
-                                            }
-                                            className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
-                                        />
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => moveSector(s.id, -1)}
-                                                className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
-                                                disabled={i === 0}
-                                                title="Subir"
-                                            >
-                                                ▲
-                                            </button>
-                                            <button
-                                                onClick={() => moveSector(s.id, +1)}
-                                                className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
-                                                disabled={i === sectors.length - 1}
-                                                title="Bajar"
-                                            >
-                                                ▼
-                                            </button>
-                                            <button
-                                                onClick={() => removeSector(s.id)}
-                                                className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
-                                                title="Eliminar"
-                                            >
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-1 sm:gap-2">
-                                            <span className={`text-xs ${theme.textMuted} w-16 sm:w-20 flex-shrink-0`}>Puntuación:</span>
-                                            <input
-                                                type="range"
-                                                min={0}
-                                                max={RING_COUNT}
-                                                value={scores[s.id] ?? 0}
-                                                onChange={(e) => setScore(s.id, e.target.value)}
-                                                className="flex-1 min-w-0"
-                                            />
-                                            <input
-                                                type="number"
-                                                min={0}
-                                                max={RING_COUNT}
-                                                value={scores[s.id] ?? 0}
-                                                onChange={(e) => setScore(s.id, e.target.value)}
-                                                className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'} flex-shrink-0`}
-                                            />
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    {/* === Sección: Datos (Reset / Export / Import) === */}
-                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <div className={`text-lg font-semibold ${theme.text}`}>Datos</div>
-                                <div className={`text-xs ${theme.textLight}`}>
-                                    Resetea el día actual o guarda/carga tus datos en JSON para poder usarlos en otro dispositivo
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <button
-                                onClick={() => {
-                                    if (confirm("¿Seguro que quieres resetear las puntuaciones del día actual?")) {
-                                        resetDay();
-                                    }
-                                }}
-                                className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
-                            >
-                                Resetear día
-                            </button>
-
-                            <button
-                                onClick={exportJSON}
-                                className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
-                            >
-                                Exportar JSON
-                            </button>
-
-                            <label className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm cursor-pointer text-center transition-colors`}>
-                                Importar JSON
-                                <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
-                            </label>
-                        </div>
-                    </div>
-
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    {/* === Preferencias de Estadísticas === */}
-                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <div className={`text-lg font-semibold ${theme.text}`}>Estadísticas</div>
-                                <div className={`text-xs ${theme.textLight}`}>
-                                    Alterna la visibilidad de las estadísticas
-                                </div>
-                            </div>
-
-                            {/* Master toggle: desactivar todo (oculta también el botón) */}
-                            <button
-                                onClick={() =>
-                                    setStatsVisibility(v => ({ ...v, enabled: !v.enabled }))
-                                }
-                                className={`relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${statsVisibility.enabled ? "bg-green-500/70" : "bg-neutral-400/60"} padding-esp`}
-                                title="Desactivar todo (oculta el botón de estadísticas)"
-                            >
-                                <span
-                                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${statsVisibility.enabled ? "translate-x-6" : "translate-x-0"}`}
-                                />
-                            </button>
-                        </div>
-
-                        {/* Toggles individuales (deshabilitados cuando master OFF) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                            {[
-                                ["showDailyAverage", "📈 Evolución de la Media Diaria"],
-                                ["showSectorProgress", "📊 Progresión por Sector"],
-                                ["showLast7AllSectors", "📅 Últimos 7 días (comparativa)"],
-                                ["showComparison", "📊 Comparación Actual vs Promedio"],
-                                ["showWeeklyTrend", "📅 Promedio por día de la semana"],
-                                ["showHeatMap", "🔥 Heatmap (60 días)"],
-                                ["showInsights", "💡 Insights"],
-                            ].map(([key, label]) => (
-                                <label key={key} className={`flex items-center justify-between p-2 rounded-lg ${theme.card}`}>
-                                    <span className={`text-sm ${theme.text}`}>{label}</span>
-                                    <input
-                                        type="checkbox"
-                                        checked={(statsVisibility as any)[key]}
-                                        disabled={!statsVisibility.enabled}
-                                        onChange={(e) =>
-                                            setStatsVisibility(v => ({ ...v, [key]: e.target.checked } as StatsVisibility))
-                                        }
-                                        className="h-4 w-4 cursor-pointer"
-                                    />
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className={`text-sm font-medium ${theme.text}`}>Tema</div>
-                                <div className={`text-xs ${theme.textLight}`}>
-                                    {darkMode ? "Modo oscuro activado" : "Modo claro activado"}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setDarkMode(!darkMode)}
-                                className={`padding-esp relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${darkMode ? "bg-neutral-600" : "bg-neutral-300"
-                                    }`}
-                            >
-                                <span
-                                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${darkMode ? "translate-x-6" : "translate-x-0"
-                                        }`}
-                                >
-                                    {darkMode ? (
-                                        <svg className="h-6 w-6 p-1 text-neutral-900" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                        </svg>
-                                    ) : (
-                                        <svg className="h-6 w-6 p-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                                        </svg>
-                                    )}
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className={`text-sm font-medium ${theme.text}`}>Tutorial</div>
-                                <div className={`text-xs ${theme.textLight}`}>
-                                    Vuelve a ver la guía interactiva paso a paso de la aplicación.
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setTutorialStep(1)}
-                                className={`${theme.buttonPrimary} rounded-md px-3 py-2 text-sm font-semibold transition-colors`}>
-                                Reiniciar tutorial
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <SettingsDrawer
+                drawerOpen={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                theme={theme}
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
+                newName={newName}
+                setNewName={setNewName}
+                addSector={addSector}
+                sectors={sectors}
+                setSectors={setSectors}
+                moveSector={moveSector}
+                removeSector={removeSector}
+                scores={scores}
+                ringCount={RING_COUNT}
+                setScore={setScore}
+                resetDay={resetDay}
+                exportJSON={exportJSON}
+                importJSON={importJSON}
+                statsVisibility={statsVisibility}
+                setStatsVisibility={setStatsVisibility}
+                onRestartTutorial={restartTutorial}
+            />
         </div>
     );
 }

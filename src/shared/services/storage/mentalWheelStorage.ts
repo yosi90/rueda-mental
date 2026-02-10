@@ -103,15 +103,26 @@ export function saveDarkMode(darkMode: boolean): void {
 
 export function hasTutorialBeenShown(): boolean {
     try {
-        return Boolean(localStorage.getItem(STORAGE_KEYS.tutorialShown));
+        const raw = localStorage.getItem(STORAGE_KEYS.tutorialShown);
+        if (raw === null) return false;
+        if (raw === "false") return false;
+        return true;
     } catch {
         return false;
     }
 }
 
 export function markTutorialAsShown(): void {
+    saveTutorialShown(true);
+}
+
+export function saveTutorialShown(shown: boolean): void {
     try {
-        localStorage.setItem(STORAGE_KEYS.tutorialShown, "true");
+        if (shown) {
+            localStorage.setItem(STORAGE_KEYS.tutorialShown, "true");
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.tutorialShown);
+        }
     } catch {
         // noop
     }
@@ -120,7 +131,19 @@ export function markTutorialAsShown(): void {
 export function loadStatsVisibility(defaultValue: StatsVisibility): StatsVisibility {
     try {
         const raw = localStorage.getItem(STORAGE_KEYS.statsVisibility);
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+            const parsed = JSON.parse(raw) as Partial<StatsVisibility>;
+            return {
+                enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : defaultValue.enabled,
+                showDailyAverage: typeof parsed.showDailyAverage === "boolean" ? parsed.showDailyAverage : defaultValue.showDailyAverage,
+                showSectorProgress: typeof parsed.showSectorProgress === "boolean" ? parsed.showSectorProgress : defaultValue.showSectorProgress,
+                showLast7AllSectors: typeof parsed.showLast7AllSectors === "boolean" ? parsed.showLast7AllSectors : defaultValue.showLast7AllSectors,
+                showComparison: typeof parsed.showComparison === "boolean" ? parsed.showComparison : defaultValue.showComparison,
+                showWeeklyTrend: typeof parsed.showWeeklyTrend === "boolean" ? parsed.showWeeklyTrend : defaultValue.showWeeklyTrend,
+                showHeatMap: typeof parsed.showHeatMap === "boolean" ? parsed.showHeatMap : defaultValue.showHeatMap,
+                showInsights: typeof parsed.showInsights === "boolean" ? parsed.showInsights : defaultValue.showInsights,
+            };
+        }
     } catch {
         // noop
     }

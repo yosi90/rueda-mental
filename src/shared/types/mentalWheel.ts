@@ -55,3 +55,14 @@ export type StatsVisibility = {
     showHeatMap: boolean;
     showInsights: boolean;
 };
+
+export interface MentalWheelBackup {
+    version?: number;
+    config?: Sector[];
+    scoresByDate?: ScoresByDate;
+    commentsByDate?: CommentsByDate;
+    dailySummaryByDate?: DailySummaryByDate;
+    darkMode?: boolean;
+    tutorialShown?: boolean;
+    statsVisibility?: Partial<StatsVisibility>;
+}
