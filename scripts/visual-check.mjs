@@ -199,20 +199,18 @@ const report = [];
     const valueOf = (name) => page.getByRole("slider", { name }).getAttribute("aria-valuetext");
     const box = await page.locator("svg.select-none").boundingBox();
 
-    // Clic en un anillo concreto de «Familia» (sector 0) y deshacer
+    // Clic en un anillo de «Familia»: puntúa sin aviso; repetirlo quita la nota con aviso y deshacer
     const before = await valueOf("Familia");
     const p = await sectorPoint(page, 0, 8, 0.45);
     await page.mouse.click(p.x, p.y);
     const afterClick = await valueOf("Familia");
+    const toastsAfterScore = await page.getByRole("status").filter({ hasText: "Deshacer" }).count();
+    await page.mouse.click(p.x, p.y);
+    const cleared = await valueOf("Familia");
     const toastText = await page.getByRole("status").filter({ hasText: "Familia" }).textContent();
     await page.screenshot({ path: `${OUT}/11-toast-undo.png` });
     await page.getByRole("button", { name: "Deshacer" }).click();
-    report.push(`clic rueda: ${before} → ${afterClick} (aviso «${toastText?.replace("Deshacer", "").replace("✕", "").trim()}») → deshacer: ${await valueOf("Familia")}`);
-
-    // Mismo anillo dos veces = quitar puntuación
-    await page.mouse.click(p.x, p.y);
-    await page.mouse.click(p.x, p.y);
-    report.push(`mismo anillo dos veces: ${await valueOf("Familia")}`);
+    report.push(`clic rueda: ${before} → ${afterClick} (avisos al puntuar: ${toastsAfterScore}) → mismo anillo: ${cleared} (aviso «${toastText?.replace("Deshacer", "").replace("✕", "").trim()}») → deshacer: ${await valueOf("Familia")}`);
 
     // Borrar sector desde Configuración: diálogo propio, cancelar, borrar y deshacer
     await page.getByRole("button", { name: "Configuración" }).click();

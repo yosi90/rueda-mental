@@ -131,8 +131,9 @@ export function FloatingInfoPanel({
     const sosButtonClass = "border border-red-300 bg-white/95 text-red-700 hover:bg-red-50 dark:border-red-400/40 dark:bg-neutral-800/95 dark:text-red-200 dark:hover:bg-neutral-700";
 
     return (
-        <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
-            <div className="flex flex-col gap-2 w-fit">
+        <div className="fixed z-40 inset-x-0 top-0 flex flex-col gap-2 sm:inset-x-auto sm:top-4 sm:left-4 sm:flex-row sm:items-start sm:gap-3">
+            {/* Media del día y SOS: solo desde sm (en móvil, SOS está en Configuración) */}
+            <div className="hidden sm:flex flex-col gap-2 w-fit">
                 <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg min-w-40 sm:min-w-none`}>
                     <div className={`text-xs sm:text-sm ${theme.textMuted}`}>
                         {hasHoverInfo ? (
@@ -158,13 +159,14 @@ export function FloatingInfoPanel({
                 </button>
             </div>
 
-            <div className="flex flex-col gap-2 mt-1 sm:mt-0">
-            <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
+            <div className="flex flex-col gap-2">
+            {/* En móvil, barra superior a todo el ancho; desde sm, tarjeta flotante */}
+            <div className={`border-b ${theme.borderLight} bg-white dark:bg-neutral-800 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:rounded-2xl sm:border-0 sm:bg-white/90 sm:dark:bg-neutral-800/90 sm:backdrop-blur-sm sm:px-4 sm:py-3 sm:shadow-lg`}>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={onPrevDay}
-                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
+                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 inline-flex items-center justify-center min-h-9 min-w-9 sm:min-h-0 sm:min-w-0 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
                         title={`${t("panel.prevDay")} (←)`}
                         aria-keyshortcuts="ArrowLeft"
                         aria-label={t("panel.prevDay")}
@@ -172,11 +174,11 @@ export function FloatingInfoPanel({
                         <span aria-hidden="true">&lt;</span>
                     </button>
 
-                    <div className="relative" ref={calendarRef}>
+                    <div className="relative flex flex-1 justify-center sm:flex-none" ref={calendarRef}>
                         <button
                             type="button"
                             onClick={() => setCalendarOpen((prev) => !prev)}
-                            className={`text-xs sm:text-sm border-0 bg-transparent px-1 py-0.5 rounded ${theme.text} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
+                            className={`text-sm min-h-9 border-0 bg-transparent px-2 py-0.5 rounded ${theme.text} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
                             aria-label={`${t("panel.selectDate")}: ${formattedDate}`}
                             aria-haspopup="dialog"
                             aria-expanded={calendarOpen}
@@ -195,7 +197,7 @@ export function FloatingInfoPanel({
                             <div
                                 role="dialog"
                                 aria-label={monthLabel}
-                                className={`absolute top-full left-0 mt-2 z-50 rounded-xl border p-3 shadow-xl backdrop-blur-sm ${theme.card} min-w-[250px]`}
+                                className={`absolute top-full left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 mt-2 z-50 rounded-xl border p-3 shadow-xl backdrop-blur-sm ${theme.card} min-w-[250px]`}
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <button
@@ -278,7 +280,7 @@ export function FloatingInfoPanel({
                     <button
                         type="button"
                         onClick={onNextDay}
-                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
+                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 inline-flex items-center justify-center min-h-9 min-w-9 sm:min-h-0 sm:min-w-0 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
                         title={`${t("panel.nextDay")} (→)`}
                         aria-keyshortcuts="ArrowRight"
                         aria-label={t("panel.nextDay")}
@@ -289,7 +291,7 @@ export function FloatingInfoPanel({
                     <button
                         type="button"
                         onClick={onToday}
-                        className={`${theme.buttonPrimary} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
+                        className={`${theme.buttonPrimary} min-h-9 sm:min-h-0 rounded-md px-3 py-1 text-sm font-medium transition-colors`}
                         title={`${t("panel.goToday")} (T)`}
                         aria-keyshortcuts="T"
                     >
@@ -299,7 +301,7 @@ export function FloatingInfoPanel({
             </div>
 
             {referenceLabel && (
-                <div className={`self-start inline-flex items-center gap-2 rounded-xl ${theme.card} backdrop-blur-sm px-3 py-1 text-xs shadow-md ${theme.textMuted}`}>
+                <div className={`mx-3 sm:mx-0 self-start inline-flex items-center gap-2 rounded-xl ${theme.card} backdrop-blur-sm px-3 py-1 text-xs shadow-md ${theme.textMuted}`}>
                     <svg width="18" height="4" aria-hidden="true" className="shrink-0">
                         <line x1="1" y1="2" x2="17" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" />
                     </svg>
@@ -312,7 +314,7 @@ export function FloatingInfoPanel({
                     type="button"
                     onClick={copySource.onCopy}
                     title={t("panel.copyFromTitle", { date: copySource.label })}
-                    className={`self-start inline-flex items-center gap-1.5 rounded-xl ${theme.card} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${theme.text} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+                    className={`mx-3 sm:mx-0 self-start inline-flex items-center gap-1.5 rounded-xl ${theme.card} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${theme.text} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
                 >
                     <span aria-hidden="true">↺</span>
                     {t("panel.copyFrom", { date: copySource.label })}

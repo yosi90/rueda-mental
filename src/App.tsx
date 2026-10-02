@@ -27,7 +27,7 @@ import {
     RING_COUNT,
 } from "./features/wheel/utils/wheelGeometry";
 import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
-import { TopRightButtons } from "./shared/components/TopRightButtons";
+import { MainActionButtons } from "./shared/components/MainActionButtons";
 import { useFeedback } from "./shared/feedback/FeedbackProvider";
 import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
 import { useI18n } from "./shared/i18n/I18nContext";
@@ -142,17 +142,15 @@ export default function MentalWheelApp() {
         data.setScore(dateStr, sectorId, toRawScore(clamped, RING_COUNT, isScaleInverted));
     }
 
-    // Clic en la rueda: repetir la misma puntuación la quita.
+    // Clic en la rueda: repetir la misma puntuación la quita (solo entonces se ofrece deshacer).
     function handleWheelScore(sectorId: string, level: number): void {
         const date = dateStr;
         const previous = scoresByDate[date]?.[sectorId];
         const next = previous === level ? 0 : level;
         data.setScore(date, sectorId, next);
-        const name = sectorName(sectorId);
+        if (next > 0) return;
         notify({
-            message: next > 0
-                ? t("toast.scoreSet", { name, value: toDisplay(next) })
-                : t("toast.scoreCleared", { name }),
+            message: t("toast.scoreCleared", { name: sectorName(sectorId) }),
             actionLabel: t("common.undo"),
             onAction: () => data.restoreScore(date, sectorId, previous),
         });
@@ -237,7 +235,7 @@ export default function MentalWheelApp() {
 
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`}>
-            <TopRightButtons
+            <MainActionButtons
                 showStatsButton={statsVisibility.enabled}
                 onOpenStats={() => {
                     setSummaryOpen(false);
@@ -255,7 +253,7 @@ export default function MentalWheelApp() {
                 <button
                     type="button"
                     onClick={resetZoom}
-                    className={`fixed bottom-4 right-4 z-40 rounded-full ${theme.buttonPrimary} px-4 py-3 shadow-lg transition-colors text-sm font-medium`}
+                    className={`fixed bottom-20 sm:bottom-4 right-4 z-40 rounded-full ${theme.buttonPrimary} px-4 py-3 shadow-lg transition-colors text-sm font-medium`}
                     title={t("app.resetZoom")}
                     aria-label={t("app.resetZoom")}
                 >
@@ -288,14 +286,15 @@ export default function MentalWheelApp() {
             />
 
             {dateStr > todayStr && (
-                <div className="fixed top-22 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold shadow-lg motion-safe:animate-pulse" role="status">
+                <div className="fixed bottom-20 sm:bottom-auto sm:top-22 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold shadow-lg motion-safe:animate-pulse" role="status">
                     {t("app.futureDateWarning")}
                 </div>
             )}
 
             {/* Rueda principal */}
             <p id="wheel-keyboard-hint" className="sr-only">{t("wheel.keyboardHint")}</p>
-            <div className="absolute inset-0 flex items-center justify-center" style={{ padding: "80px 20px 20px 20px" }}>
+            {/* Márgenes para las barras superior e inferior en móvil y para los paneles flotantes desde sm */}
+            <div className="absolute inset-0 flex items-center justify-center px-3 pt-28 pb-20 sm:px-5 sm:pt-20 sm:pb-5">
                 <div className="w-full h-full max-h-full flex items-center justify-center">
                     <svg
                         ref={svgRef}

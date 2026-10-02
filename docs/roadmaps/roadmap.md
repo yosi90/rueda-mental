@@ -83,6 +83,13 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 - [x] Banderas del selector de idioma sustituidas por el código de idioma (las banderas son de países, no de idiomas).
 - [x] Zoom con la rueda del ratón sin error de listener pasivo; importar JSON accesible con teclado.
 
+### Ajustes tras revisión en móvil
+- [x] Pantallas pequeñas: fecha como barra superior a todo el ancho y acciones (estadísticas, resumen, configuración) en barra inferior; sin «Media del día».
+- [x] Avisos a todo el ancho y por encima de la barra inferior en móvil; animación de entrada corregida.
+- [x] Sin aviso al poner o cambiar una puntuación (solo al quitarla, con «Deshacer»).
+- [x] Puntuación en pastilla circular entre la rueda y el nombre (distinguible, centrada y sin recortes).
+- [x] Textos del tutorial sin referencias a posiciones («arriba a la derecha»).
+
 ---
 
 ## Hito 5 — Nuevas funciones

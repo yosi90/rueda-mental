@@ -159,10 +159,11 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
             onBlur={() => setPaused(false)}
-            className={`fixed bottom-4 left-1/2 z-[90] flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-2.5 text-sm shadow-xl motion-safe:animate-[toast-in_150ms_ease-out] ${toneClass}`}
-            style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
+            className={`fixed z-[90] inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm shadow-xl motion-safe:animate-[toast-in_150ms_ease-out]
+                sm:inset-x-auto sm:left-1/2 sm:bottom-4 sm:w-max sm:max-w-[calc(100%-2rem)] sm:-translate-x-1/2 ${toneClass}`}
         >
-            <span>{toast.message}</span>
+            {/* En móvil: ancho completo y por encima de la barra inferior de acciones */}
+            <span className="flex-1 min-w-0">{toast.message}</span>
             {toast.actionLabel && toast.onAction && (
                 <button
                     type="button"
