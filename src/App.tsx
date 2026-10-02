@@ -15,7 +15,6 @@ import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
 import { TopRightButtons } from "./shared/components/TopRightButtons";
 import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
 import { useI18n } from "./shared/i18n/I18nContext";
-import { isLanguage } from "./shared/i18n/translations";
 import {
     hasTutorialBeenShown,
     loadComments,
@@ -46,6 +45,7 @@ import type {
     SectorWithAngles,
     StatsVisibility,
 } from "./shared/types/mentalWheel";
+import { parseBackup } from "./shared/services/io/backup";
 import type { ThemeClasses } from "./shared/types/theme";
 import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/utils/date";
 import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
@@ -94,22 +94,6 @@ export default function MentalWheelApp() {
         return a0 <= a1 ? (ang >= a0 && ang <= a1)
             : (ang >= a0 || ang <= a1); // sector que cruza 360°
     };
-    const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
-        typeof value === "object" && value !== null && !Array.isArray(value);
-    const normalizeImportedStatsVisibility = (value: unknown): StatsVisibility | null => {
-        if (!isObjectRecord(value)) return null;
-        return {
-            enabled: typeof value.enabled === "boolean" ? value.enabled : DEFAULT_STATS_VISIBILITY.enabled,
-            showDailyAverage: typeof value.showDailyAverage === "boolean" ? value.showDailyAverage : DEFAULT_STATS_VISIBILITY.showDailyAverage,
-            showSectorProgress: typeof value.showSectorProgress === "boolean" ? value.showSectorProgress : DEFAULT_STATS_VISIBILITY.showSectorProgress,
-            showLast7AllSectors: typeof value.showLast7AllSectors === "boolean" ? value.showLast7AllSectors : DEFAULT_STATS_VISIBILITY.showLast7AllSectors,
-            showComparison: typeof value.showComparison === "boolean" ? value.showComparison : DEFAULT_STATS_VISIBILITY.showComparison,
-            showWeeklyTrend: typeof value.showWeeklyTrend === "boolean" ? value.showWeeklyTrend : DEFAULT_STATS_VISIBILITY.showWeeklyTrend,
-            showHeatMap: typeof value.showHeatMap === "boolean" ? value.showHeatMap : DEFAULT_STATS_VISIBILITY.showHeatMap,
-            showInsights: typeof value.showInsights === "boolean" ? value.showInsights : DEFAULT_STATS_VISIBILITY.showInsights,
-        };
-    };
-
     // --- Estado ---
     const todayStr = formatDateInput(new Date());
     const [dateStr, setDateStr] = useState<string>(todayStr);
@@ -147,7 +131,7 @@ export default function MentalWheelApp() {
         sectors.forEach(s => initial[s.id] = true);
         return initial;
     });
-    const { tutorialStep, restartTutorial } = useTutorialFlow({
+    const { tutorialStep, tutorialSector, restartTutorial, skipTutorial } = useTutorialFlow({
         sectors,
         scoresByDate,
         dateStr,
@@ -414,28 +398,28 @@ export default function MentalWheelApp() {
     }
     function importJSON(evt: React.ChangeEvent<HTMLInputElement>): void {
         const file = evt.target.files?.[0];
+        evt.target.value = "";
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-            try {
-                const data: MentalWheelBackup = JSON.parse(String(reader.result));
-                if (Array.isArray(data.config)) setSectors(data.config);
-                if (isObjectRecord(data.scoresByDate)) setScoresByDate(data.scoresByDate as ScoresByDate);
-                if (isObjectRecord(data.commentsByDate)) setCommentsByDate(data.commentsByDate as CommentsByDate);
-                if (isObjectRecord(data.dailySummaryByDate)) setDailySummaryByDate(data.dailySummaryByDate as DailySummaryByDate);
-                if (typeof data.scaleInverted === "boolean") setIsScaleInverted(data.scaleInverted);
-                if (typeof data.darkMode === "boolean") setDarkMode(data.darkMode);
-                if (typeof data.language === "string" && isLanguage(data.language)) setLanguage(data.language);
-                if (typeof data.tutorialShown === "boolean") saveTutorialShown(data.tutorialShown);
-                const importedStatsVisibility = normalizeImportedStatsVisibility(data.statsVisibility);
-                if (importedStatsVisibility) setStatsVisibility(importedStatsVisibility);
-            } catch (error) {
+            const backup = parseBackup(String(reader.result));
+            if (!backup) {
                 alert(t("app.invalidJson"));
-                console.error("Error al importar JSON:", error);
+                return;
             }
+            if (!confirm(t("data.confirmImport"))) return;
+
+            if (backup.config) setSectors(backup.config);
+            if (backup.scoresByDate) setScoresByDate(backup.scoresByDate);
+            if (backup.commentsByDate) setCommentsByDate(backup.commentsByDate);
+            if (backup.dailySummaryByDate) setDailySummaryByDate(backup.dailySummaryByDate);
+            if (backup.scaleInverted !== undefined) setIsScaleInverted(backup.scaleInverted);
+            if (backup.darkMode !== undefined) setDarkMode(backup.darkMode);
+            if (backup.language) setLanguage(backup.language);
+            if (backup.tutorialShown !== undefined) saveTutorialShown(backup.tutorialShown);
+            if (backup.statsVisibility) setStatsVisibility(backup.statsVisibility);
         };
         reader.readAsText(file);
-        evt.target.value = "";
     }
 
     const [statsVisibility, setStatsVisibility] = useState<StatsVisibility>(() =>
@@ -653,7 +637,8 @@ export default function MentalWheelApp() {
             <TutorialOverlay
                 tutorialStep={tutorialStep}
                 isTouchDevice={isTouchDevice}
-                tutorialSectorName={sectors[3]?.name}
+                tutorialSectorName={tutorialSector?.name}
+                onSkip={skipTutorial}
                 theme={theme}
             />
 

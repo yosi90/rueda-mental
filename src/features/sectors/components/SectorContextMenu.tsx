@@ -163,7 +163,7 @@ function SectorMenuContent({
                     title={t("sectorMenu.deleteTitle")}
                     className={`rounded-md border ${theme.border} ${theme.button} px-1 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] sm:text-xs transition-colors flex-shrink-0`}
                     onClick={() => {
-                        if (confirm(t("sectorMenu.deleteConfirm"))) {
+                        if (confirm(t("sectors.deleteConfirm", { name: sector.name }))) {
                             removeSector(sector.id);
                             onClose();
                         }

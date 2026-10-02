@@ -85,6 +85,7 @@ const es = {
     "sectors.moveUp": "Subir",
     "sectors.moveDown": "Bajar",
     "sectors.delete": "Eliminar",
+    "sectors.deleteConfirm": "¿Eliminar «{{name}}»? Se borrarán también todas sus puntuaciones y comentarios.",
     "sectors.scoreLabel": "Puntuacion:",
 
     "scale.title": "Invertir orden de numeracion",
@@ -98,6 +99,7 @@ const es = {
     "data.resetDay": "Resetear dia",
     "data.exportJson": "Exportar JSON",
     "data.importJson": "Importar JSON",
+    "data.confirmImport": "Importar este archivo reemplazará todos tus datos actuales. ¿Continuar?",
 
     "statsVisibility.title": "Estadisticas",
     "statsVisibility.description": "Alterna la visibilidad de las estadisticas",
@@ -117,6 +119,7 @@ const es = {
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Vuelve a ver la guia interactiva paso a paso de la aplicacion.",
     "tutorial.section.restart": "Reiniciar tutorial",
+    "tutorial.skip": "Saltar tutorial",
 
     "legal.title": "Aviso legal y privacidad",
     "legal.p1": "Esta web es gratuita y no realiza trafico de datos personales hacia servidores del titular. No se usan cookies de analitica, publicidad ni perfiles de terceros.",
@@ -134,7 +137,6 @@ const es = {
     "summary.howFacedPlaceholder": "Como lo afrontaste o como piensas afrontarlo?",
 
     "sectorMenu.deleteTitle": "Eliminar",
-    "sectorMenu.deleteConfirm": "Eliminar este sector?",
     "sectorMenu.comment": "Comentario",
     "sectorMenu.deleteCommentTitle": "Eliminar comentario del dia",
     "sectorMenu.commentPlaceholder": "Escribe tu comentario...",
@@ -266,6 +268,7 @@ const en: Record<keyof typeof es, string> = {
     "sectors.moveUp": "Move up",
     "sectors.moveDown": "Move down",
     "sectors.delete": "Delete",
+    "sectors.deleteConfirm": "Delete “{{name}}”? All its scores and comments will be deleted too.",
     "sectors.scoreLabel": "Score:",
 
     "scale.title": "Invert score order",
@@ -279,6 +282,7 @@ const en: Record<keyof typeof es, string> = {
     "data.resetDay": "Reset day",
     "data.exportJson": "Export JSON",
     "data.importJson": "Import JSON",
+    "data.confirmImport": "Importing this file will replace all your current data. Continue?",
 
     "statsVisibility.title": "Statistics",
     "statsVisibility.description": "Toggle statistics visibility",
@@ -298,6 +302,7 @@ const en: Record<keyof typeof es, string> = {
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Replay the interactive step-by-step guide.",
     "tutorial.section.restart": "Restart tutorial",
+    "tutorial.skip": "Skip tutorial",
 
     "legal.title": "Legal notice and privacy",
     "legal.p1": "This website is free and does not send personal data to owner servers. No analytics, advertising cookies, or third-party profiling are used.",
@@ -315,7 +320,6 @@ const en: Record<keyof typeof es, string> = {
     "summary.howFacedPlaceholder": "How did you handle it or how do you plan to?",
 
     "sectorMenu.deleteTitle": "Delete",
-    "sectorMenu.deleteConfirm": "Delete this sector?",
     "sectorMenu.comment": "Comment",
     "sectorMenu.deleteCommentTitle": "Delete today's comment",
     "sectorMenu.commentPlaceholder": "Write your comment...",
@@ -447,6 +451,7 @@ const pt: Record<keyof typeof es, string> = {
     "sectors.moveUp": "Subir",
     "sectors.moveDown": "Descer",
     "sectors.delete": "Eliminar",
+    "sectors.deleteConfirm": "Eliminar «{{name}}»? Todas as suas pontuações e comentários também serão apagados.",
     "sectors.scoreLabel": "Pontuacao:",
 
     "scale.title": "Inverter ordem da escala",
@@ -460,6 +465,7 @@ const pt: Record<keyof typeof es, string> = {
     "data.resetDay": "Repor dia",
     "data.exportJson": "Exportar JSON",
     "data.importJson": "Importar JSON",
+    "data.confirmImport": "Importar este ficheiro vai substituir todos os teus dados atuais. Continuar?",
 
     "statsVisibility.title": "Estatisticas",
     "statsVisibility.description": "Alterna a visibilidade das estatisticas",
@@ -478,6 +484,7 @@ const pt: Record<keyof typeof es, string> = {
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Volta a ver o guia interativo passo a passo.",
     "tutorial.section.restart": "Reiniciar tutorial",
+    "tutorial.skip": "Saltar tutorial",
 
     "legal.title": "Aviso legal e privacidade",
     "legal.p1": "Este site e gratuito e nao envia dados pessoais para servidores do titular. Nao sao usados cookies de analitica, publicidade ou perfis de terceiros.",
@@ -495,7 +502,6 @@ const pt: Record<keyof typeof es, string> = {
     "summary.howFacedPlaceholder": "Como enfrentaste isso ou como pensas enfrentar?",
 
     "sectorMenu.deleteTitle": "Eliminar",
-    "sectorMenu.deleteConfirm": "Eliminar este setor?",
     "sectorMenu.comment": "Comentario",
     "sectorMenu.deleteCommentTitle": "Eliminar comentario de hoje",
     "sectorMenu.commentPlaceholder": "Escreve o teu comentario...",
@@ -627,6 +633,7 @@ const de: Record<keyof typeof es, string> = {
     "sectors.moveUp": "Nach oben",
     "sectors.moveDown": "Nach unten",
     "sectors.delete": "Loeschen",
+    "sectors.deleteConfirm": "„{{name}}“ löschen? Alle Bewertungen und Kommentare dazu werden ebenfalls gelöscht.",
     "sectors.scoreLabel": "Punktzahl:",
 
     "scale.title": "Skalenreihenfolge umkehren",
@@ -640,6 +647,7 @@ const de: Record<keyof typeof es, string> = {
     "data.resetDay": "Tag zuruecksetzen",
     "data.exportJson": "JSON exportieren",
     "data.importJson": "JSON importieren",
+    "data.confirmImport": "Beim Importieren dieser Datei werden alle aktuellen Daten ersetzt. Fortfahren?",
 
     "statsVisibility.title": "Statistiken",
     "statsVisibility.description": "Sichtbarkeit der Statistiken umschalten",
@@ -658,6 +666,7 @@ const de: Record<keyof typeof es, string> = {
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Interaktive Schritt-fuer-Schritt-Anleitung erneut anzeigen.",
     "tutorial.section.restart": "Tutorial neu starten",
+    "tutorial.skip": "Tutorial überspringen",
 
     "legal.title": "Rechtliches und Datenschutz",
     "legal.p1": "Diese Website ist kostenlos und uebermittelt keine personenbezogenen Daten an Server des Betreibers. Es werden keine Analyse-, Werbe- oder Drittanbieter-Cookies verwendet.",
@@ -675,7 +684,6 @@ const de: Record<keyof typeof es, string> = {
     "summary.howFacedPlaceholder": "Wie hast du es bewaeltigt oder wie willst du es angehen?",
 
     "sectorMenu.deleteTitle": "Loeschen",
-    "sectorMenu.deleteConfirm": "Diesen Bereich loeschen?",
     "sectorMenu.comment": "Kommentar",
     "sectorMenu.deleteCommentTitle": "Heutigen Kommentar loeschen",
     "sectorMenu.commentPlaceholder": "Schreibe deinen Kommentar...",

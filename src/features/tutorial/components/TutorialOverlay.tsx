@@ -6,6 +6,7 @@ interface TutorialOverlayProps {
     isTouchDevice: boolean;
     tutorialSectorName?: string;
     theme: Pick<ThemeClasses, "text">;
+    onSkip: () => void;
 }
 
 export function TutorialOverlay({
@@ -13,12 +14,23 @@ export function TutorialOverlay({
     isTouchDevice,
     tutorialSectorName,
     theme,
+    onSkip,
 }: TutorialOverlayProps) {
     const { t } = useI18n();
     const sectorName = tutorialSectorName ?? "...";
 
     return (
         <>
+            {tutorialStep >= 1 && tutorialStep <= 5 && (
+                <button
+                    type="button"
+                    onClick={onSkip}
+                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[71] rounded-full bg-neutral-900/80 text-white px-4 py-2 text-sm font-medium shadow-lg hover:bg-neutral-900 transition-colors"
+                >
+                    {t("tutorial.skip")}
+                </button>
+            )}
+
             {tutorialStep === 1 && (
                 <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`${theme.text} text-sm sm:text-lg text-center`}>

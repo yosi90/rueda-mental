@@ -47,7 +47,7 @@ export function SectorsSettingsSection({
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder={t("sectors.newPlaceholder")}
                     className={`flex-1 rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
-                    onKeyPress={(e) => e.key === "Enter" && addSector()}
+                    onKeyDown={(e) => e.key === "Enter" && addSector()}
                 />
                 <button onClick={addSector} className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}>
                     {t("sectors.add")}
@@ -95,7 +95,9 @@ export function SectorsSettingsSection({
                                     ▼
                                 </button>
                                 <button
-                                    onClick={() => removeSector(s.id)}
+                                    onClick={() => {
+                                        if (confirm(t("sectors.deleteConfirm", { name: s.name }))) removeSector(s.id);
+                                    }}
                                     className={`rounded-md border ${theme.border} ${theme.button} px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs transition-colors flex-shrink-0`}
                                     title={t("sectors.delete")}
                                 >

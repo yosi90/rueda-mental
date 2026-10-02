@@ -5,6 +5,7 @@ import type {
     Sector,
     StatsVisibility,
 } from "../../types/mentalWheel";
+import { normalizeStatsVisibility } from "../../utils/statsVisibility";
 
 const STORAGE_KEYS = {
     config: "mental-wheel-config-v1",
@@ -157,19 +158,7 @@ export function saveTutorialShown(shown: boolean): void {
 export function loadStatsVisibility(defaultValue: StatsVisibility): StatsVisibility {
     try {
         const raw = localStorage.getItem(STORAGE_KEYS.statsVisibility);
-        if (raw) {
-            const parsed = JSON.parse(raw) as Partial<StatsVisibility>;
-            return {
-                enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : defaultValue.enabled,
-                showDailyAverage: typeof parsed.showDailyAverage === "boolean" ? parsed.showDailyAverage : defaultValue.showDailyAverage,
-                showSectorProgress: typeof parsed.showSectorProgress === "boolean" ? parsed.showSectorProgress : defaultValue.showSectorProgress,
-                showLast7AllSectors: typeof parsed.showLast7AllSectors === "boolean" ? parsed.showLast7AllSectors : defaultValue.showLast7AllSectors,
-                showComparison: typeof parsed.showComparison === "boolean" ? parsed.showComparison : defaultValue.showComparison,
-                showWeeklyTrend: typeof parsed.showWeeklyTrend === "boolean" ? parsed.showWeeklyTrend : defaultValue.showWeeklyTrend,
-                showHeatMap: typeof parsed.showHeatMap === "boolean" ? parsed.showHeatMap : defaultValue.showHeatMap,
-                showInsights: typeof parsed.showInsights === "boolean" ? parsed.showInsights : defaultValue.showInsights,
-            };
-        }
+        if (raw) return normalizeStatsVisibility(JSON.parse(raw), defaultValue) ?? defaultValue;
     } catch {
         // noop
     }
