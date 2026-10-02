@@ -217,22 +217,7 @@ export default function MentalWheelApp() {
         notifyUndoable(t("toast.imported"), snapshot);
     }
 
-    const {
-        scale,
-        translateX,
-        translateY,
-        isPanning,
-        handleSvgContextMenu,
-        handleSvgClick,
-        handleSvgMove,
-        handleWheel,
-        handleTouchStart,
-        handleTouchMove,
-        handleTouchEnd,
-        handleMouseDown,
-        handleMouseUp,
-        resetZoom,
-    } = useWheelInteractions({
+    const { scale, translateX, translateY, isPanning, resetZoom, handlers: wheelHandlers } = useWheelInteractions({
         svgRef,
         size: SIZE,
         cx,
@@ -310,19 +295,10 @@ export default function MentalWheelApp() {
                         ref={svgRef}
                         role="group"
                         aria-label={t("wheel.label")}
-                        onContextMenu={handleSvgContextMenu}
+                        {...wheelHandlers}
                         width="100%"
                         height="100%"
                         viewBox={`0 0 ${SIZE} ${SIZE}`}
-                        onClick={handleSvgClick}
-                        onMouseMove={handleSvgMove}
-                        onMouseLeave={() => setHoverInfo(null)}
-                        onWheel={handleWheel}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        onMouseDown={handleMouseDown}
-                        onMouseUp={handleMouseUp}
                         className="select-none touch-none drop-shadow-2xl"
                         style={{ maxWidth: "100%", maxHeight: "100%", cursor: scale === 1 ? "pointer" : isPanning ? "grabbing" : "grab", touchAction: "none" }}
                         preserveAspectRatio="xMidYMid meet"

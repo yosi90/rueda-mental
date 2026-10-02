@@ -1,18 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
     Dispatch,
     MouseEvent as ReactMouseEvent,
+    PointerEvent as ReactPointerEvent,
     RefObject,
     SetStateAction,
-    Touch as ReactTouchPoint,
-    TouchEvent as ReactTouchEvent,
-    WheelEvent as ReactWheelEvent,
 } from "react";
-import type {
-    HoverInfo,
-    InfoMenuContextual,
-    SectorWithAngles,
-} from "../../../shared/types/mentalWheel";
+import type { HoverInfo, InfoMenuContextual, SectorWithAngles } from "../../../shared/types/mentalWheel";
+import { normalizeDeg } from "../utils/wheelGeometry";
 
 interface UseWheelInteractionsParams {
     svgRef: RefObject<SVGSVGElement | null>;
@@ -21,7 +16,7 @@ interface UseWheelInteractionsParams {
     cy: number;
     radius: number;
     sectorsWithAngles: SectorWithAngles[];
-    inSector: (ang: number, sector: SectorWithAngles) => boolean;
+    inSector: (angle: number, sector: SectorWithAngles) => boolean;
     distanceToLevel: (distance: number) => number;
     /** Clic en un sector: `level` es la puntuación interna (anillo) pulsada. */
     onWheelScore: (sectorId: string, level: number) => void;
@@ -29,23 +24,21 @@ interface UseWheelInteractionsParams {
     setInfoMenuContextual: Dispatch<SetStateAction<InfoMenuContextual | null>>;
 }
 
-interface PointHit {
-    dist: number;
-    sector: SectorWithAngles | undefined;
-}
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 5;
+const DRAG_THRESHOLD_PX = 4;
+const LONG_PRESS_MS = 600;
 
 function clamp(v: number, min: number, max: number): number {
     return Math.max(min, Math.min(max, v));
 }
 
-function toDeg(rad: number): number {
-    return (rad * 180) / Math.PI;
-}
-
-function normDeg(d: number): number {
-    return ((d % 360) + 360) % 360;
-}
-
+/**
+ * Interacciones de la rueda con Pointer Events (ratón, táctil y lápiz):
+ * clic para puntuar, clic derecho / pulsación larga para el menú, rueda o pellizco para zoom
+ * y arrastre para desplazar (solo con zoom distinto de 1).
+ * El estado transitorio del gesto vive en refs para no re-renderizar en cada movimiento.
+ */
 export function useWheelInteractions({
     svgRef,
     size,
@@ -59,212 +52,203 @@ export function useWheelInteractions({
     setHoverInfo,
     setInfoMenuContextual,
 }: UseWheelInteractionsParams) {
-    const [scale, setScale] = useState<number>(1);
-    const [translateX, setTranslateX] = useState<number>(0);
-    const [translateY, setTranslateY] = useState<number>(0);
-    const [isPanning, setIsPanning] = useState<boolean>(false);
-    const [startPan, setStartPan] = useState<{ x: number; y: number } | null>(null);
-    const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
-    const [hasPanned, setHasPanned] = useState<boolean>(false);
+    const [scale, setScale] = useState(1);
+    const [translate, setTranslate] = useState({ x: 0, y: 0 });
+    const [isPanning, setIsPanning] = useState(false);
 
+    const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+    const gestureRef = useRef({
+        startX: 0,
+        startY: 0,
+        lastX: 0,
+        lastY: 0,
+        moved: false,
+        pinchDistance: null as number | null,
+        suppressClick: false,
+    });
     const longPressTimerRef = useRef<number | null>(null);
-    const longPressActivatedRef = useRef<boolean>(false);
+    const scaleRef = useRef(scale);
+    const translateRef = useRef(translate);
+    useEffect(() => {
+        scaleRef.current = scale;
+        translateRef.current = translate;
+    });
 
-    function toWheelPoint(
-        svg: SVGSVGElement,
-        clientX: number,
-        clientY: number
-    ): DOMPoint | null {
-        const pt = svg.createSVGPoint();
-        pt.x = clientX;
-        pt.y = clientY;
-        const screenCTM = svg.getScreenCTM();
-        if (!screenCTM) return null;
-        const loc = pt.matrixTransform(screenCTM.inverse());
-        loc.x = (loc.x - size / 2 - translateX) / scale + size / 2;
-        loc.y = (loc.y - size / 2 - translateY) / scale + size / 2;
-        return loc;
+    function toWheelPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+        const svg = svgRef.current;
+        const screenCTM = svg?.getScreenCTM();
+        if (!svg || !screenCTM) return null;
+        const point = new DOMPoint(clientX, clientY).matrixTransform(screenCTM.inverse());
+        const { x: tx, y: ty } = translateRef.current;
+        return {
+            x: (point.x - size / 2 - tx) / scaleRef.current + size / 2,
+            y: (point.y - size / 2 - ty) / scaleRef.current + size / 2,
+        };
     }
 
-    function findHit(pointX: number, pointY: number): PointHit | null {
-        const dx = pointX - cx;
-        const dy = pointY - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist > radius) return null;
-        const angle = toDeg(Math.atan2(dy, dx));
-        const ang = normDeg(angle);
-        const sector = sectorsWithAngles.find((s) => inSector(ang, s));
-        return { dist, sector };
+    function hitTest(clientX: number, clientY: number): { sector: SectorWithAngles; level: number } | null {
+        const point = toWheelPoint(clientX, clientY);
+        if (!point) return null;
+        const dx = point.x - cx;
+        const dy = point.y - cy;
+        const distance = Math.hypot(dx, dy);
+        if (distance > radius) return null;
+        const angle = normalizeDeg((Math.atan2(dy, dx) * 180) / Math.PI);
+        const sector = sectorsWithAngles.find((s) => inSector(angle, s));
+        return sector ? { sector, level: distanceToLevel(distance) } : null;
     }
 
-    function clearLongPressTimer() {
-        if (longPressTimerRef.current) {
-            clearTimeout(longPressTimerRef.current);
+    function clearLongPress() {
+        if (longPressTimerRef.current !== null) {
+            window.clearTimeout(longPressTimerRef.current);
             longPressTimerRef.current = null;
         }
     }
 
-    function getTouchDistance(touch1: ReactTouchPoint, touch2: ReactTouchPoint): number {
-        const dx = touch1.clientX - touch2.clientX;
-        const dy = touch1.clientY - touch2.clientY;
-        return Math.sqrt(dx * dx + dy * dy);
+    function openMenuAt(clientX: number, clientY: number) {
+        const hit = hitTest(clientX, clientY);
+        if (hit) setInfoMenuContextual({ idSector: hit.sector.id, x: clientX, y: clientY });
     }
 
-    function handleSvgContextMenu(e: ReactMouseEvent<SVGSVGElement>) {
-        e.preventDefault();
-        if (hasPanned) {
-            setHasPanned(false);
-            return;
-        }
+    function pinchDistance(): number | null {
+        const points = [...pointersRef.current.values()];
+        return points.length === 2 ? Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) : null;
+    }
+
+    // Zoom con la rueda del ratón: listener nativo no pasivo para poder evitar el scroll de la página.
+    useEffect(() => {
         const svg = svgRef.current;
         if (!svg) return;
-        const point = toWheelPoint(svg, e.clientX, e.clientY);
-        if (!point) return;
-        const hit = findHit(point.x, point.y);
-        if (!hit?.sector) return;
-        setInfoMenuContextual({ idSector: hit.sector.id, x: e.clientX, y: e.clientY });
-    }
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            setScale((prev) => clamp(prev * (event.deltaY > 0 ? 0.9 : 1.1), MIN_SCALE, MAX_SCALE));
+        };
+        svg.addEventListener("wheel", handleWheel, { passive: false });
+        return () => svg.removeEventListener("wheel", handleWheel);
+    }, [svgRef]);
 
-    function handleSvgClick(e: ReactMouseEvent<SVGSVGElement>) {
-        if (hasPanned || longPressActivatedRef.current) {
-            setHasPanned(false);
-            longPressActivatedRef.current = false;
-            return;
-        }
-        const point = toWheelPoint(e.currentTarget, e.clientX, e.clientY);
-        if (!point) return;
-        const hit = findHit(point.x, point.y);
-        const sector = hit?.sector;
-        if (!hit || !sector) return;
+    useEffect(() => clearLongPress, []);
 
-        onWheelScore(sector.id, distanceToLevel(hit.dist));
-    }
+    function onPointerDown(e: ReactPointerEvent<SVGSVGElement>) {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const gesture = gestureRef.current;
 
-    function handleSvgMove(e: ReactMouseEvent<SVGSVGElement>) {
-        if (isPanning && startPan) {
-            const dx = e.clientX - startPan.x;
-            const dy = e.clientY - startPan.y;
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                setHasPanned(true);
-            }
-            if (scale !== 1) {
-                setTranslateX((prev) => prev + dx);
-                setTranslateY((prev) => prev + dy);
-            }
-            setStartPan({ x: e.clientX, y: e.clientY });
-            return;
-        }
-
-        const point = toWheelPoint(e.currentTarget, e.clientX, e.clientY);
-        if (!point) {
-            setHoverInfo(null);
-            return;
-        }
-        const hit = findHit(point.x, point.y);
-        if (!hit?.sector) {
-            setHoverInfo(null);
-            return;
-        }
-        const level = distanceToLevel(hit.dist);
-        setHoverInfo({ sectorId: hit.sector.id, level });
-    }
-
-    function handleWheel(e: ReactWheelEvent<SVGSVGElement>) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        setScale((prev) => clamp(prev * delta, 0.5, 5));
-    }
-
-    function handleTouchStart(e: ReactTouchEvent<SVGSVGElement>) {
-        if (e.touches.length === 2) {
-            const distance = getTouchDistance(e.touches[0], e.touches[1]);
-            setLastTouchDistance(distance);
+        if (pointersRef.current.size === 2) {
+            // Segundo dedo: empieza un pellizco y se cancela cualquier clic o pulsación larga
+            clearLongPress();
+            gesture.pinchDistance = pinchDistance();
+            gesture.suppressClick = true;
             setIsPanning(false);
-            setStartPan(null);
-            clearLongPressTimer();
-        } else if (e.touches.length === 1) {
-            const { clientX, clientY } = e.touches[0];
+            return;
+        }
+
+        Object.assign(gesture, {
+            startX: e.clientX,
+            startY: e.clientY,
+            lastX: e.clientX,
+            lastY: e.clientY,
+            moved: false,
+            pinchDistance: null,
+            suppressClick: false,
+        });
+        if (scaleRef.current !== 1) setIsPanning(true);
+
+        if (e.pointerType !== "mouse") {
+            const { clientX, clientY } = e;
             longPressTimerRef.current = window.setTimeout(() => {
-                if (!hasPanned && svgRef.current) {
-                    const point = toWheelPoint(svgRef.current, clientX, clientY);
-                    if (!point) return;
-                    const hit = findHit(point.x, point.y);
-                    if (!hit?.sector) return;
-                    setInfoMenuContextual({ idSector: hit.sector.id, x: clientX, y: clientY });
-                    longPressActivatedRef.current = true;
-                    setIsPanning(false);
-                    setStartPan(null);
-                }
-            }, 600);
-
-            setIsPanning(true);
-            setHasPanned(false);
-            setStartPan({ x: clientX, y: clientY });
+                longPressTimerRef.current = null;
+                if (gestureRef.current.moved) return;
+                gestureRef.current.suppressClick = true;
+                setIsPanning(false);
+                openMenuAt(clientX, clientY);
+            }, LONG_PRESS_MS);
         }
     }
 
-    function handleTouchMove(e: ReactTouchEvent<SVGSVGElement>) {
-        if (e.touches.length === 2 && lastTouchDistance !== null) {
-            e.preventDefault();
-            const newDistance = getTouchDistance(e.touches[0], e.touches[1]);
-            const delta = newDistance / lastTouchDistance;
-            setScale((prev) => clamp(prev * delta, 0.5, 5));
-            setLastTouchDistance(newDistance);
-        } else if (e.touches.length === 1 && isPanning && startPan) {
-            const dx = e.touches[0].clientX - startPan.x;
-            const dy = e.touches[0].clientY - startPan.y;
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                setHasPanned(true);
-                clearLongPressTimer();
+    function onPointerMove(e: ReactPointerEvent<SVGSVGElement>) {
+        const gesture = gestureRef.current;
+        if (!pointersRef.current.has(e.pointerId)) {
+            // Sin botón pulsado: solo resaltado al pasar el ratón
+            if (e.pointerType === "mouse") {
+                const hit = hitTest(e.clientX, e.clientY);
+                setHoverInfo(hit ? { sectorId: hit.sector.id, level: hit.level } : null);
             }
-            if (scale !== 1) {
-                setTranslateX((prev) => prev + dx);
-                setTranslateY((prev) => prev + dy);
+            return;
+        }
+        pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pointersRef.current.size === 2) {
+            const distance = pinchDistance();
+            if (distance && gesture.pinchDistance) {
+                const ratio = distance / gesture.pinchDistance;
+                setScale((prev) => clamp(prev * ratio, MIN_SCALE, MAX_SCALE));
             }
-            setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            gesture.pinchDistance = distance;
+            return;
         }
-    }
 
-    function handleTouchEnd() {
-        clearLongPressTimer();
-        setLastTouchDistance(null);
-        setIsPanning(false);
-        setStartPan(null);
-    }
-
-    function handleMouseDown(e: ReactMouseEvent<SVGSVGElement>) {
-        if (e.button === 0) {
-            setIsPanning(true);
-            setHasPanned(false);
-            setStartPan({ x: e.clientX, y: e.clientY });
+        if (!gesture.moved && Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY) > DRAG_THRESHOLD_PX) {
+            gesture.moved = true;
+            gesture.suppressClick = true;
+            clearLongPress();
         }
+        if (gesture.moved && scaleRef.current !== 1) {
+            const dx = e.clientX - gesture.lastX;
+            const dy = e.clientY - gesture.lastY;
+            setTranslate((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+        }
+        gesture.lastX = e.clientX;
+        gesture.lastY = e.clientY;
     }
 
-    function handleMouseUp() {
-        setIsPanning(false);
-        setStartPan(null);
+    function onPointerUp(e: ReactPointerEvent<SVGSVGElement>) {
+        pointersRef.current.delete(e.pointerId);
+        clearLongPress();
+        if (pointersRef.current.size < 2) gestureRef.current.pinchDistance = null;
+        if (pointersRef.current.size === 0) setIsPanning(false);
+    }
+
+    function onPointerLeave(e: ReactPointerEvent<SVGSVGElement>) {
+        if (e.pointerType === "mouse") setHoverInfo(null);
+    }
+
+    function onClick(e: ReactMouseEvent<SVGSVGElement>) {
+        if (gestureRef.current.suppressClick) {
+            gestureRef.current.suppressClick = false;
+            return;
+        }
+        const hit = hitTest(e.clientX, e.clientY);
+        if (hit) onWheelScore(hit.sector.id, hit.level);
+    }
+
+    function onContextMenu(e: ReactMouseEvent<SVGSVGElement>) {
+        e.preventDefault();
+        // En táctil la pulsación larga ya abre el menú (y algunos navegadores emiten además contextmenu)
+        if (gestureRef.current.moved) return;
+        openMenuAt(e.clientX, e.clientY);
     }
 
     function resetZoom() {
         setScale(1);
-        setTranslateX(0);
-        setTranslateY(0);
+        setTranslate({ x: 0, y: 0 });
     }
 
     return {
         scale,
-        translateX,
-        translateY,
+        translateX: translate.x,
+        translateY: translate.y,
         isPanning,
-        handleSvgContextMenu,
-        handleSvgClick,
-        handleSvgMove,
-        handleWheel,
-        handleTouchStart,
-        handleTouchMove,
-        handleTouchEnd,
-        handleMouseDown,
-        handleMouseUp,
         resetZoom,
+        handlers: {
+            onPointerDown,
+            onPointerMove,
+            onPointerUp,
+            onPointerCancel: onPointerUp,
+            onPointerLeave,
+            onClick,
+            onContextMenu,
+        },
     };
 }

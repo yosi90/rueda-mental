@@ -296,6 +296,61 @@ const report = [];
     await context.close();
 }
 
+// 10. Gestos: toque, pulsación larga, zoom con rueda y arrastre
+{
+    const { page, context, errors } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const valueOf = (name) => page.getByRole("slider", { name }).getAttribute("aria-valuetext");
+    const cdp = await context.newCDPSession(page);
+    const touch = (type, x, y) => cdp.send("Input.dispatchTouchEvent", {
+        type,
+        touchPoints: type === "touchEnd" ? [] : [{ x, y }],
+    });
+
+    const p = await sectorPoint(page, 0, 8, 0.75);
+    const before = await valueOf("Familia");
+    await page.touchscreen.tap(p.x, p.y);
+    report.push(`toque: Familia ${before} → ${await valueOf("Familia")}`);
+
+    const q = await sectorPoint(page, 4, 8, 0.5); // «Trabajo»
+    const trabajoBefore = await valueOf("Trabajo");
+    await touch("touchStart", q.x, q.y);
+    await page.waitForTimeout(800);
+    await touch("touchEnd", q.x, q.y);
+    await page.waitForTimeout(150);
+    const dialog = page.getByRole("dialog");
+    report.push(`pulsación larga: menú de «${await dialog.getAttribute("aria-label")}» · puntuación sin cambios: ${trabajoBefore === await valueOf("Trabajo")}`);
+    await page.keyboard.press("Escape");
+    await context.close();
+
+    // Escritorio: rueda del ratón y arrastre
+    const desk = await newPage(browser);
+    const svg = desk.page.locator("svg.select-none");
+    const box = await svg.boundingBox();
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2;
+    // Arrastre con zoom 1: no mueve la rueda ni puntúa
+    const familiaBefore = await desk.page.getByRole("slider", { name: "Familia" }).getAttribute("aria-valuetext");
+    await desk.page.mouse.move(centerX + 40, centerY - 120);
+    await desk.page.mouse.down();
+    await desk.page.mouse.move(centerX + 140, centerY - 60, { steps: 5 });
+    await desk.page.mouse.up();
+    const transform1 = await desk.page.locator("svg.select-none > g").getAttribute("transform");
+    report.push(`arrastre con zoom 1: sin desplazamiento = ${transform1?.startsWith("translate(260 260) scale(1)")} · sin puntuar = ${familiaBefore === await desk.page.getByRole("slider", { name: "Familia" }).getAttribute("aria-valuetext")}`);
+    // Zoom con la rueda del ratón
+    await desk.page.mouse.move(centerX, centerY);
+    await desk.page.mouse.wheel(0, -300);
+    await desk.page.waitForTimeout(100);
+    const resetVisible = await desk.page.getByRole("button", { name: "Resetear zoom" }).isVisible();
+    await desk.page.mouse.down();
+    await desk.page.mouse.move(centerX + 80, centerY + 40, { steps: 5 });
+    await desk.page.mouse.up();
+    const transform2 = await desk.page.locator("svg.select-none > g").getAttribute("transform");
+    report.push(`rueda del ratón → botón resetear zoom: ${resetVisible} · arrastre con zoom desplaza: ${transform2 !== transform1} (${transform2})`);
+    await desk.page.getByRole("button", { name: "Resetear zoom" }).click();
+    report.push(`errores gestos: ${JSON.stringify([...errors, ...desk.errors])}`);
+    await desk.context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
