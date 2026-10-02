@@ -124,7 +124,6 @@ export default function MentalWheelApp() {
     // Estado nuevo (junto al resto de useState)
     const [commentsByDate, setCommentsByDate] = useState<CommentsByDate>(() => loadComments());
     const [dailySummaryByDate, setDailySummaryByDate] = useState<DailySummaryByDate>(() => loadDailySummary());
-    const commentTextRef = useRef<HTMLTextAreaElement>(null);
 
     // --- Nuevo estado y referencias para menú contextual ---
     const [infoMenuContextual, setInfoMenuContextual] = useState<InfoMenuContextual | null>(null);
@@ -668,7 +667,6 @@ export default function MentalWheelApp() {
                 dateStr={dateStr}
                 ringCount={RING_COUNT}
                 isScaleInverted={isScaleInverted}
-                commentTextRef={commentTextRef}
                 onClose={() => setInfoMenuContextual(null)}
                 setSectors={setSectors}
                 removeSector={removeSector}
