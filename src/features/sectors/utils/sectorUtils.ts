@@ -2,7 +2,8 @@ import type { Language } from "../../../shared/i18n/translations";
 import type { Sector } from "../../../shared/types/mentalWheel";
 
 export function genId(): string {
-    return Math.random().toString(36).slice(2, 10);
+    // randomUUID solo existe en contextos seguros (https/localhost)
+    return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
 }
 
 export function hslFor(i: number): string {

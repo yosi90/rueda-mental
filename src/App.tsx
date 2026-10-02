@@ -56,7 +56,7 @@ import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
 // - Guarda automáticamente por día en localStorage
 // - Exporta/Importa JSON
 // - Modal de estadísticas y gráficos
-// - UI en español (ES)
+// - UI multilingüe (es, en, pt, de)
 
 const StatsModal = lazy(() =>
     import("./features/stats/components/StatsModal").then((module) => ({ default: module.StatsModal }))
