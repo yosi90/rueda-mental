@@ -25,8 +25,10 @@ export function TopRightButtons({
                     onClick={onOpenStats}
                     className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                     title={t("top.stats")}
+                    aria-label={t("top.stats")}
+                    aria-haspopup="dialog"
                 >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-1px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M3 3v18h18" />
                         <path d="M18 17V9" />
                         <path d="M13 17V5" />
@@ -40,8 +42,10 @@ export function TopRightButtons({
                 onClick={onOpenSummary}
                 className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                 title={t("top.summary")}
+                aria-label={t("top.summary")}
+                aria-haspopup="dialog"
             >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="4" y="3" width="16" height="18" rx="2" />
                     <line x1="8" y1="8" x2="16" y2="8" />
                     <line x1="8" y1="12" x2="16" y2="12" />
@@ -54,8 +58,10 @@ export function TopRightButtons({
                 onClick={onOpenSettings}
                 className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                 title={t("top.settings")}
+                aria-label={t("top.settings")}
+                aria-haspopup="dialog"
             >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-2px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 translate-x-[-1px] sm:translate-x-0 translate-y-[-2px] sm:translate-y-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="3" y1="12" x2="21" y2="12" />
                     <line x1="3" y1="6" x2="21" y2="6" />
                     <line x1="3" y1="18" x2="21" y2="18" />

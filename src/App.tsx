@@ -508,8 +508,8 @@ export default function MentalWheelApp() {
         card: darkMode ? "bg-neutral-800/90" : "bg-white/90",
         cardSolid: darkMode ? "bg-neutral-800" : "bg-white",
         text: darkMode ? "text-neutral-100" : "text-neutral-900",
-        textMuted: darkMode ? "text-neutral-400" : "text-neutral-600",
-        textLight: darkMode ? "text-neutral-500" : "text-neutral-500",
+        textMuted: darkMode ? "text-neutral-300" : "text-neutral-600",
+        textLight: darkMode ? "text-neutral-300" : "text-neutral-600",
         border: darkMode ? "border-neutral-600" : "border-neutral-300",
         borderLight: darkMode ? "border-neutral-600" : "border-neutral-200",
         input: darkMode ? "bg-neutral-700 border-neutral-600 text-neutral-100" : "bg-white border-neutral-300 text-neutral-900",
@@ -548,8 +548,9 @@ export default function MentalWheelApp() {
                     onClick={resetZoom}
                     className={`fixed bottom-4 right-4 z-40 rounded-full ${theme.buttonPrimary} px-4 py-3 shadow-lg transition-colors text-sm font-medium`}
                     title={t("app.resetZoom")}
+                    aria-label={t("app.resetZoom")}
                 >
-                    🔍
+                    <span aria-hidden="true">🔍</span>
                 </button>
             )}
 
@@ -584,14 +585,17 @@ export default function MentalWheelApp() {
 
             {/* Rueda principal */}
             {dateStr > todayStr && (
-                <div className="fixed top-22 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold shadow-lg animate-pulse">
+                <div className="fixed top-22 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold shadow-lg motion-safe:animate-pulse" role="status">
                     {t("app.futureDateWarning")}
                 </div>
             )}
+            <p id="wheel-keyboard-hint" className="sr-only">{t("wheel.keyboardHint")}</p>
             <div className="absolute inset-0 flex items-center justify-center" style={{ padding: '80px 20px 20px 20px' }}>
                 <div className="w-full h-full max-h-full flex items-center justify-center">
                     <svg
                         ref={svgRef}  /* referencia al SVG para cálculos de posición */
+                        role="group"
+                        aria-label={t("wheel.label")}
                         onContextMenu={handleSvgContextMenu}  /* manejador de menú contextual */
                         width="100%"
                         height="100%"
@@ -627,6 +631,9 @@ export default function MentalWheelApp() {
                                 levelOuterRadius={levelOuterRadius}
                                 levelLabelRadius={levelLabelRadius}
                                 theme={{ svgGrid: theme.svgGrid, svgText: theme.svgText }}
+                                keyboardHintId="wheel-keyboard-hint"
+                                onKeyboardScore={setScore}
+                                onOpenSectorMenu={(idSector, x, y) => setInfoMenuContextual({ idSector, x, y })}
                             />
                             <circle cx={cx} cy={cy} r={centerDecorationRadius} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
                         </g>
@@ -639,7 +646,6 @@ export default function MentalWheelApp() {
                 isTouchDevice={isTouchDevice}
                 tutorialSectorName={tutorialSector?.name}
                 onSkip={skipTutorial}
-                theme={theme}
             />
 
             <SectorContextMenu

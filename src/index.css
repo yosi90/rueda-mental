@@ -29,6 +29,17 @@ select {
   cursor: pointer;
 }
 
+/* Foco de teclado en los sectores de la rueda */
+.wheel-sector-focus {
+  outline: none;
+}
+
+.wheel-sector-focus:focus-visible {
+  stroke: #2563eb;
+  stroke-width: 3;
+  fill: rgb(37 99 235 / 0.08);
+}
+
 .padding-esp {
   padding: 2px 4px;
 }

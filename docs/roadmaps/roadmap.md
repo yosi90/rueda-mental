@@ -37,16 +37,18 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 
 ---
 
-## Hito 2 — Accesibilidad básica
+## Hito 2 — Accesibilidad básica ✅
 
-- [ ] Cajón de configuración cerrado con `inert` (ahora es navegable con Tab y visible para lectores de pantalla estando oculto; además su sombra asoma por el borde derecho).
-- [ ] Modales con `role="dialog"`, `aria-modal`, `aria-labelledby`, trampa de foco, devolución del foco y cierre con Esc.
-- [ ] Nombre accesible en botones de solo icono (cerrar, tema…); interruptores con `role="switch"` + `aria-checked`; emojis con `aria-hidden`.
-- [ ] `<label htmlFor>` en los textarea del resumen y en los nombres de sector.
-- [ ] Rueda operable con teclado y lector de pantalla (cada sector como `role="slider"`, flechas para puntuar).
-- [ ] Tamaños mínimos: textos ≥ 12 px, objetivos táctiles ≥ 24 px.
-- [ ] Respetar `prefers-reduced-motion` (aviso de fecha futura con `animate-pulse`).
-- [ ] Revisar contrastes en ambos temas.
+- [x] Cajón de configuración cerrado con `inert` (ahora es navegable con Tab y visible para lectores de pantalla estando oculto; además su sombra asoma por el borde derecho).
+- [x] Modales con `role="dialog"`, `aria-modal`, `aria-labelledby`, trampa de foco, devolución del foco y cierre con Esc.
+- [x] Nombre accesible en botones de solo icono (cerrar, tema…); interruptores con `role="switch"` + `aria-checked`; emojis con `aria-hidden`.
+- [x] `<label htmlFor>` en los textarea del resumen y en los nombres de sector.
+- [x] Rueda operable con teclado y lector de pantalla (cada sector como `role="slider"`, flechas para puntuar).
+- [x] Tamaños mínimos: textos ≥ 12 px, objetivos táctiles ≥ 24 px.
+- [x] Respetar `prefers-reduced-motion` (aviso de fecha futura con `animate-pulse`).
+- [x] Revisar contrastes en ambos temas (texto secundario en modo oscuro, tutorial, números de los anillos).
+- [x] Calendario: nombre completo de cada día, `aria-current` en hoy, `aria-pressed` en el seleccionado.
+- [x] Burbujas del tutorial anunciadas con `role="status"`.
 
 ---
 
@@ -72,10 +74,12 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 - [ ] Interacciones de la rueda con Pointer Events y estado de pan en refs.
 - [ ] Paleta de gráficas coherente con la app y con los colores de los sectores.
 - [ ] Heatmap: distinguir «sin datos» de «media muy baja» (hoy comparten color).
-- [ ] Tutorial con color menos alarmante y flecha hacia el elemento señalado.
+- [x] Tutorial con color menos alarmante (índigo, hecho en el hito 2).
+- [ ] Tutorial con flecha hacia el elemento señalado.
 - [ ] Ajustar contraste del modo claro.
 - [ ] «Rueda fantasma»: contorno de ayer o de la media semanal sobre la rueda actual.
 - [ ] Optimizar el favicon (70 KB).
+- [ ] Banderas del selector de idioma: en Windows los emojis de bandera se ven como «ES», «GB»… (usar SVG o quitar).
 
 ---
 

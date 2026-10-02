@@ -109,6 +109,10 @@ export function FloatingInfoPanel({
         return [...labels.slice(firstDayOfWeek), ...labels.slice(0, firstDayOfWeek)];
     }, [locale, firstDayOfWeek]);
 
+    const dayLabelFormatter = useMemo(() => (
+        new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+    ), [locale]);
+
     const calendarCells = useMemo(() => {
         const year = calendarMonth.getFullYear();
         const month = calendarMonth.getMonth();
@@ -124,9 +128,10 @@ export function FloatingInfoPanel({
             return {
                 day: dayNumber,
                 iso: formatDateInput(date),
+                label: dayLabelFormatter.format(date),
             };
         });
-    }, [calendarMonth, firstDayOfWeek]);
+    }, [calendarMonth, firstDayOfWeek, dayLabelFormatter]);
 
     const sosButtonClass = darkMode
         ? "border border-red-400/40 bg-neutral-800/95 text-red-200 hover:bg-neutral-700"
@@ -163,11 +168,13 @@ export function FloatingInfoPanel({
             <div className={`rounded-xl sm:rounded-2xl ${cardClass} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 mt-1 sm:mt-0 shadow-lg`}>
                 <div className="flex items-center gap-2">
                     <button
+                        type="button"
                         onClick={onPrevDay}
                         className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
                         title={t("panel.prevDay")}
+                        aria-label={t("panel.prevDay")}
                     >
-                        &lt;
+                        <span aria-hidden="true">&lt;</span>
                     </button>
 
                     <div className="relative" ref={calendarRef}>
@@ -175,7 +182,9 @@ export function FloatingInfoPanel({
                             type="button"
                             onClick={() => setCalendarOpen((prev) => !prev)}
                             className={`text-xs sm:text-sm border-0 bg-transparent px-1 py-0.5 rounded ${textClass} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
-                            aria-label={t("panel.selectDate")}
+                            aria-label={`${t("panel.selectDate")}: ${formattedDate}`}
+                            aria-haspopup="dialog"
+                            aria-expanded={calendarOpen}
                             title={t("panel.selectDate")}
                         >
                             <span>{formattedDate}</span>
@@ -188,30 +197,36 @@ export function FloatingInfoPanel({
                         </button>
 
                         {calendarOpen && (
-                            <div className={`absolute top-full left-0 mt-2 z-50 rounded-xl border p-3 shadow-xl backdrop-blur-sm ${cardClass} min-w-[250px]`}>
+                            <div
+                                role="dialog"
+                                aria-label={monthLabel}
+                                className={`absolute top-full left-0 mt-2 z-50 rounded-xl border p-3 shadow-xl backdrop-blur-sm ${cardClass} min-w-[250px]`}
+                            >
                                 <div className="flex items-center justify-between mb-2">
                                     <button
                                         type="button"
                                         onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                                        className={`rounded-md px-2 py-1 text-sm font-bold ${buttonClass}`}
-                                        title={t("panel.prevDay")}
+                                        className={`rounded-md min-h-8 min-w-8 px-2 text-sm font-bold ${buttonClass}`}
+                                        title={t("panel.prevMonth")}
+                                        aria-label={t("panel.prevMonth")}
                                     >
-                                        &lt;
+                                        <span aria-hidden="true">&lt;</span>
                                     </button>
-                                    <div className={`text-sm font-semibold capitalize ${textClass}`}>{monthLabel}</div>
+                                    <div className={`text-sm font-semibold capitalize ${textClass}`} aria-live="polite">{monthLabel}</div>
                                     <button
                                         type="button"
                                         onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                                        className={`rounded-md px-2 py-1 text-sm font-bold ${buttonClass}`}
-                                        title={t("panel.nextDay")}
+                                        className={`rounded-md min-h-8 min-w-8 px-2 text-sm font-bold ${buttonClass}`}
+                                        title={t("panel.nextMonth")}
+                                        aria-label={t("panel.nextMonth")}
                                     >
-                                        &gt;
+                                        <span aria-hidden="true">&gt;</span>
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-7 gap-1 mb-1">
+                                <div className="grid grid-cols-7 gap-1 mb-1" aria-hidden="true">
                                     {weekDayLabels.map((label) => (
-                                        <div key={label} className={`text-[10px] text-center uppercase ${textMutedClass}`}>
+                                        <div key={label} className={`text-xs text-center uppercase ${textMutedClass}`}>
                                             {label}
                                         </div>
                                     ))}
@@ -220,7 +235,7 @@ export function FloatingInfoPanel({
                                 <div className="grid grid-cols-7 gap-1">
                                     {calendarCells.map((cell, index) => {
                                         if (!cell) {
-                                            return <div key={`empty-${index}`} className="h-7" />;
+                                            return <div key={`empty-${index}`} className="h-8" />;
                                         }
 
                                         const isSelected = cell.iso === dateStr;
@@ -249,12 +264,15 @@ export function FloatingInfoPanel({
                                                 key={cell.iso}
                                                 type="button"
                                                 disabled={isFuture}
+                                                aria-label={cell.label}
+                                                aria-pressed={isSelected}
+                                                aria-current={isToday ? "date" : undefined}
                                                 onClick={() => {
                                                     if (isFuture) return;
                                                     onDateChange(cell.iso);
                                                     setCalendarOpen(false);
                                                 }}
-                                                className={`relative h-7 rounded-md text-xs transition-colors ${selectedClass} ${todayClass} ${hasDataClass} ${futureClass}`}
+                                                className={`relative h-8 rounded-md text-xs transition-colors ${selectedClass} ${todayClass} ${hasDataClass} ${futureClass}`}
                                             >
                                                 {cell.day}
                                                 {hasData && (
@@ -275,14 +293,17 @@ export function FloatingInfoPanel({
                     </div>
 
                     <button
+                        type="button"
                         onClick={onNextDay}
                         className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
                         title={t("panel.nextDay")}
+                        aria-label={t("panel.nextDay")}
                     >
-                        &gt;
+                        <span aria-hidden="true">&gt;</span>
                     </button>
 
                     <button
+                        type="button"
                         onClick={onToday}
                         className={`${buttonPrimaryClass} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
                         title={t("panel.goToday")}

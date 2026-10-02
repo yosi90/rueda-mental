@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import type { HoverInfo, Sector, SectorWithAngles } from "../../../shared/types/mentalWheel";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { ThemeClasses } from "../../../shared/types/theme";
@@ -19,6 +20,12 @@ interface WheelLayersProps {
     levelOuterRadius: (level: number) => number;
     levelLabelRadius: (level: number) => number;
     theme: Pick<ThemeClasses, "svgGrid" | "svgText">;
+    /** id del texto con las instrucciones de teclado. */
+    keyboardHintId: string;
+    /** Puntuación en escala visible (0 = sin nota). */
+    onKeyboardScore: (sectorId: string, displayScore: number) => void;
+    /** Abre el menú del sector en las coordenadas de pantalla indicadas. */
+    onOpenSectorMenu: (sectorId: string, x: number, y: number) => void;
 }
 
 function toRad(deg: number): number {
@@ -60,6 +67,9 @@ export function WheelLayers({
     levelOuterRadius,
     levelLabelRadius,
     theme,
+    keyboardHintId,
+    onKeyboardScore,
+    onOpenSectorMenu,
 }: WheelLayersProps) {
     const { t } = useI18n();
 
@@ -97,12 +107,13 @@ export function WheelLayers({
 
         return (
             <g key={`lab-${s.id}`}>
-                <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="middle" fill={theme.svgText}>
+                <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="middle" fill={theme.svgText} aria-hidden="true">
                     {s.name}
                 </text>
 
                 {hasComment && (
                     <text
+                        aria-hidden="true"
                         x={tx + (anchor === "start" ? 10 : anchor === "end" ? -10 : 0)}
                         y={ty - 10}
                         fontSize={12}
@@ -136,7 +147,7 @@ export function WheelLayers({
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill={theme.svgText}
-                    opacity={0.6}
+                    opacity={0.75}
                     className="hidden md:block"
                 >
                     {displayLevel}
@@ -153,6 +164,53 @@ export function WheelLayers({
         return <path d={p} fill={s.color} opacity={0.2} pointerEvents="none" />;
     })();
 
+    // Capa enfocable para teclado y lectores de pantalla: un slider por sector.
+    // pointerEvents="none" para que el ratón siga usando la lógica de clic por coordenadas.
+    function handleSectorKeyDown(event: KeyboardEvent<SVGPathElement>, sectorId: string, current: number) {
+        const { key } = event;
+        let next: number | null = null;
+        if (key === "ArrowUp" || key === "ArrowRight") next = Math.min(ringCount, current + 1);
+        else if (key === "ArrowDown" || key === "ArrowLeft") next = Math.max(0, current - 1);
+        else if (key === "Home") next = 0;
+        else if (key === "End") next = ringCount;
+        else if (/^[0-9]$/.test(key)) next = Number(key);
+
+        if (next !== null) {
+            event.preventDefault();
+            if (next !== current) onKeyboardScore(sectorId, next);
+            return;
+        }
+        if (key === "Enter" || key === "ContextMenu" || (key === "F10" && event.shiftKey)) {
+            event.preventDefault();
+            const rect = event.currentTarget.getBoundingClientRect();
+            onOpenSectorMenu(sectorId, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+    }
+
+    const keyboardSliders = sectorsWithAngles.map((s) => {
+        const displayScore = toDisplayScore(scores[s.id] ?? 0, ringCount, isScaleInverted);
+        return (
+            <path
+                key={`kb-${s.id}`}
+                d={sectorPath(cx, cy, 0, radius, s.a0, s.a1)}
+                fill="transparent"
+                pointerEvents="none"
+                className="wheel-sector-focus"
+                tabIndex={0}
+                role="slider"
+                aria-label={s.name}
+                aria-valuemin={0}
+                aria-valuemax={ringCount}
+                aria-valuenow={displayScore}
+                aria-valuetext={displayScore > 0
+                    ? t("wheel.valueText", { value: displayScore, max: ringCount })
+                    : t("wheel.unscored")}
+                aria-describedby={keyboardHintId}
+                onKeyDown={(e) => handleSectorKeyDown(e, s.id, displayScore)}
+            />
+        );
+    });
+
     return (
         <>
             {filledSectors}
@@ -163,6 +221,7 @@ export function WheelLayers({
             {labels}
             {ringNumbers}
             {hoverLayer}
+            {keyboardSliders}
         </>
     );
 }

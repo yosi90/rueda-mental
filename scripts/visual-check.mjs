@@ -94,7 +94,7 @@ const report = [];
     await page.waitForTimeout(200);
     await page.screenshot({ path: `${OUT}/03-dark-context-menu.png` });
     await page.mouse.click(5, 790); // cerrar menú (overlay)
-    await page.getByTitle("Estadísticas", { exact: true }).click();
+    await page.getByRole("button", { name: "Estadísticas" }).click();
     await page.waitForSelector("text=Racha actual");
     report.push(`subtítulo stats: ${await page.getByText(/días registrados/).textContent()}`);
     await page.screenshot({ path: `${OUT}/04-dark-stats-top.png` });
@@ -129,6 +129,66 @@ const report = [];
     await page.getByTitle("Día siguiente").click();
     const next = await label.textContent();
     report.push(`México: hoy ${start} | < ${prev} | > > ${next}`);
+    await context.close();
+}
+
+// 6. Accesibilidad con teclado
+{
+    const { page, context, errors } = await newPage(browser);
+    const focusedDescription = () => page.evaluate(() => {
+        const el = document.activeElement;
+        if (!el) return "none";
+        const role = el.getAttribute("role") ?? el.tagName.toLowerCase();
+        return `${role}:${el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 30)}`;
+    });
+
+    // El cajón cerrado no debe estar en el árbol accesible
+    report.push(`botones «Estadísticas» accesibles (esperado 1): ${await page.getByRole("button", { name: "Estadísticas" }).count()}`);
+
+    // Tabular hasta el primer sector de la rueda
+    let reachedSlider = false;
+    for (let i = 0; i < 20 && !reachedSlider; i++) {
+        await page.keyboard.press("Tab");
+        reachedSlider = (await focusedDescription()).startsWith("slider:");
+    }
+    report.push(`Tab llega a la rueda: ${reachedSlider} (${await focusedDescription()})`);
+    const slider = page.locator(":focus");
+    const before = await slider.getAttribute("aria-valuetext");
+    await page.keyboard.press("ArrowUp");
+    const afterUp = await slider.getAttribute("aria-valuetext");
+    await page.keyboard.press("7");
+    const afterDigit = await slider.getAttribute("aria-valuetext");
+    report.push(`teclado en sector: ${before} → ↑ ${afterUp} → 7: ${afterDigit}`);
+    await page.screenshot({ path: `${OUT}/08-keyboard-focus.png` });
+
+    // Intro abre el menú; Escape lo cierra y devuelve el foco al sector
+    await page.keyboard.press("Enter");
+    const dialogOpen = await page.getByRole("dialog").count();
+    report.push(`Intro abre menú (diálogos: ${dialogOpen}), foco en: ${await focusedDescription()}`);
+    await page.keyboard.press("Escape");
+    report.push(`Escape cierra menú (diálogos: ${await page.getByRole("dialog").count()}), foco vuelve a: ${await focusedDescription()}`);
+
+    // Resumen: trampa de foco y Escape
+    await page.getByRole("button", { name: "Resumen del día" }).click();
+    const inside = [];
+    for (let i = 0; i < 8; i++) {
+        await page.keyboard.press("Tab");
+        inside.push(await page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]'))));
+    }
+    report.push(`foco atrapado en resumen tras 8 Tab: ${inside.every(Boolean)}`);
+    await page.keyboard.press("Escape");
+    report.push(`Escape cierra resumen: ${(await page.getByRole("dialog").count()) === 0}, foco vuelve a: ${await focusedDescription()}`);
+
+    // Configuración: interruptores con role=switch
+    await page.getByRole("button", { name: "Configuración" }).click();
+    await page.waitForTimeout(400);
+    const switches = await page.getByRole("switch").evaluateAll((els) => els.map((el) => `${el.getAttribute("aria-label")}=${el.getAttribute("aria-checked")}`));
+    report.push(`interruptores: ${switches.join(", ")}`);
+    await page.screenshot({ path: `${OUT}/09-settings-open.png` });
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}/10-settings-closed.png` });
+    report.push(`errores teclado: ${JSON.stringify(errors)}`);
     await context.close();
 }
 

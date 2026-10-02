@@ -1,11 +1,9 @@
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 
 interface TutorialOverlayProps {
     tutorialStep: number;
     isTouchDevice: boolean;
     tutorialSectorName?: string;
-    theme: Pick<ThemeClasses, "text">;
     onSkip: () => void;
 }
 
@@ -13,7 +11,6 @@ export function TutorialOverlay({
     tutorialStep,
     isTouchDevice,
     tutorialSectorName,
-    theme,
     onSkip,
 }: TutorialOverlayProps) {
     const { t } = useI18n();
@@ -32,11 +29,11 @@ export function TutorialOverlay({
             )}
 
             {tutorialStep === 1 && (
-                <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
+                    <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step1.title")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                    <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {t("tutorial.step1.body")} <b>{sectorName}</b>?
                     </p>
                     <p className="text-xs text-center mt-4">
@@ -46,11 +43,11 @@ export function TutorialOverlay({
             )}
 
             {tutorialStep === 2 && (
-                <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
+                    <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step2.title")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                    <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {isTouchDevice ? t("tutorial.step2.bodyTouch") : t("tutorial.step2.bodyMouse")}
                     </p>
                     <p className="text-xs text-center mt-4">
@@ -60,11 +57,11 @@ export function TutorialOverlay({
             )}
 
             {tutorialStep === 3 && (
-                <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2" style={{ top: isTouchDevice ? "150px" : "200px", left: "50%", transform: "translateX(-50%)" }}>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify`}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm left-1/2" style={{ top: isTouchDevice ? "150px" : "200px", left: "50%", transform: "translateX(-50%)" }}>
+                    <p className={`text-sm sm:text-lg text-justify`}>
                         {t("tutorial.step3.p1")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                    <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {isTouchDevice ? t("tutorial.step3.p2Touch") : t("tutorial.step3.p2Mouse")}
                     </p>
                     <p className="text-xs text-center mt-4">
@@ -75,13 +72,13 @@ export function TutorialOverlay({
 
             {tutorialStep === 4 && (
                 <div
-                    className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm"
+                    role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm"
                     style={isTouchDevice ? { top: "84px", left: "50%", transform: "translateX(-50%)" } : { top: "84px", right: "16px" }}
                 >
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                    <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step4.title")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                    <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {t("tutorial.step4.body")}
                     </p>
                     <div className="mt-4 flex justify-center">
@@ -103,27 +100,27 @@ export function TutorialOverlay({
 
             {tutorialStep === 5 && (
                 <div
-                    className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-md left-1/2 -translate-x-1/2"
+                    role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-md left-1/2 -translate-x-1/2"
                     style={{ top: isTouchDevice ? "86px" : "96px" }}
                 >
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                    <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step5.title")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                    <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {t("tutorial.step5.body1")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-lg text-justify mt-3`}>
+                    <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {isTouchDevice ? t("tutorial.step5.body2Touch") : t("tutorial.step5.body2Mouse")}
                     </p>
                 </div>
             )}
 
             {tutorialStep === 6 && (
-                <div className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-red-500 shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2">
-                    <p className={`${theme.text} text-sm sm:text-lg text-center`}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2">
+                    <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step6.title")}
                     </p>
-                    <p className={`${theme.text} text-sm sm:text-base text-justify mt-3`}>
+                    <p className={`text-sm sm:text-base text-justify mt-3`}>
                         {t("tutorial.step6.body")}
                     </p>
                 </div>

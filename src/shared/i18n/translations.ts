@@ -64,6 +64,8 @@ const es = {
     "panel.helpSos": "Ayuda SOS",
     "panel.prevDay": "Día anterior",
     "panel.nextDay": "Día siguiente",
+    "panel.prevMonth": "Mes anterior",
+    "panel.nextMonth": "Mes siguiente",
     "panel.goToday": "Ir a hoy",
     "panel.selectDate": "Seleccionar fecha",
 
@@ -228,6 +230,10 @@ const es = {
 
     "wheel.hasCommentAria": "Tiene comentario",
     "wheel.hasCommentTitle": "Tiene un comentario",
+    "wheel.label": "Rueda de puntuaciones del día",
+    "wheel.valueText": "{{value}} de {{max}}",
+    "wheel.unscored": "Sin puntuar",
+    "wheel.keyboardHint": "Usa las flechas para cambiar la puntuación, los números del 0 al 9 para fijarla, Inicio para quitarla, Fin para el máximo e Intro para abrir el menú del sector.",
 } as const;
 
 const en: Record<keyof typeof es, string> = {
@@ -248,6 +254,8 @@ const en: Record<keyof typeof es, string> = {
     "panel.helpSos": "SOS Help",
     "panel.prevDay": "Previous day",
     "panel.nextDay": "Next day",
+    "panel.prevMonth": "Previous month",
+    "panel.nextMonth": "Next month",
     "panel.goToday": "Go to today",
     "panel.selectDate": "Select date",
 
@@ -412,6 +420,10 @@ const en: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Has comment",
     "wheel.hasCommentTitle": "Has a comment",
+    "wheel.label": "Daily score wheel",
+    "wheel.valueText": "{{value}} of {{max}}",
+    "wheel.unscored": "Not scored",
+    "wheel.keyboardHint": "Use the arrow keys to change the score, 0–9 to set it, Home to clear it, End for the maximum and Enter to open the sector menu.",
 };
 
 const pt: Record<keyof typeof es, string> = {
@@ -432,6 +444,8 @@ const pt: Record<keyof typeof es, string> = {
     "panel.helpSos": "Ajuda SOS",
     "panel.prevDay": "Dia anterior",
     "panel.nextDay": "Dia seguinte",
+    "panel.prevMonth": "Mês anterior",
+    "panel.nextMonth": "Mês seguinte",
     "panel.goToday": "Ir para hoje",
     "panel.selectDate": "Selecionar data",
 
@@ -594,6 +608,10 @@ const pt: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Tem comentário",
     "wheel.hasCommentTitle": "Tem um comentário",
+    "wheel.label": "Roda de pontuações do dia",
+    "wheel.valueText": "{{value}} de {{max}}",
+    "wheel.unscored": "Sem pontuação",
+    "wheel.keyboardHint": "Usa as setas para mudar a pontuação, os números de 0 a 9 para a definir, Home para a limpar, End para o máximo e Enter para abrir o menu do setor.",
 };
 
 const de: Record<keyof typeof es, string> = {
@@ -615,6 +633,8 @@ const de: Record<keyof typeof es, string> = {
     "panel.helpSos": "SOS Hilfe",
     "panel.prevDay": "Vorheriger Tag",
     "panel.nextDay": "Nächster Tag",
+    "panel.prevMonth": "Vorheriger Monat",
+    "panel.nextMonth": "Nächster Monat",
     "panel.goToday": "Zu heute",
     "panel.selectDate": "Datum auswählen",
 
@@ -778,6 +798,10 @@ const de: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Hat Kommentar",
     "wheel.hasCommentTitle": "Hat einen Kommentar",
+    "wheel.label": "Tagesbewertungsrad",
+    "wheel.valueText": "{{value}} von {{max}}",
+    "wheel.unscored": "Nicht bewertet",
+    "wheel.keyboardHint": "Mit den Pfeiltasten änderst du die Bewertung, mit 0–9 legst du sie fest, Pos1 löscht sie, Ende setzt das Maximum und Enter öffnet das Bereichsmenü.",
 };
 
 export const TRANSLATIONS = { es, en, pt, de } as const;
