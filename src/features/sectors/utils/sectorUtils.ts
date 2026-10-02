@@ -1,5 +1,6 @@
 import type { Language } from "../../../shared/i18n/translations";
 import type { Sector } from "../../../shared/types/mentalWheel";
+import { DEFAULT_SECTOR_ICONS } from "../icons/sectorIcons";
 
 export function genId(): string {
     // randomUUID solo existe en contextos seguros (https/localhost)
@@ -62,21 +63,33 @@ function normalizeLabel(label: string): string {
 
 export function defaultSectors(language: Language = "es"): Sector[] {
     const names = DEFAULT_SECTOR_LABELS[language];
-    return names.map((name, i) => ({ id: genId(), name, color: hslFor(i) }));
+    return names.map((name, i) => ({ id: genId(), name, color: hslFor(i), icon: DEFAULT_SECTOR_ICONS[i] }));
+}
+
+function defaultSectorIndex(name: string): number {
+    const normalizedName = normalizeLabel(name);
+    return DEFAULT_SECTOR_LABELS.es.findIndex((_, index) =>
+        Object.values(DEFAULT_SECTOR_LABELS).some((labels) => normalizeLabel(labels[index]) === normalizedName)
+    );
 }
 
 export function translateDefaultSectorName(name: string, targetLanguage: Language): string | null {
-    const normalizedName = normalizeLabel(name);
-    const targetLabels = DEFAULT_SECTOR_LABELS[targetLanguage];
+    const index = defaultSectorIndex(name);
+    return index >= 0 ? DEFAULT_SECTOR_LABELS[targetLanguage][index] : null;
+}
 
-    for (let index = 0; index < targetLabels.length; index += 1) {
-        const matchesAnyLanguage = Object.values(DEFAULT_SECTOR_LABELS).some((labels) =>
-            normalizeLabel(labels[index]) === normalizedName
-        );
-        if (matchesAnyLanguage) {
-            return targetLabels[index];
-        }
-    }
-
-    return null;
+/**
+ * Asigna el icono por defecto a los sectores predefinidos que aún no tienen icono
+ * (datos guardados antes de que existieran los iconos). Respeta los iconos elegidos o quitados.
+ */
+export function withDefaultIcons(sectors: Sector[]): Sector[] {
+    let changed = false;
+    const result = sectors.map((sector) => {
+        if (sector.icon !== undefined) return sector;
+        const index = defaultSectorIndex(sector.name);
+        if (index < 0) return sector;
+        changed = true;
+        return { ...sector, icon: DEFAULT_SECTOR_ICONS[index] };
+    });
+    return changed ? result : sectors;
 }

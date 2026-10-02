@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { defaultSectors, genId, hslFor, translateDefaultSectorName } from "../features/sectors/utils/sectorUtils";
+import { defaultSectors, genId, hslFor, translateDefaultSectorName, withDefaultIcons } from "../features/sectors/utils/sectorUtils";
 import type { Language } from "../shared/i18n/translations";
 import type { ParsedBackup } from "../shared/services/io/backup";
 import {
@@ -43,7 +43,7 @@ function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T
  * Las puntuaciones son internas (anillo 1..10, 0 = sin nota); la escala visible se aplica fuera.
  */
 export function useMentalWheelData(language: Language) {
-    const [sectors, setSectors] = useState<Sector[]>(() => loadConfig() || defaultSectors(language));
+    const [sectors, setSectors] = useState<Sector[]>(() => withDefaultIcons(loadConfig() || defaultSectors(language)));
     const [scoresByDate, setScoresByDate] = useState<ScoresByDate>(() => loadScores());
     const [commentsByDate, setCommentsByDate] = useState<CommentsByDate>(() => loadComments());
     const [dailySummaryByDate, setDailySummaryByDate] = useState<DailySummaryByDate>(() => loadDailySummary());
@@ -169,7 +169,7 @@ export function useMentalWheelData(language: Language) {
     }
 
     function importData(backup: ParsedBackup): void {
-        if (backup.config) setSectors(backup.config);
+        if (backup.config) setSectors(withDefaultIcons(backup.config));
         if (backup.scoresByDate) setScoresByDate(backup.scoresByDate);
         if (backup.commentsByDate) setCommentsByDate(backup.commentsByDate);
         if (backup.dailySummaryByDate) setDailySummaryByDate(backup.dailySummaryByDate);

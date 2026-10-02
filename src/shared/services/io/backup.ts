@@ -29,7 +29,8 @@ function isSector(value: unknown): value is Sector {
     return isObjectRecord(value)
         && typeof value.id === "string" && value.id.length > 0
         && typeof value.name === "string"
-        && typeof value.color === "string";
+        && typeof value.color === "string"
+        && (value.icon === undefined || typeof value.icon === "string");
 }
 
 function isByDate<T>(value: unknown, isDay: (day: unknown) => day is T): value is Record<string, T> {

@@ -30,6 +30,7 @@ import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
 import { MainActionButtons } from "./shared/components/MainActionButtons";
 import { useFeedback } from "./shared/feedback/FeedbackProvider";
 import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
+import { useMediaQuery } from "./shared/hooks/useMediaQuery";
 import { useI18n } from "./shared/i18n/I18nContext";
 import { downloadBackup, readBackupFile } from "./shared/services/io/backup";
 import { hasTutorialBeenShown, saveTutorialShown } from "./shared/services/storage/mentalWheelStorage";
@@ -55,6 +56,7 @@ export default function MentalWheelApp() {
     const { sectors, scoresByDate, commentsByDate, dailySummaryByDate } = data;
     const { isScaleInverted, statsVisibility } = preferences;
     const isTouchDevice = useTouchDeviceDetection();
+    const isSmallScreen = useMediaQuery("(max-width: 639px)");
 
     // --- Estado de la interfaz ---
     const todayStr = formatDateInput(new Date());
@@ -321,6 +323,7 @@ export default function MentalWheelApp() {
                                 sectorsWithAngles={sectorsWithAngles}
                                 scores={scores}
                                 referenceScores={referenceDate ? scoresByDate[referenceDate] : null}
+                                compactLabels={isSmallScreen}
                                 highlightSectorId={tutorialStep === 1 || tutorialStep === 2 ? tutorialSector?.id : null}
                                 hoverInfo={hoverInfo}
                                 dateStr={dateStr}

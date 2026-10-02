@@ -3,6 +3,7 @@ import { theme } from "../../../shared/theme/theme";
 import type { HoverInfo, Sector, SectorWithAngles } from "../../../shared/types/mentalWheel";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
+import { SectorLabel } from "./SectorLabel";
 
 interface WheelLayersProps {
     cx: number;
@@ -14,6 +15,8 @@ interface WheelLayersProps {
     sectors: Sector[];
     sectorsWithAngles: SectorWithAngles[];
     scores: Record<string, number>;
+    /** Pantallas pequeñas: etiquetas con solo icono + puntuación. */
+    compactLabels: boolean;
     /** Sector resaltado (lo señala el tutorial). */
     highlightSectorId?: string | null;
     /** Puntuaciones de otro día dibujadas como contorno discontinuo (referencia). */
@@ -31,8 +34,7 @@ interface WheelLayersProps {
     onOpenSectorMenu: (sectorId: string, x: number, y: number) => void;
 }
 
-const LABEL_OFFSET = 24; // distancia del nombre al borde de la rueda
-const BADGE_RADIUS = 8.5;
+const LABEL_OFFSET = 24; // distancia de la etiqueta al borde de la rueda
 
 function toRad(deg: number): number {
     return (deg * Math.PI) / 180;
@@ -69,6 +71,7 @@ export function WheelLayers({
     scores,
     referenceScores,
     highlightSectorId,
+    compactLabels,
     hoverInfo,
     dateStr,
     getComment,
@@ -105,21 +108,6 @@ export function WheelLayers({
         })
         : null;
 
-    // Puntuación dentro del sector, en el centro del tramo exterior relleno
-    const scoreBadges = sectorsWithAngles.map((s) => {
-        const raw = Math.max(0, Math.min(ringCount, scores[s.id] ?? 0));
-        if (raw <= 0) return null;
-        const [bx, by] = polar(cx, cy, levelLabelRadius(raw), s.mid);
-        return (
-            <g key={`score-${s.id}`} aria-hidden="true" pointerEvents="none">
-                <circle cx={bx} cy={by} r={BADGE_RADIUS} fill={theme.svgText} />
-                <text x={bx} y={by} fontSize={10} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={theme.svgBg}>
-                    {toDisplayScore(raw, ringCount, isScaleInverted)}
-                </text>
-            </g>
-        );
-    });
-
     const gridRings = Array.from({ length: ringCount }, (_, i) => (
         <circle
             key={`r-${i + 1}`}
@@ -154,9 +142,15 @@ export function WheelLayers({
 
         return (
             <g key={`lab-${s.id}`}>
-                <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="central" fill={theme.svgText} aria-hidden="true">
-                    {s.name}
-                </text>
+                <SectorLabel
+                    x={tx}
+                    y={ty}
+                    anchor={anchor}
+                    name={s.name}
+                    score={toDisplayScore(scores[s.id] ?? 0, ringCount, isScaleInverted)}
+                    iconId={s.icon}
+                    compact={compactLabels}
+                />
 
                 {hasComment && (
                     <text
@@ -283,7 +277,6 @@ export function WheelLayers({
                 {gridLines}
             </g>
             {referenceArcs}
-            {scoreBadges}
             {labels}
             {ringNumbers}
             {hoverLayer}

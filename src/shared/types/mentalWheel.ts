@@ -2,6 +2,8 @@ export interface Sector {
     id: string;
     name: string;
     color: string;
+    /** id de icono (ver sectorIcons). "" = sin icono elegido explícitamente; undefined = nunca asignado. */
+    icon?: string;
 }
 
 export interface SectorWithAngles extends Sector {
