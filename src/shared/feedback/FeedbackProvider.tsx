@@ -25,6 +25,8 @@ export interface NotifyOptions {
     tone?: "info" | "error";
     actionLabel?: string;
     onAction?: () => void;
+    /** No se cierra solo (p. ej. «hay una versión nueva»). */
+    persistent?: boolean;
 }
 
 interface FeedbackContextValue {
@@ -143,10 +145,10 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
     const [paused, setPaused] = useState(false);
 
     useEffect(() => {
-        if (paused) return;
+        if (paused || toast.persistent) return;
         const timer = window.setTimeout(onDismiss, TOAST_DURATION_MS);
         return () => window.clearTimeout(timer);
-    }, [paused, onDismiss]);
+    }, [paused, onDismiss, toast.persistent]);
 
     const toneClass = toast.tone === "error"
         ? "bg-red-700 text-white"

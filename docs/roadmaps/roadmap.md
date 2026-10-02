@@ -118,8 +118,13 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 
 ## Hito 6 — Nuevas funciones
 
-- [ ] PWA instalable y offline (`vite-plugin-pwa`).
-- [ ] Protección de datos: `navigator.storage.persist()` y recordatorio periódico de copia de seguridad.
+### Prioridad (revisión de uso)
+- [ ] Estadísticas: primera apertura lenta, sin indicación de carga (mejorar rendimiento y/o añadir indicador).
+- [ ] Resumen / notas del día: rediseñar el formulario.
+- [ ] Menú de configuración demasiado grande: reestructurarlo y dividirlo.
+
+- [x] PWA instalable y offline (`vite-plugin-pwa`): aviso de versión nueva, botón «Instalar la app» y guía para iPhone; cabeceras de caché en Firebase.
+- [x] Protección de datos: `navigator.storage.persist()` cuando hay datos, fecha de la última copia y recordatorio (≥ 7 días con datos y copia de hace ≥ 30 días, máx. 1 por semana).
 - [ ] Teléfonos SOS según idioma/país (verificar cada número antes de publicar).
 - [ ] Archivar sectores en lugar de borrarlos, conservando su historial.
 - [ ] Vista de diario: listar y buscar resúmenes y comentarios pasados.

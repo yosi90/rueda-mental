@@ -17,6 +17,9 @@ const STORAGE_KEYS = {
     darkMode: "mental-wheel-dark-mode",
     style: "mental-wheel-style-v1",
     backgroundImage: "mental-wheel-background-image-v1",
+    lastBackupAt: "mental-wheel-last-backup-v1",
+    backupReminderAt: "mental-wheel-backup-reminder-v1",
+    persistRequested: "mental-wheel-persist-requested-v1",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
     language: "mental-wheel-language-v1",
@@ -250,3 +253,30 @@ export function saveBackgroundImage(enabled: boolean): void {
         // noop
     }
 }
+
+function loadTimestamp(key: string): number | null {
+    try {
+        const value = Number(localStorage.getItem(key));
+        return Number.isFinite(value) && value > 0 ? value : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveTimestamp(key: string, time = Date.now()): void {
+    try {
+        localStorage.setItem(key, String(time));
+    } catch {
+        // noop
+    }
+}
+
+/** Momento de la última copia exportada (ms) o null si nunca. */
+export const loadLastBackupAt = () => loadTimestamp(STORAGE_KEYS.lastBackupAt);
+export const saveLastBackupAt = () => saveTimestamp(STORAGE_KEYS.lastBackupAt);
+/** Última vez que se mostró el recordatorio de copia. */
+export const loadBackupReminderAt = () => loadTimestamp(STORAGE_KEYS.backupReminderAt);
+export const saveBackupReminderAt = () => saveTimestamp(STORAGE_KEYS.backupReminderAt);
+/** Si ya se pidió al navegador almacenamiento persistente. */
+export const loadPersistRequestedAt = () => loadTimestamp(STORAGE_KEYS.persistRequested);
+export const savePersistRequestedAt = () => saveTimestamp(STORAGE_KEYS.persistRequested);

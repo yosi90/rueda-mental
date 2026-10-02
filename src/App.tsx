@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useGlobalShortcuts } from "./app/useGlobalShortcuts";
 import { EMPTY_DAILY_SUMMARY, useMentalWheelData, type DataSnapshot } from "./app/useMentalWheelData";
 import { usePreferences } from "./app/usePreferences";
+import { useInstallPrompt, usePwaUpdates } from "./app/usePwa";
+import { useDataProtection } from "./app/useDataProtection";
 import { SectorContextMenu } from "./features/sectors/components/SectorContextMenu";
 import { DataSettingsSection } from "./features/settings/components/DataSettingsSection";
 import { LanguageSection } from "./features/settings/components/LanguageSection";
@@ -34,7 +36,7 @@ import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection"
 import { useMediaQuery } from "./shared/hooks/useMediaQuery";
 import { useI18n } from "./shared/i18n/I18nContext";
 import { downloadBackup, readBackupFile } from "./shared/services/io/backup";
-import { hasTutorialBeenShown, saveTutorialShown } from "./shared/services/storage/mentalWheelStorage";
+import { hasTutorialBeenShown, loadLastBackupAt, saveLastBackupAt, saveTutorialShown } from "./shared/services/storage/mentalWheelStorage";
 import { theme } from "./shared/theme/theme";
 import type { HoverInfo, InfoMenuContextual } from "./shared/types/mentalWheel";
 import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/utils/date";
@@ -68,6 +70,7 @@ export default function MentalWheelApp() {
     const [statsOpen, setStatsOpen] = useState(false);
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [sosOpen, setSosOpen] = useState(false);
+    const [lastBackupAt, setLastBackupAt] = useState<number | null>(() => loadLastBackupAt());
     const svgRef = useRef<SVGSVGElement>(null);
     const labelBounds = useVisibleLabelBounds(svgRef, SIZE);
 
@@ -114,6 +117,10 @@ export default function MentalWheelApp() {
         [scoresByDate, commentsByDate, dailySummaryByDate]
     );
     // Último día anterior con puntuaciones: se puede copiar a un día vacío y se dibuja como referencia
+    usePwaUpdates();
+    const { canInstall, install } = useInstallPrompt();
+    useDataProtection(daysWithData.size, () => exportBackup());
+
     const previousDateWithScores = useMemo(
         () => findPreviousDateWithScores(scoresByDate, dateStr),
         [scoresByDate, dateStr]
@@ -199,6 +206,8 @@ export default function MentalWheelApp() {
             tutorialShown: hasTutorialBeenShown(),
             statsVisibility,
         }, `rueda-desempeno-${dateStr}.json`);
+        saveLastBackupAt();
+        setLastBackupAt(Date.now());
     }
 
     async function importBackup(file: File): Promise<void> {
@@ -414,7 +423,14 @@ export default function MentalWheelApp() {
                     isScaleInverted={isScaleInverted}
                     setIsScaleInverted={preferences.setIsScaleInverted}
                 />
-                <DataSettingsSection resetDay={resetDay} exportJSON={exportBackup} onImportFile={importBackup} />
+                <DataSettingsSection
+                    resetDay={resetDay}
+                    exportJSON={exportBackup}
+                    onImportFile={importBackup}
+                    lastBackupAt={lastBackupAt}
+                    canInstall={canInstall}
+                    onInstall={() => void install()}
+                />
                 <ReferenceDaySection
                     showReference={preferences.showReference}
                     setShowReference={preferences.setShowReference}
