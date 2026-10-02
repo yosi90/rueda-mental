@@ -26,6 +26,9 @@
   --chart-tooltip-bg: #ffffff;
   --chart-tooltip-border: #e5e5e5;
   --chart-tooltip-text: #171717;
+  /* Paleta categórica validada (slots 1-2) para series de las gráficas */
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
   --heat-1: #dbeafe;
   --heat-2: #93c5fd;
   --heat-3: #3b82f6;
@@ -53,6 +56,8 @@
   --chart-tooltip-bg: #262626;
   --chart-tooltip-border: #404040;
   --chart-tooltip-text: #f5f5f5;
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
   --heat-1: #1e3a8a;
   --heat-2: #1d4ed8;
   --heat-3: #3b82f6;

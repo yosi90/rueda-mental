@@ -11,6 +11,12 @@ import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
 
+// Tarjetas de gráficas: en oscuro sobre neutral-800 para que la paleta (validada) mantenga 3:1 de contraste
+const CHART_CARD = "bg-neutral-50 dark:bg-neutral-800";
+// El texto de la leyenda usa el color de texto; el marcador de color identifica la serie
+const legendText = (value: string) => <span style={{ color: "var(--chart-text)" }}>{value}</span>;
+const ANIMATE_CHARTS = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 interface StatsModalProps {
     onClose: () => void;
     statsData: StatsData;
@@ -144,14 +150,14 @@ export function StatsModal({
                                 <>
                                     {/* Gráfico 1: Media Diaria */}
                                     {statsVisibility.showDailyAverage && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.dailyAverageChart")}</h3>
                                             <ResponsiveContainer width="100%" height={250}>
                                                 <AreaChart data={dailyAverageChartData}>
                                                     <defs>
                                                         <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
+                                                            <stop offset="5%" stopColor="var(--chart-series-1)" stopOpacity={0.6} />
+                                                            <stop offset="95%" stopColor="var(--chart-series-1)" stopOpacity={0.05} />
                                                         </linearGradient>
                                                     </defs>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
@@ -173,10 +179,11 @@ export function StatsModal({
                                                     <Area
                                                         type="monotone"
                                                         dataKey="media"
-                                                        stroke="#8884d8"
+                                                        stroke="var(--chart-series-1)"
                                                         fillOpacity={1}
                                                         fill="url(#colorMedia)"
                                                         strokeWidth={2}
+                                                        isAnimationActive={ANIMATE_CHARTS}
                                                     />
                                                 </AreaChart>
                                             </ResponsiveContainer>
@@ -185,7 +192,7 @@ export function StatsModal({
 
                                     {/* Gráfico 2: Progresión por Sector */}
                                     {statsVisibility.showSectorProgress && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                                 <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>{t("stats.sectorProgressChart")}</h3>
                                                 <select
@@ -219,8 +226,9 @@ export function StatsModal({
                                                     <Line
                                                         type="monotone"
                                                         dataKey="puntuacion"
-                                                        stroke={sectors.find(s => s.id === selectedSectorId)?.color || "#8884d8"}
-                                                        strokeWidth={3}
+                                                        stroke={sectors.find(s => s.id === selectedSectorId)?.color || "var(--chart-series-1)"}
+                                                        strokeWidth={2}
+                                                        isAnimationActive={ANIMATE_CHARTS}
                                                         dot={{ r: 4 }}
                                                         activeDot={{ r: 6 }}
                                                     />
@@ -231,7 +239,7 @@ export function StatsModal({
 
                                     {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
                                     {statsVisibility.showLast7AllSectors && last7ChartData && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.last7Chart")}</h3>
 
                                             <ResponsiveContainer width="100%" height={300}>
@@ -252,7 +260,7 @@ export function StatsModal({
                                                         formatter={formatChartTooltipValue}
                                                         contentStyle={chartTooltipStyle}
                                                     />
-                                                    <Legend />
+                                                    <Legend formatter={legendText} />
                                                     {sectors.filter(s => visibleSectors[s.id]).map(sector => (
                                                         <Line
                                                             key={sector.id}
@@ -260,6 +268,7 @@ export function StatsModal({
                                                             dataKey={getSectorSeriesKey(sector.id)}
                                                             stroke={rgbToHex(sector.color)}
                                                             strokeWidth={2}
+                                                            isAnimationActive={ANIMATE_CHARTS}
                                                             dot={{ r: 4, fill: rgbToHex(sector.color) }}
                                                             activeDot={{ r: 6 }}
                                                             name={sector.name}
@@ -310,7 +319,7 @@ export function StatsModal({
 
                                     {/* Gráfico 3: Comparación de Sectores */}
                                     {statsVisibility.showComparison && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.comparisonChart")}</h3>
                                             <ResponsiveContainer width="100%" height={300}>
                                                 <BarChart data={sectorComparisonChartData}>
@@ -333,9 +342,9 @@ export function StatsModal({
                                                         formatter={formatChartTooltipValue}
                                                         contentStyle={chartTooltipStyle}
                                                     />
-                                                    <Legend />
-                                                    <Bar dataKey="actual" fill="#82ca9d" name={t("stats.actualLabel")} />
-                                                    <Bar dataKey="promedio" fill="#8884d8" name={t("stats.historicalAverageLabel")} />
+                                                    <Legend formatter={legendText} />
+                                                    <Bar dataKey="actual" fill="var(--chart-series-1)" radius={[4, 4, 0, 0]} isAnimationActive={ANIMATE_CHARTS} name={t("stats.actualLabel")} />
+                                                    <Bar dataKey="promedio" fill="var(--chart-series-2)" radius={[4, 4, 0, 0]} isAnimationActive={ANIMATE_CHARTS} name={t("stats.historicalAverageLabel")} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
@@ -343,7 +352,7 @@ export function StatsModal({
 
                                     {/* Gráfico 4: Tendencia Semanal */}
                                     {statsVisibility.showWeeklyTrend && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.weeklyChart")}</h3>
                                             <ResponsiveContainer width="100%" height={250}>
                                                 <BarChart data={weeklyChartData}>
@@ -363,7 +372,7 @@ export function StatsModal({
                                                         formatter={formatChartTooltipValue}
                                                         contentStyle={chartTooltipStyle}
                                                     />
-                                                    <Bar dataKey="media" fill="#ffc658" name={t("stats.insightsAverageSuffix")} />
+                                                    <Bar dataKey="media" fill="var(--chart-series-1)" radius={[4, 4, 0, 0]} isAnimationActive={ANIMATE_CHARTS} name={t("stats.insightsAverageSuffix")} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                             <p className={`text-xs ${theme.textMuted} mt-2 text-center`}>
@@ -374,7 +383,7 @@ export function StatsModal({
 
                                     {/* Gráfico 5: Heat Map de Consistencia */}
                                     {statsVisibility.showHeatMap && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.heatMapChart")}</h3>
                                             <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
                                                 {statsData.heatMapData.map((day) => {
@@ -417,7 +426,7 @@ export function StatsModal({
 
                                     {/* Resumen de Insights */}
                                     {statsVisibility.showInsights && (
-                                        <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>{t("statsVisibility.insights")}</h3>
                                             <div className="space-y-2 text-sm">
                                                 {(() => {
