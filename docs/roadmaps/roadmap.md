@@ -92,7 +92,29 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 
 ---
 
-## Hito 5 — Nuevas funciones
+## Hito 5 — Personalización visual
+
+Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro y oscuro se mantienen; se añaden estilos opcionales.
+
+### Iconos
+- [ ] Iconos en los sectores predefinidos (lucide, SVG ligeros que siguen el color del tema).
+- [ ] Selector de icono para cualquier sector (menú del sector y Configuración): ~150-200 iconos por categorías y con buscador.
+- [ ] Puntuación de nuevo junto al nombre: icono + nombre + pastilla, sin recortes en los laterales.
+- [ ] Móvil: solo icono + puntuación (nombre si el sector no tiene icono; siempre accesible por lector de pantalla).
+- [ ] El icono se guarda en la copia de seguridad; los sectores por defecto existentes reciben su icono al cargar.
+
+### Estilos visuales
+- [ ] Base: colores restantes como variables (superficies, acento, rueda, sectores por defecto) para cambiar de estilo sin tocar componentes.
+- [ ] Selector de estilo en Configuración (claro y oscuro se mantienen como opciones).
+- [ ] Aurora: rosa nocturno (fondo CSS/SVG: cielo, estrellas).
+- [ ] Playa, Rock y Montaña.
+- [ ] Tipografía de títulos por estilo, alojada en la propia web (sin Google Fonts, por privacidad).
+- [ ] Contraste validado en cada estilo (texto, rueda y gráficas).
+- [ ] Fondos ilustrados (imágenes generadas aparte) en WebP comprimido, con capa para legibilidad y opción «sin imagen».
+
+---
+
+## Hito 6 — Nuevas funciones
 
 - [ ] PWA instalable y offline (`vite-plugin-pwa`).
 - [ ] Protección de datos: `navigator.storage.persist()` y recordatorio periódico de copia de seguridad.
