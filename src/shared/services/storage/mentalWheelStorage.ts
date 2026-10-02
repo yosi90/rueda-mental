@@ -111,13 +111,15 @@ export function saveScaleInverted(scaleInverted: boolean): void {
     }
 }
 
+/** Tema guardado; en la primera visita, el del sistema operativo. */
 export function loadDarkMode(): boolean {
     try {
         const saved = localStorage.getItem(STORAGE_KEYS.darkMode);
-        return saved ? JSON.parse(saved) : false;
+        if (saved) return JSON.parse(saved);
     } catch {
-        return false;
+        // noop
     }
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
 export function saveDarkMode(darkMode: boolean): void {
@@ -173,12 +175,12 @@ export function saveStatsVisibility(statsVisibility: StatsVisibility): void {
     }
 }
 
-export function loadLanguage(defaultLanguage = "es"): string {
+/** Idioma guardado, o null si el usuario aún no ha elegido ninguno. */
+export function loadLanguage(): string | null {
     try {
-        const raw = localStorage.getItem(STORAGE_KEYS.language);
-        return raw || defaultLanguage;
+        return localStorage.getItem(STORAGE_KEYS.language);
     } catch {
-        return defaultLanguage;
+        return null;
     }
 }
 

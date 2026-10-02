@@ -52,6 +52,7 @@ const es = {
     "common.cancel": "Cancelar",
     "common.save": "Guardar",
     "common.delete": "Borrar",
+    "common.undo": "Deshacer",
     "common.score": "Puntuación",
     "common.color": "Color",
 
@@ -68,6 +69,8 @@ const es = {
     "panel.nextMonth": "Mes siguiente",
     "panel.goToday": "Ir a hoy",
     "panel.selectDate": "Seleccionar fecha",
+    "panel.copyFrom": "Igual que el {{date}}",
+    "panel.copyFromTitle": "Copiar a este día las puntuaciones del {{date}}",
 
     "app.resetZoom": "Resetear zoom",
     "app.invalidJson": "Archivo JSON no válido",
@@ -97,7 +100,6 @@ const es = {
 
     "data.title": "Datos",
     "data.description": "Resetea el día actual o guarda/carga tus datos en JSON para usarlos en otro dispositivo",
-    "data.confirmReset": "¿Seguro que quieres resetear las puntuaciones del día actual?",
     "data.resetDay": "Resetear día",
     "data.exportJson": "Exportar JSON",
     "data.importJson": "Importar JSON",
@@ -230,6 +232,12 @@ const es = {
 
     "wheel.hasCommentAria": "Tiene comentario",
     "wheel.hasCommentTitle": "Tiene un comentario",
+    "toast.sectorDeleted": "Sector «{{name}}» eliminado",
+    "toast.dayReset": "Día reseteado",
+    "toast.imported": "Datos importados",
+    "toast.copied": "Puntuaciones copiadas del {{date}}",
+    "toast.scoreSet": "{{name}}: {{value}}",
+    "toast.scoreCleared": "{{name}}: sin puntuar",
     "wheel.label": "Rueda de puntuaciones del día",
     "wheel.valueText": "{{value}} de {{max}}",
     "wheel.unscored": "Sin puntuar",
@@ -242,6 +250,7 @@ const en: Record<keyof typeof es, string> = {
     "common.cancel": "Cancel",
     "common.save": "Save",
     "common.delete": "Delete",
+    "common.undo": "Undo",
     "common.score": "Score",
     "common.color": "Color",
 
@@ -258,6 +267,8 @@ const en: Record<keyof typeof es, string> = {
     "panel.nextMonth": "Next month",
     "panel.goToday": "Go to today",
     "panel.selectDate": "Select date",
+    "panel.copyFrom": "Same as {{date}}",
+    "panel.copyFromTitle": "Copy the scores from {{date}} to this day",
 
     "app.resetZoom": "Reset zoom",
     "app.invalidJson": "Invalid JSON file",
@@ -287,7 +298,6 @@ const en: Record<keyof typeof es, string> = {
 
     "data.title": "Data",
     "data.description": "Reset the current day or save/load your data as JSON to use it on another device",
-    "data.confirmReset": "Are you sure you want to reset today's scores?",
     "data.resetDay": "Reset day",
     "data.exportJson": "Export JSON",
     "data.importJson": "Import JSON",
@@ -420,6 +430,12 @@ const en: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Has comment",
     "wheel.hasCommentTitle": "Has a comment",
+    "toast.sectorDeleted": "Sector “{{name}}” deleted",
+    "toast.dayReset": "Day reset",
+    "toast.imported": "Data imported",
+    "toast.copied": "Scores copied from {{date}}",
+    "toast.scoreSet": "{{name}}: {{value}}",
+    "toast.scoreCleared": "{{name}}: not scored",
     "wheel.label": "Daily score wheel",
     "wheel.valueText": "{{value}} of {{max}}",
     "wheel.unscored": "Not scored",
@@ -433,6 +449,7 @@ const pt: Record<keyof typeof es, string> = {
     "common.cancel": "Cancelar",
     "common.save": "Guardar",
     "common.delete": "Apagar",
+    "common.undo": "Anular",
     "common.score": "Pontuação",
 
     "top.stats": "Estatísticas",
@@ -448,6 +465,8 @@ const pt: Record<keyof typeof es, string> = {
     "panel.nextMonth": "Mês seguinte",
     "panel.goToday": "Ir para hoje",
     "panel.selectDate": "Selecionar data",
+    "panel.copyFrom": "Igual a {{date}}",
+    "panel.copyFromTitle": "Copiar para este dia as pontuações de {{date}}",
 
     "app.resetZoom": "Repor zoom",
     "app.invalidJson": "Ficheiro JSON inválido",
@@ -477,7 +496,6 @@ const pt: Record<keyof typeof es, string> = {
 
     "data.title": "Dados",
     "data.description": "Repor o dia atual ou guardar/carregar os teus dados em JSON para usar noutro dispositivo",
-    "data.confirmReset": "Tens a certeza de que queres repor as pontuações de hoje?",
     "data.resetDay": "Repor dia",
     "data.exportJson": "Exportar JSON",
     "data.importJson": "Importar JSON",
@@ -608,6 +626,12 @@ const pt: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Tem comentário",
     "wheel.hasCommentTitle": "Tem um comentário",
+    "toast.sectorDeleted": "Setor «{{name}}» eliminado",
+    "toast.dayReset": "Dia reposto",
+    "toast.imported": "Dados importados",
+    "toast.copied": "Pontuações copiadas de {{date}}",
+    "toast.scoreSet": "{{name}}: {{value}}",
+    "toast.scoreCleared": "{{name}}: sem pontuação",
     "wheel.label": "Roda de pontuações do dia",
     "wheel.valueText": "{{value}} de {{max}}",
     "wheel.unscored": "Sem pontuação",
@@ -621,6 +645,7 @@ const de: Record<keyof typeof es, string> = {
     "common.cancel": "Abbrechen",
     "common.save": "Speichern",
     "common.delete": "Löschen",
+    "common.undo": "Rückgängig",
     "common.score": "Punktzahl",
     "common.color": "Farbe",
 
@@ -637,6 +662,8 @@ const de: Record<keyof typeof es, string> = {
     "panel.nextMonth": "Nächster Monat",
     "panel.goToday": "Zu heute",
     "panel.selectDate": "Datum auswählen",
+    "panel.copyFrom": "Wie am {{date}}",
+    "panel.copyFromTitle": "Bewertungen vom {{date}} für diesen Tag übernehmen",
 
     "app.resetZoom": "Zoom zurücksetzen",
     "app.invalidJson": "Ungültige JSON-Datei",
@@ -666,7 +693,6 @@ const de: Record<keyof typeof es, string> = {
 
     "data.title": "Daten",
     "data.description": "Setze den aktuellen Tag zurück oder speichere/lade deine Daten als JSON für ein anderes Gerät",
-    "data.confirmReset": "Möchtest du die heutigen Punktzahlen wirklich zurücksetzen?",
     "data.resetDay": "Tag zurücksetzen",
     "data.exportJson": "JSON exportieren",
     "data.importJson": "JSON importieren",
@@ -798,6 +824,12 @@ const de: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Hat Kommentar",
     "wheel.hasCommentTitle": "Hat einen Kommentar",
+    "toast.sectorDeleted": "Bereich „{{name}}“ gelöscht",
+    "toast.dayReset": "Tag zurückgesetzt",
+    "toast.imported": "Daten importiert",
+    "toast.copied": "Bewertungen vom {{date}} übernommen",
+    "toast.scoreSet": "{{name}}: {{value}}",
+    "toast.scoreCleared": "{{name}}: nicht bewertet",
     "wheel.label": "Tagesbewertungsrad",
     "wheel.valueText": "{{value}} von {{max}}",
     "wheel.unscored": "Nicht bewertet",

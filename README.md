@@ -7,6 +7,13 @@ Web de autoayuda y regulación emocional. Cada día puntúas del 1 al 10 distint
 - **Idiomas**: español, inglés, portugués y alemán.
 - **SOS**: acceso rápido a teléfonos de emergencia y apoyo emocional.
 
+## Uso rápido
+
+- **Puntuar**: clic en el anillo del sector (clic de nuevo en la misma puntuación para quitarla). Cada cambio se puede deshacer desde el aviso inferior.
+- **Menú del sector**: clic derecho o pulsación larga (nombre, color, puntuación, comentario del día).
+- **Teclado**: `Tab` recorre los sectores; flechas, `0`–`9`, `Inicio`/`Fin` puntúan e `Intro` abre el menú. Fuera de la rueda, `←`/`→` cambian de día y `T` vuelve a hoy.
+- **Día vacío**: el botón «Igual que el…» copia las puntuaciones del último día registrado.
+
 ## Desarrollo
 
 Requiere Node 20.19 o superior.

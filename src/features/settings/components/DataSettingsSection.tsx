@@ -30,11 +30,8 @@ export function DataSettingsSection({
 
             <div className="flex flex-col sm:flex-row gap-2">
                 <button
-                    onClick={() => {
-                        if (confirm(t("data.confirmReset"))) {
-                            resetDay();
-                        }
-                    }}
+                    type="button"
+                    onClick={resetDay}
                     className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`}
                 >
                     {t("data.resetDay")}

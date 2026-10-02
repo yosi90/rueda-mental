@@ -192,6 +192,80 @@ const report = [];
     await context.close();
 }
 
+// 7. Usabilidad: deshacer, quitar puntuación, confirmaciones propias, copiar día y atajos
+{
+    const { page, context, errors } = await newPage(browser);
+    const valueOf = (name) => page.getByRole("slider", { name }).getAttribute("aria-valuetext");
+    const box = await page.locator("svg.select-none").boundingBox();
+
+    // Clic en un anillo concreto de «Familia» (sector 0) y deshacer
+    const before = await valueOf("Familia");
+    const p = await sectorPoint(page, 0, 8, 0.45);
+    await page.mouse.click(p.x, p.y);
+    const afterClick = await valueOf("Familia");
+    const toastText = await page.getByRole("status").filter({ hasText: "Familia" }).textContent();
+    await page.screenshot({ path: `${OUT}/11-toast-undo.png` });
+    await page.getByRole("button", { name: "Deshacer" }).click();
+    report.push(`clic rueda: ${before} → ${afterClick} (aviso «${toastText?.replace("Deshacer", "").replace("✕", "").trim()}») → deshacer: ${await valueOf("Familia")}`);
+
+    // Mismo anillo dos veces = quitar puntuación
+    await page.mouse.click(p.x, p.y);
+    await page.mouse.click(p.x, p.y);
+    report.push(`mismo anillo dos veces: ${await valueOf("Familia")}`);
+
+    // Borrar sector desde Configuración: diálogo propio, cancelar, borrar y deshacer
+    await page.getByRole("button", { name: "Configuración" }).click();
+    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Eliminar: Salud" }).click();
+    const alert = page.getByRole("alertdialog");
+    report.push(`diálogo de confirmación: ${await alert.isVisible()} · foco en: ${await page.evaluate(() => document.activeElement?.textContent)}`);
+    await page.screenshot({ path: `${OUT}/12-confirm-dialog.png` });
+    await page.keyboard.press("Escape");
+    report.push(`Escape cancela: sector sigue = ${await page.getByRole("button", { name: "Eliminar: Salud" }).count() === 1}`);
+    await page.getByRole("button", { name: "Eliminar: Salud" }).click();
+    await alert.getByRole("button", { name: "Eliminar" }).click();
+    const deleted = await page.getByRole("button", { name: "Eliminar: Salud" }).count() === 0;
+    await page.getByRole("button", { name: "Deshacer" }).click();
+    report.push(`borrar sector: ${deleted} → deshacer lo recupera: ${await page.getByRole("button", { name: "Eliminar: Salud" }).count() === 1}`);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+
+    // Atajos de teclado: ← cambia de día; en un día vacío aparece «Igual que…»
+    await page.evaluate(() => document.activeElement?.blur?.());
+    const dateLabel = page.getByRole("button", { name: /^Seleccionar fecha/ });
+    const today = await dateLabel.textContent();
+    // El seed deja huecos cada 6 días empezando en «hace 3 días»
+    for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowLeft");
+    const gapDay = await dateLabel.textContent();
+    const copyButton = page.getByRole("button", { name: /^Igual que el/ });
+    report.push(`← ×3: ${today} → ${gapDay} · botón copiar visible: ${await copyButton.isVisible()} (${await copyButton.textContent()})`);
+    await page.screenshot({ path: `${OUT}/13-copy-previous.png` });
+    await copyButton.click();
+    report.push(`tras copiar, Familia = ${await valueOf("Familia")} · botón oculto: ${!(await copyButton.isVisible())}`);
+    await page.keyboard.press("t");
+    report.push(`T vuelve a hoy: ${(await dateLabel.textContent()) === today}`);
+
+    // El cursor con zoom 1 es de puntero (sin arrastre)
+    report.push(`cursor con zoom 1: ${await page.locator("svg.select-none").evaluate((el) => getComputedStyle(el).cursor)}`);
+    report.push(`errores usabilidad: ${JSON.stringify(errors)}`);
+    void box;
+    await context.close();
+}
+
+// 8. Primera visita: idioma y tema del sistema
+{
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "de-DE", colorScheme: "dark" });
+    const page = await context.newPage();
+    await page.goto(URL);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForSelector("svg");
+    const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+    report.push(`primera visita de-DE + oscuro: «${await page.getByRole("button", { name: "Heute" }).textContent()}» · tema ${theme} · sectores: ${await page.getByRole("slider").first().getAttribute("aria-label")}`);
+    await page.screenshot({ path: `${OUT}/14-first-visit-de-dark.png` });
+    await context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

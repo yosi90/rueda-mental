@@ -49,6 +49,9 @@ import { parseBackup } from "./shared/services/io/backup";
 import type { ThemeClasses } from "./shared/types/theme";
 import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/utils/date";
 import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
+import { dayHasScores, findPreviousDateWithScores } from "./shared/utils/scores";
+import { useFeedback } from "./shared/feedback/FeedbackProvider";
+import { hasOpenDialog } from "./shared/hooks/useDialogA11y";
 
 // === Mental Performance Wheel ===
 // - Añade/Quita sectores (aspectos de vida)
@@ -64,6 +67,7 @@ const StatsModal = lazy(() =>
 
 export default function MentalWheelApp() {
     const { t, language, setLanguage, locale, languageDetails } = useI18n();
+    const { confirm, notify } = useFeedback();
 
     // --- Configuración base ---
     const RING_COUNT = 10; // 0..10 (0 = sin nota)
@@ -155,7 +159,10 @@ export default function MentalWheelApp() {
 
 
     // Guardar preferencia de tema
-    useEffect(() => saveDarkMode(darkMode), [darkMode]);
+    useEffect(() => {
+        saveDarkMode(darkMode);
+        document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    }, [darkMode]);
     useEffect(() => saveScaleInverted(isScaleInverted), [isScaleInverted]);
 
     useEffect(() => {
@@ -295,6 +302,26 @@ export default function MentalWheelApp() {
         });
     }
 
+    // --- Deshacer ---
+    interface DataSnapshot {
+        sectors: Sector[];
+        scoresByDate: ScoresByDate;
+        commentsByDate: CommentsByDate;
+        dailySummaryByDate: DailySummaryByDate;
+    }
+    function takeSnapshot(): DataSnapshot {
+        return { sectors, scoresByDate, commentsByDate, dailySummaryByDate };
+    }
+    function restoreSnapshot(snapshot: DataSnapshot): void {
+        setSectors(snapshot.sectors);
+        setScoresByDate(snapshot.scoresByDate);
+        setCommentsByDate(snapshot.commentsByDate);
+        setDailySummaryByDate(snapshot.dailySummaryByDate);
+    }
+    function notifyUndoable(message: string, snapshot: DataSnapshot): void {
+        notify({ message, actionLabel: t("common.undo"), onAction: () => restoreSnapshot(snapshot) });
+    }
+
     // --- UI Ops ---
     function addSector() {
         const name = newName.trim() || `Sector ${sectors.length + 1}`;
@@ -302,7 +329,20 @@ export default function MentalWheelApp() {
         setSectors((prev) => [...prev, { id: genId(), name, color }]);
         setNewName("");
     }
-    function removeSector(id: string): void {
+    async function removeSector(id: string): Promise<void> {
+        const sector = sectors.find((s) => s.id === id);
+        if (!sector) return;
+        const confirmed = await confirm({
+            message: t("sectors.deleteConfirm", { name: sector.name }),
+            confirmLabel: t("sectors.delete"),
+            danger: true,
+        });
+        if (!confirmed) return;
+        const snapshot = takeSnapshot();
+        deleteSectorData(id);
+        notifyUndoable(t("toast.sectorDeleted", { name: sector.name }), snapshot);
+    }
+    function deleteSectorData(id: string): void {
         setSectors((prev) => prev.filter((s) => s.id !== id));
         setScoresByDate((prev) => {
             const cleaned: ScoresByDate = {};
@@ -349,6 +389,7 @@ export default function MentalWheelApp() {
         setScoresByDate((prev) => ({ ...prev, [dateStr]: { ...prev[dateStr], [id]: level } }));
     }
     function resetDay() {
+        const snapshot = takeSnapshot();
         setScoresByDate((prev) => {
             const copy = { ...prev };
             delete copy[dateStr];
@@ -364,7 +405,62 @@ export default function MentalWheelApp() {
             delete copy[dateStr];
             return copy;
         });
+        notifyUndoable(t("toast.dayReset"), snapshot);
     }
+
+    // Puntuación con clic en la rueda: repetir la misma puntuación la quita.
+    function handleWheelScore(sectorId: string, level: number): void {
+        const date = dateStr;
+        const previous = scoresByDate[date]?.[sectorId];
+        const next = previous === level ? 0 : level;
+        setScoresByDate((prev) => ({ ...prev, [date]: { ...prev[date], [sectorId]: next } }));
+
+        const name = sectors.find((s) => s.id === sectorId)?.name ?? "";
+        const displayed = toDisplayScore(next, RING_COUNT, isScaleInverted);
+        notify({
+            message: displayed > 0
+                ? t("toast.scoreSet", { name, value: displayed })
+                : t("toast.scoreCleared", { name }),
+            actionLabel: t("common.undo"),
+            onAction: () => setScoresByDate((prev) => {
+                const day = { ...prev[date] };
+                if (previous === undefined) delete day[sectorId];
+                else day[sectorId] = previous;
+                const copy = { ...prev, [date]: day };
+                if (Object.keys(day).length === 0) delete copy[date];
+                return copy;
+            }),
+        });
+    }
+
+    const previousDateWithScores = useMemo(
+        () => (dayHasScores(scores) ? null : findPreviousDateWithScores(scoresByDate, dateStr)),
+        [scores, scoresByDate, dateStr]
+    );
+    function copyScoresFrom(sourceDate: string): void {
+        const snapshot = takeSnapshot();
+        setScoresByDate((prev) => ({ ...prev, [dateStr]: { ...prev[sourceDate] } }));
+        notifyUndoable(t("toast.copied", { date: formatShortDate(sourceDate) }), snapshot);
+    }
+    function formatShortDate(date: string): string {
+        return parseDateInput(date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+    }
+
+    // Atajos globales: ← / → cambian de día y T vuelve a hoy (fuera de campos, sliders y diálogos).
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || hasOpenDialog()) return;
+            const target = event.target as HTMLElement | null;
+            if (target?.closest("input, textarea, select, [contenteditable='true'], [role='slider'], [role='dialog']")) return;
+            if (event.key === "ArrowLeft") setDateStr((d) => addDaysToDateInput(d, -1));
+            else if (event.key === "ArrowRight") setDateStr((d) => addDaysToDateInput(d, 1));
+            else if (event.key === "t" || event.key === "T") setDateStr(formatDateInput(new Date()));
+            else return;
+            event.preventDefault();
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     function exportJSON() {
         const backup: MentalWheelBackup = {
@@ -401,14 +497,20 @@ export default function MentalWheelApp() {
         evt.target.value = "";
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             const backup = parseBackup(String(reader.result));
             if (!backup) {
-                alert(t("app.invalidJson"));
+                notify({ message: t("app.invalidJson"), tone: "error" });
                 return;
             }
-            if (!confirm(t("data.confirmImport"))) return;
+            const confirmed = await confirm({
+                message: t("data.confirmImport"),
+                confirmLabel: t("data.importJson"),
+                danger: true,
+            });
+            if (!confirmed) return;
 
+            const snapshot = takeSnapshot();
             if (backup.config) setSectors(backup.config);
             if (backup.scoresByDate) setScoresByDate(backup.scoresByDate);
             if (backup.commentsByDate) setCommentsByDate(backup.commentsByDate);
@@ -418,6 +520,7 @@ export default function MentalWheelApp() {
             if (backup.language) setLanguage(backup.language);
             if (backup.tutorialShown !== undefined) saveTutorialShown(backup.tutorialShown);
             if (backup.statsVisibility) setStatsVisibility(backup.statsVisibility);
+            notifyUndoable(t("toast.imported"), snapshot);
         };
         reader.readAsText(file);
     }
@@ -456,10 +559,9 @@ export default function MentalWheelApp() {
         cy,
         radius,
         sectorsWithAngles,
-        dateStr,
         inSector,
         distanceToLevel,
-        setScoresByDate,
+        onWheelScore: handleWheelScore,
         setHoverInfo,
         setInfoMenuContextual,
     });
@@ -581,6 +683,10 @@ export default function MentalWheelApp() {
                 onOpenSos={() => setSosOpen(true)}
                 todayStr={todayStr}
                 daysWithData={daysWithData}
+                copySource={previousDateWithScores ? {
+                    label: formatShortDate(previousDateWithScores),
+                    onCopy: () => copyScoresFrom(previousDateWithScores),
+                } : null}
             />
 
             {/* Rueda principal */}
@@ -610,7 +716,7 @@ export default function MentalWheelApp() {
                         onMouseDown={handleMouseDown}
                         onMouseUp={handleMouseUp}
                         className="select-none touch-none drop-shadow-2xl"
-                        style={{ maxWidth: '100%', maxHeight: '100%', cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none' }}
+                        style={{ maxWidth: '100%', maxHeight: '100%', cursor: scale === 1 ? 'pointer' : isPanning ? 'grabbing' : 'grab', touchAction: 'none' }}
                         preserveAspectRatio="xMidYMid meet"
                     >
                         <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>

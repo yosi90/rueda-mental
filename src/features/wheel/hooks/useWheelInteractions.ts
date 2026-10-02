@@ -11,7 +11,6 @@ import type {
 import type {
     HoverInfo,
     InfoMenuContextual,
-    ScoresByDate,
     SectorWithAngles,
 } from "../../../shared/types/mentalWheel";
 
@@ -22,10 +21,10 @@ interface UseWheelInteractionsParams {
     cy: number;
     radius: number;
     sectorsWithAngles: SectorWithAngles[];
-    dateStr: string;
     inSector: (ang: number, sector: SectorWithAngles) => boolean;
     distanceToLevel: (distance: number) => number;
-    setScoresByDate: Dispatch<SetStateAction<ScoresByDate>>;
+    /** Clic en un sector: `level` es la puntuación interna (anillo) pulsada. */
+    onWheelScore: (sectorId: string, level: number) => void;
     setHoverInfo: Dispatch<SetStateAction<HoverInfo | null>>;
     setInfoMenuContextual: Dispatch<SetStateAction<InfoMenuContextual | null>>;
 }
@@ -54,10 +53,9 @@ export function useWheelInteractions({
     cy,
     radius,
     sectorsWithAngles,
-    dateStr,
     inSector,
     distanceToLevel,
-    setScoresByDate,
+    onWheelScore,
     setHoverInfo,
     setInfoMenuContextual,
 }: UseWheelInteractionsParams) {
@@ -139,11 +137,7 @@ export function useWheelInteractions({
         const sector = hit?.sector;
         if (!hit || !sector) return;
 
-        const level = distanceToLevel(hit.dist);
-        setScoresByDate((prev) => ({
-            ...prev,
-            [dateStr]: { ...prev[dateStr], [sector.id]: level },
-        }));
+        onWheelScore(sector.id, distanceToLevel(hit.dist));
     }
 
     function handleSvgMove(e: ReactMouseEvent<SVGSVGElement>) {
@@ -153,8 +147,10 @@ export function useWheelInteractions({
             if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
                 setHasPanned(true);
             }
-            setTranslateX((prev) => prev + dx);
-            setTranslateY((prev) => prev + dy);
+            if (scale !== 1) {
+                setTranslateX((prev) => prev + dx);
+                setTranslateY((prev) => prev + dy);
+            }
             setStartPan({ x: e.clientX, y: e.clientY });
             return;
         }
@@ -221,8 +217,10 @@ export function useWheelInteractions({
                 setHasPanned(true);
                 clearLongPressTimer();
             }
-            setTranslateX((prev) => prev + dx);
-            setTranslateY((prev) => prev + dy);
+            if (scale !== 1) {
+                setTranslateX((prev) => prev + dx);
+                setTranslateY((prev) => prev + dy);
+            }
             setStartPan({ x: e.touches[0].clientX, y: e.touches[0].clientY });
         }
     }

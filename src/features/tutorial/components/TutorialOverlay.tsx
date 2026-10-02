@@ -15,19 +15,21 @@ export function TutorialOverlay({
 }: TutorialOverlayProps) {
     const { t } = useI18n();
     const sectorName = tutorialSectorName ?? "...";
+    // Las burbujas no capturan el puntero (pointer-events-none); solo este botón sí.
+    const skipButton = (
+        <div className="mt-3 flex justify-end">
+            <button
+                type="button"
+                onClick={onSkip}
+                className="pointer-events-auto min-h-8 rounded-md px-2 text-xs font-semibold text-white underline underline-offset-2 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+                {t("tutorial.skip")}
+            </button>
+        </div>
+    );
 
     return (
         <>
-            {tutorialStep >= 1 && tutorialStep <= 5 && (
-                <button
-                    type="button"
-                    onClick={onSkip}
-                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[71] rounded-full bg-neutral-900/80 text-white px-4 py-2 text-sm font-medium shadow-lg hover:bg-neutral-900 transition-colors"
-                >
-                    {t("tutorial.skip")}
-                </button>
-            )}
-
             {tutorialStep === 1 && (
                 <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`text-sm sm:text-lg text-center`}>
@@ -39,6 +41,7 @@ export function TutorialOverlay({
                     <p className="text-xs text-center mt-4">
                         {t("tutorial.step1.cta", { sectorName })}
                     </p>
+                    {skipButton}
                 </div>
             )}
 
@@ -53,6 +56,7 @@ export function TutorialOverlay({
                     <p className="text-xs text-center mt-4">
                         {t("tutorial.step2.cta", { sectorName })}
                     </p>
+                    {skipButton}
                 </div>
             )}
 
@@ -67,6 +71,7 @@ export function TutorialOverlay({
                     <p className="text-xs text-center mt-4">
                         {isTouchDevice ? t("tutorial.step3.ctaTouch") : t("tutorial.step3.ctaMouse")}
                     </p>
+                    {skipButton}
                 </div>
             )}
 
@@ -95,6 +100,7 @@ export function TutorialOverlay({
                     <p className="text-xs text-center mt-4">
                         {t("tutorial.step4.cta")}
                     </p>
+                    {skipButton}
                 </div>
             )}
 
@@ -112,6 +118,7 @@ export function TutorialOverlay({
                     <p className={`text-sm sm:text-lg text-justify mt-3`}>
                         {isTouchDevice ? t("tutorial.step5.body2Touch") : t("tutorial.step5.body2Mouse")}
                     </p>
+                    {skipButton}
                 </div>
             )}
 

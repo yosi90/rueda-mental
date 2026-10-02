@@ -1,6 +1,7 @@
 import type { Scores, ScoresByDate, Sector } from "../../../shared/types/mentalWheel";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { addDaysToDateInput, parseDateInput } from "../../../shared/utils/date";
+import { dayHasScores } from "../../../shared/utils/scores";
 import type { Last7AllSectorsPoint, StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "./sectorSeriesKey";
 
@@ -17,10 +18,6 @@ interface BuildStatsDataParams {
 }
 
 const HEAT_MAP_DAYS = 60;
-
-function hasScores(dayScores: Scores | undefined): boolean {
-    return Boolean(dayScores) && Object.values(dayScores!).some((score) => score > 0);
-}
 
 function average(values: number[]): number {
     return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
@@ -59,7 +56,7 @@ export function buildStatsData({
     );
 
     const dates = Object.keys(scoresByDate)
-        .filter((date) => date <= todayStr && hasScores(scoresByDate[date]))
+        .filter((date) => date <= todayStr && dayHasScores(scoresByDate[date]))
         .sort();
     const datesWithData = new Set(dates);
 

@@ -52,24 +52,25 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 
 ---
 
-## Hito 3 — Usabilidad
+## Hito 3 — Usabilidad ✅
 
-- [ ] Diálogos y avisos propios (temáticos y traducidos) en lugar de `confirm()` / `alert()`.
-- [ ] «Deshacer» tras puntuar, borrar sector o resetear el día.
-- [ ] Poder dejar un sector a 0 desde la rueda.
-- [ ] Mostrar la puntuación de cada sector en la rueda (no solo al pasar el ratón).
-- [ ] Botón «Igual que ayer».
-- [ ] Atajos de teclado: `←` / `→` cambiar de día, `T` hoy, `Esc` cerrar.
-- [ ] Desactivar el arrastre (pan) con zoom 1 para no confundir con «clic para puntuar».
-- [ ] Detectar el idioma del navegador en la primera visita.
-- [ ] Tema inicial según `prefers-color-scheme`.
+- [x] Diálogos y avisos propios (temáticos y traducidos) en lugar de `confirm()` / `alert()`.
+- [x] «Deshacer» tras puntuar con clic, borrar sector, resetear el día, importar o copiar un día.
+- [x] Poder dejar un sector a 0 desde la rueda (clic de nuevo en la misma puntuación).
+- [x] Mostrar la puntuación de cada sector en la rueda (junto a su nombre).
+- [x] Botón «Igual que el…» (copia el último día con puntuaciones cuando el día actual está vacío).
+- [x] Atajos de teclado: `←` / `→` cambiar de día, `T` hoy, `Esc` cerrar.
+- [x] Desactivar el arrastre (pan) con zoom 1 para no confundir con «clic para puntuar».
+- [x] Detectar el idioma del navegador en la primera visita.
+- [x] Tema inicial según `prefers-color-scheme`.
+- [ ] Decidir si la «Media del día» del panel debe ignorar los sectores sin puntuar (como ya hacen las estadísticas).
 
 ---
 
 ## Hito 4 — Refactor y sistema visual
 
 - [ ] Dividir `App.tsx`: `useMentalWheelData` (estado, persistencia, import/export), `useWheelGeometry`, tema.
-- [ ] Tema con variante `dark:` de Tailwind / variables CSS en vez del objeto `theme` por props.
+- [ ] Tema con variante `dark:` de Tailwind / variables CSS en vez del objeto `theme` por props (la variante ya existe vía `data-theme`; la usan los avisos y la confirmación).
 - [ ] Reducir props de `SettingsDrawer` (contexto o reducer).
 - [ ] Interacciones de la rueda con Pointer Events y estado de pan en refs.
 - [ ] Paleta de gráficas coherente con la app y con los colores de los sectores.

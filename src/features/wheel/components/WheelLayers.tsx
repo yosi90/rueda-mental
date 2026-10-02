@@ -104,11 +104,13 @@ export function WheelLayers({
         const cosv = Math.cos(toRad(s.mid));
         const anchor = cosv > 0.25 ? "start" : cosv < -0.25 ? "end" : "middle";
         const hasComment = !!getComment(dateStr, s.id);
+        const displayScore = toDisplayScore(scores[s.id] ?? 0, ringCount, isScaleInverted);
 
         return (
             <g key={`lab-${s.id}`}>
                 <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="middle" fill={theme.svgText} aria-hidden="true">
                     {s.name}
+                    {displayScore > 0 && <tspan fontWeight={700}> {displayScore}</tspan>}
                 </text>
 
                 {hasComment && (

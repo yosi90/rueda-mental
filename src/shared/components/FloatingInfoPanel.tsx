@@ -21,6 +21,8 @@ interface FloatingInfoPanelProps {
     onOpenSos: () => void;
     todayStr: string;
     daysWithData: ReadonlySet<string>;
+    /** Día anterior con puntuaciones que se puede copiar al día actual (si este está vacío). */
+    copySource: { label: string; onCopy: () => void } | null;
 }
 
 export function FloatingInfoPanel({
@@ -42,6 +44,7 @@ export function FloatingInfoPanel({
     onOpenSos,
     todayStr,
     daysWithData,
+    copySource,
 }: FloatingInfoPanelProps) {
     const { t } = useI18n();
     const [calendarOpen, setCalendarOpen] = useState(false);
@@ -165,13 +168,15 @@ export function FloatingInfoPanel({
                 </button>
             </div>
 
-            <div className={`rounded-xl sm:rounded-2xl ${cardClass} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 mt-1 sm:mt-0 shadow-lg`}>
+            <div className="flex flex-col gap-2 mt-1 sm:mt-0">
+            <div className={`rounded-xl sm:rounded-2xl ${cardClass} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={onPrevDay}
                         className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
-                        title={t("panel.prevDay")}
+                        title={`${t("panel.prevDay")} (←)`}
+                        aria-keyshortcuts="ArrowLeft"
                         aria-label={t("panel.prevDay")}
                     >
                         <span aria-hidden="true">&lt;</span>
@@ -296,7 +301,8 @@ export function FloatingInfoPanel({
                         type="button"
                         onClick={onNextDay}
                         className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
-                        title={t("panel.nextDay")}
+                        title={`${t("panel.nextDay")} (→)`}
+                        aria-keyshortcuts="ArrowRight"
                         aria-label={t("panel.nextDay")}
                     >
                         <span aria-hidden="true">&gt;</span>
@@ -306,11 +312,25 @@ export function FloatingInfoPanel({
                         type="button"
                         onClick={onToday}
                         className={`${buttonPrimaryClass} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
-                        title={t("panel.goToday")}
+                        title={`${t("panel.goToday")} (T)`}
+                        aria-keyshortcuts="T"
                     >
                         {t("common.today")}
                     </button>
                 </div>
+            </div>
+
+            {copySource && (
+                <button
+                    type="button"
+                    onClick={copySource.onCopy}
+                    title={t("panel.copyFromTitle", { date: copySource.label })}
+                    className={`self-start inline-flex items-center gap-1.5 rounded-xl ${cardClass} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${textClass} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+                >
+                    <span aria-hidden="true">↺</span>
+                    {t("panel.copyFrom", { date: copySource.label })}
+                </button>
+            )}
             </div>
         </div>
     );

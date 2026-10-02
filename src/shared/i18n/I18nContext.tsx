@@ -23,9 +23,16 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+// Idioma guardado; en la primera visita, el primero soportado de las preferencias del navegador.
 function resolveInitialLanguage(): Language {
-    const savedLanguage = loadLanguage("es");
-    return isLanguage(savedLanguage) ? savedLanguage : "es";
+    const savedLanguage = loadLanguage();
+    if (savedLanguage && isLanguage(savedLanguage)) return savedLanguage;
+    const browserLanguages = navigator.languages?.length ? navigator.languages : [navigator.language];
+    for (const tag of browserLanguages) {
+        const base = tag?.toLowerCase().split("-")[0];
+        if (base && isLanguage(base)) return base;
+    }
+    return "es";
 }
 
 export function I18nProvider({ children }: PropsWithChildren) {

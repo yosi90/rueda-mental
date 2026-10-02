@@ -12,6 +12,10 @@ const FOCUSABLE_SELECTOR = [
 // Pila de diálogos abiertos: solo el último responde a Tab y Escape.
 const openDialogs: symbol[] = [];
 
+export function hasOpenDialog(): boolean {
+    return openDialogs.length > 0;
+}
+
 function getFocusable(container: HTMLElement): HTMLElement[] {
     return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
         .filter((el) => !el.closest("[inert]") && el.getClientRects().length > 0);
@@ -21,12 +25,13 @@ function getFocusable(container: HTMLElement): HTMLElement[] {
  * Comportamiento accesible de un diálogo modal mientras `open` es true:
  * mueve el foco al contenedor, lo mantiene dentro (Tab / Shift+Tab),
  * cierra con Escape y devuelve el foco al elemento que lo abrió.
- * El contenedor debe tener `tabIndex={-1}`.
+ * El contenedor debe tener `tabIndex={-1}`. Con `initialFocusRef` el foco va a ese elemento.
  */
 export function useDialogA11y(
     open: boolean,
     onClose: () => void,
-    containerRef: RefObject<HTMLElement | null>
+    containerRef: RefObject<HTMLElement | null>,
+    initialFocusRef?: RefObject<HTMLElement | null>
 ): void {
     const onCloseRef = useRef(onClose);
     useEffect(() => {
@@ -38,7 +43,7 @@ export function useDialogA11y(
         const id = Symbol("dialog");
         openDialogs.push(id);
         const previouslyFocused = document.activeElement as HTMLElement | null;
-        containerRef.current?.focus({ preventScroll: true });
+        (initialFocusRef?.current ?? containerRef.current)?.focus({ preventScroll: true });
 
         const handleKeyDown = (event: KeyboardEvent) => {
             if (openDialogs[openDialogs.length - 1] !== id) return;
@@ -80,5 +85,5 @@ export function useDialogA11y(
             if (index >= 0) openDialogs.splice(index, 1);
             if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
         };
-    }, [open, containerRef]);
+    }, [open, containerRef, initialFocusRef]);
 }

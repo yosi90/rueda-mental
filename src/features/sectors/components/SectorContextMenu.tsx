@@ -175,10 +175,8 @@ function SectorMenuContent({
                     aria-label={t("sectorMenu.deleteTitle")}
                     className={`inline-flex items-center justify-center min-h-8 min-w-8 rounded-md border ${theme.border} ${theme.button} px-2 text-xs transition-colors flex-shrink-0`}
                     onClick={() => {
-                        if (confirm(t("sectors.deleteConfirm", { name: sector.name }))) {
-                            removeSector(sector.id);
-                            onClose();
-                        }
+                        onClose();
+                        removeSector(sector.id);
                     }}
                 >
                     <span aria-hidden="true">🗑️</span>

@@ -104,9 +104,7 @@ export function SectorsSettingsSection({
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            if (confirm(t("sectors.deleteConfirm", { name: s.name }))) removeSector(s.id);
-                                        }}
+                                        onClick={() => removeSector(s.id)}
                                         className={iconButtonClass}
                                         title={t("sectors.delete")}
                                         aria-label={`${t("sectors.delete")}: ${s.name}`}
