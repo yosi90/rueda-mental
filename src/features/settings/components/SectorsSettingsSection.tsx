@@ -4,6 +4,7 @@ import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { Sector } from "../../../shared/types/mentalWheel";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { rgbToHex } from "../../../shared/utils/color";
+import { IconPicker } from "../../sectors/components/IconPicker";
 
 interface SectorsSettingsSectionProps {
     addSector: (name: string) => void;
@@ -71,6 +72,11 @@ export function SectorsSettingsSection({
                                     title={t("common.color")}
                                     aria-label={`${t("common.color")}: ${s.name}`}
                                     className="h-8 w-8 cursor-pointer rounded-md border flex-shrink-0"
+                                />
+                                <IconPicker
+                                    sectorName={s.name}
+                                    value={s.icon}
+                                    onChange={(icon) => updateSector(s.id, { icon })}
                                 />
                                 <input
                                     value={s.name}

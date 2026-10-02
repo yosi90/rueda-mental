@@ -5,6 +5,7 @@ import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWheel";
 import { rgbToHex } from "../../../shared/utils/color";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
+import { IconPicker } from "./IconPicker";
 
 interface SectorContextMenuProps {
     menu: InfoMenuContextual | null;
@@ -148,6 +149,12 @@ function SectorMenuContent({
                     title={t("common.color")}
                     aria-label={t("common.color")}
                     className="h-8 w-8 cursor-pointer rounded-md border flex-shrink-0"
+                />
+                <IconPicker
+                    size="sm"
+                    sectorName={sector.name}
+                    value={sector.icon}
+                    onChange={(icon) => updateSector(sector.id, { icon })}
                 />
 
                 <input

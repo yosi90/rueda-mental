@@ -97,11 +97,11 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro y oscuro se mantienen; se añaden estilos opcionales.
 
 ### Iconos
-- [ ] Iconos en los sectores predefinidos (lucide, SVG ligeros que siguen el color del tema).
-- [ ] Selector de icono para cualquier sector (menú del sector y Configuración): ~150-200 iconos por categorías y con buscador.
-- [ ] Puntuación de nuevo junto al nombre: icono + nombre + pastilla, sin recortes en los laterales.
-- [ ] Móvil: solo icono + puntuación (nombre si el sector no tiene icono; siempre accesible por lector de pantalla).
-- [ ] El icono se guarda en la copia de seguridad; los sectores por defecto existentes reciben su icono al cargar.
+- [x] Iconos en los sectores predefinidos (lucide, SVG ligeros que siguen el color del tema).
+- [x] Selector de icono para cualquier sector (menú del sector y Configuración): ~150-200 iconos por categorías y con buscador.
+- [x] Puntuación de nuevo junto al nombre: icono + nombre + pastilla, sin recortes en los laterales.
+- [x] Móvil: solo icono + puntuación (nombre si el sector no tiene icono; siempre accesible por lector de pantalla).
+- [x] El icono se guarda en la copia de seguridad; los sectores por defecto existentes reciben su icono al cargar.
 
 ### Estilos visuales
 - [ ] Base: colores restantes como variables (superficies, acento, rueda, sectores por defecto) para cambiar de estilo sin tocar componentes.

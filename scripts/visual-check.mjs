@@ -349,6 +349,33 @@ const report = [];
     await desk.context.close();
 }
 
+// 11. Iconos: asignación por defecto y selector
+{
+    const { page, context, errors } = await newPage(browser);
+    const storedIcon = (id) => page.evaluate((id) => JSON.parse(localStorage.getItem("mental-wheel-config-v1")).find((s) => s.id === id)?.icon, id);
+    report.push(`icono por defecto de Familia: ${await storedIcon("s0")}`);
+
+    const p = await sectorPoint(page, 0);
+    await page.mouse.click(p.x, p.y, { button: "right" });
+    await page.getByRole("button", { name: "Elegir icono: Familia" }).click();
+    const picker = page.getByRole("dialog", { name: /Icono de/ });
+    report.push(`selector abierto: ${await picker.isVisible()} · foco en búsqueda: ${await page.evaluate(() => document.activeElement?.getAttribute("type"))}`);
+    await page.screenshot({ path: `${OUT}/15-icon-picker.png` });
+
+    await page.keyboard.press("Escape");
+    report.push(`Escape cierra solo el selector: selector=${await picker.count()} · menú sigue=${await page.getByRole("dialog", { name: "Familia" }).count()}`);
+
+    await page.getByRole("button", { name: "Elegir icono: Familia" }).click();
+    await page.getByRole("searchbox").fill("estrella");
+    await picker.getByRole("button", { name: "favorito" }).click();
+    report.push(`tras elegir «estrella»: ${await storedIcon("s0")}`);
+    await page.getByRole("button", { name: "Elegir icono: Familia" }).click();
+    await picker.getByRole("button", { name: "Sin icono" }).click();
+    report.push(`tras «Sin icono»: «${await storedIcon("s0")}»`);
+    report.push(`errores iconos: ${JSON.stringify(errors)}`);
+    await context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
