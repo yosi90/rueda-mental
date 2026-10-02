@@ -86,7 +86,7 @@
 
   --wheel-bg: #fffaf3;
   --wheel-grid: rgb(14 116 144 / 0.2);
-  --wheel-text: #3b2f22;
+  --wheel-text: #241a10;
   --wheel-center: #fffaf3;
   --wheel-center-border: #e3cfb4;
   --chart-grid: #ecdcc6;
@@ -176,7 +176,7 @@
 
   --wheel-bg: #f8faf6;
   --wheel-grid: rgb(22 101 52 / 0.18);
-  --wheel-text: #263326;
+  --wheel-text: #152015;
   --wheel-center: #f8faf6;
   --wheel-center-border: #c6d2c3;
   --chart-grid: #d8e1d4;
@@ -192,10 +192,78 @@
     linear-gradient(180deg, #cfe3ea 0%, #e8efe6 45%, #e4ebe2 100%);
 }
 
-/* Capa de fondo decorativo (detrás de la interfaz) */
+/* Capa de fondo decorativo (detrás de la interfaz); en las vistas previas, siempre el fondo CSS */
 .app-backdrop {
   background-color: var(--ui-page);
   background: var(--app-backdrop, none), var(--ui-page);
+}
+
+/*
+ * Fondos con imagen (fondo principal, si el usuario no los ha desactivado).
+ * Velo del color del estilo encima para que la rueda y los textos se lean.
+ * Cada imagen solo se descarga si su estilo está activo.
+ */
+[data-style="light"],
+[data-style="dark"] {
+  --app-backdrop-photo: none;
+}
+
+[data-style="aurora"] {
+  --app-backdrop-photo:
+    linear-gradient(rgb(31 21 40 / 0.2), rgb(31 21 40 / 0.45)),
+    url("../assets/backgrounds/aurora-desktop.webp") center / cover no-repeat;
+}
+
+[data-style="beach"] {
+  --app-backdrop-photo:
+    radial-gradient(ellipse 48% 62% at 50% 52%, rgb(255 250 243 / 0.82) 55%, rgb(255 250 243 / 0.35) 85%, transparent 100%),
+    linear-gradient(rgb(251 239 224 / 0.25), rgb(251 239 224 / 0.25)),
+    url("../assets/backgrounds/beach-desktop.webp") center / cover no-repeat;
+}
+
+[data-style="rock"] {
+  --app-backdrop-photo:
+    linear-gradient(rgb(0 0 0 / 0.15), rgb(0 0 0 / 0.3)),
+    url("../assets/backgrounds/rock-desktop.webp") center / cover no-repeat;
+}
+
+[data-style="mountain"] {
+  --app-backdrop-photo:
+    radial-gradient(ellipse 48% 62% at 50% 52%, rgb(248 250 246 / 0.55) 55%, rgb(248 250 246 / 0.2) 85%, transparent 100%),
+    linear-gradient(rgb(248 250 246 / 0.15), rgb(248 250 246 / 0.2)),
+    url("../assets/backgrounds/mountain-desktop.webp") center / cover no-repeat;
+}
+
+@media (orientation: portrait) {
+  [data-style="aurora"] {
+    --app-backdrop-photo:
+      linear-gradient(rgb(31 21 40 / 0.2), rgb(31 21 40 / 0.45)),
+      url("../assets/backgrounds/aurora-mobile.webp") center / cover no-repeat;
+  }
+
+  [data-style="beach"] {
+    --app-backdrop-photo:
+      radial-gradient(ellipse 80% 36% at 50% 52%, rgb(255 250 243 / 0.85) 60%, rgb(255 250 243 / 0.35) 88%, transparent 100%),
+      linear-gradient(rgb(251 239 224 / 0.25), rgb(251 239 224 / 0.25)),
+      url("../assets/backgrounds/beach-mobile.webp") center / cover no-repeat;
+  }
+
+  [data-style="rock"] {
+    --app-backdrop-photo:
+      linear-gradient(rgb(0 0 0 / 0.15), rgb(0 0 0 / 0.3)),
+      url("../assets/backgrounds/rock-mobile.webp") center / cover no-repeat;
+  }
+
+  [data-style="mountain"] {
+    --app-backdrop-photo:
+      radial-gradient(ellipse 80% 36% at 50% 52%, rgb(248 250 246 / 0.6) 60%, rgb(248 250 246 / 0.2) 88%, transparent 100%),
+      linear-gradient(rgb(248 250 246 / 0.15), rgb(248 250 246 / 0.2)),
+      url("../assets/backgrounds/mountain-mobile.webp") center / cover no-repeat;
+  }
+}
+
+html[data-bg-image="on"] .app-backdrop--main {
+  background: var(--app-backdrop-photo), var(--ui-page);
 }
 
 h1,

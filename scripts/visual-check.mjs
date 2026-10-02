@@ -387,9 +387,17 @@ const report = [];
         await page.getByRole("button", { name, exact: true }).click();
         report.push(`«${name}» → ${await styleOf()} · pulsado: ${await page.getByRole("button", { name, exact: true }).getAttribute("aria-pressed")}`);
     }
+    const bgOf = () => page.evaluate(() => document.documentElement.dataset.bgImage);
+    const photoSwitch = page.getByRole("switch", { name: "Fondo con imagen" });
+    report.push(`fondo con imagen por defecto: ${await bgOf()} (interruptor: ${await photoSwitch.getAttribute("aria-checked")})`);
+    await photoSwitch.click();
+    report.push(`tras desactivarlo: ${await bgOf()}`);
+    await page.getByRole("button", { name: "Claro", exact: true }).click();
+    report.push(`interruptor oculto en «Claro»: ${(await photoSwitch.count()) === 0}`);
+    await page.getByRole("button", { name: "Montaña", exact: true }).click();
     await page.reload();
     await page.waitForSelector("svg");
-    report.push(`tras recargar: ${await styleOf()}`);
+    report.push(`tras recargar: ${await styleOf()} · imagen: ${await bgOf()}`);
     report.push(`errores estilos: ${JSON.stringify(errors)}`);
     await context.close();
 }

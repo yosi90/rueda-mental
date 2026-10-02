@@ -25,3 +25,6 @@ dist-ssr
 *.old
 .old/
 screenshots
+
+# Originales de los fondos (se usan las versiones WebP de src/assets/backgrounds)
+fondos-originales

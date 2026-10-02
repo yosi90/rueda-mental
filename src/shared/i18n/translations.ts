@@ -120,6 +120,8 @@ const es = {
     "style.beach": "Playa",
     "style.rock": "Rock",
     "style.mountain": "Montaña",
+    "style.photoBackground": "Fondo con imagen",
+    "style.photoBackgroundDesc": "Desactívalo para un fondo más sencillo y ligero.",
 
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Vuelve a ver la guía interactiva paso a paso de la aplicación.",
@@ -342,6 +344,8 @@ const en: Record<keyof typeof es, string> = {
     "style.beach": "Beach",
     "style.rock": "Rock",
     "style.mountain": "Mountain",
+    "style.photoBackground": "Image background",
+    "style.photoBackgroundDesc": "Turn it off for a simpler, lighter background.",
 
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Replay the interactive step-by-step guide.",
@@ -563,6 +567,8 @@ const pt: Record<keyof typeof es, string> = {
     "style.beach": "Praia",
     "style.rock": "Rock",
     "style.mountain": "Montanha",
+    "style.photoBackground": "Fundo com imagem",
+    "style.photoBackgroundDesc": "Desativa-o para um fundo mais simples e leve.",
 
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Volta a ver o guia interativo passo a passo.",
@@ -784,6 +790,8 @@ const de: Record<keyof typeof es, string> = {
     "style.beach": "Strand",
     "style.rock": "Rock",
     "style.mountain": "Berge",
+    "style.photoBackground": "Hintergrundbild",
+    "style.photoBackgroundDesc": "Ausschalten für einen schlichteren, leichteren Hintergrund.",
 
     "tutorial.section.title": "Tutorial",
     "tutorial.section.description": "Interaktive Schritt-für-Schritt-Anleitung erneut anzeigen.",

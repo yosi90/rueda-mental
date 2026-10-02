@@ -111,7 +111,8 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 - [x] Playa, Rock y Montaña (fondos CSS/SVG: olas, focos con grano, cumbres).
 - [x] Tipografía de títulos por estilo, alojada en la propia web (sin Google Fonts, por privacidad).
 - [x] Contraste validado en cada estilo (texto, botones, acento, rueda y gráficas ≥ 4.5:1); halo en los nombres de la rueda.
-- [ ] Fondos ilustrados (imágenes generadas aparte) en WebP comprimido, con capa para legibilidad y opción «sin imagen».
+- [x] Fondos con imagen (WebP de 15-70 KB, versión horizontal y vertical) con velo para legibilidad; interruptor «Fondo con imagen» (activo por defecto) que vuelve a los fondos CSS.
+- [x] `npm run contrast-check`: contraste real de las etiquetas sobre cada fondo (peor caso ≥ 5.7:1).
 
 ---
 

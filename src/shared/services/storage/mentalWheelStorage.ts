@@ -16,6 +16,7 @@ const STORAGE_KEYS = {
     scaleInverted: "mental-wheel-scale-inverted-v1",
     darkMode: "mental-wheel-dark-mode",
     style: "mental-wheel-style-v1",
+    backgroundImage: "mental-wheel-background-image-v1",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
     language: "mental-wheel-language-v1",
@@ -228,6 +229,23 @@ export function saveAppStyle(style: AppStyle): void {
         localStorage.setItem(STORAGE_KEYS.style, style);
         // Se mantiene también el modo oscuro por compatibilidad con copias y versiones anteriores
         saveDarkMode(APP_STYLE_DEFINITIONS[style].mode === "dark");
+    } catch {
+        // noop
+    }
+}
+
+/** Fondo con imagen en los estilos que lo tienen (por defecto, sí). */
+export function loadBackgroundImage(): boolean {
+    try {
+        return localStorage.getItem(STORAGE_KEYS.backgroundImage) !== "false";
+    } catch {
+        return true;
+    }
+}
+
+export function saveBackgroundImage(enabled: boolean): void {
+    try {
+        localStorage.setItem(STORAGE_KEYS.backgroundImage, String(enabled));
     } catch {
         // noop
     }

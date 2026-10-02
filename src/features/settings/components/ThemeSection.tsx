@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { ToggleSwitch } from "../../../shared/components/ToggleSwitch";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import { theme } from "../../../shared/theme/theme";
 import { APP_STYLE_DEFINITIONS, APP_STYLES, type AppStyle } from "../../../shared/theme/styles";
@@ -5,11 +7,14 @@ import { APP_STYLE_DEFINITIONS, APP_STYLES, type AppStyle } from "../../../share
 interface ThemeSectionProps {
     style: AppStyle;
     setStyle: (style: AppStyle) => void;
+    backgroundImage: boolean;
+    setBackgroundImage: (enabled: boolean) => void;
 }
 
 /** Selector de estilo visual. Cada tarjeta es una vista previa real (lleva su propio data-style). */
-export function ThemeSection({ style, setStyle }: ThemeSectionProps) {
+export function ThemeSection({ style, setStyle, backgroundImage, setBackgroundImage }: ThemeSectionProps) {
     const { t } = useI18n();
+    const photoDescId = useId();
 
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
@@ -49,6 +54,21 @@ export function ThemeSection({ style, setStyle }: ThemeSectionProps) {
                     );
                 })}
             </div>
+
+            {APP_STYLE_DEFINITIONS[style].hasPhoto && (
+                <div className={`mt-3 flex items-center justify-between gap-4 border-t ${theme.borderLight} pt-3`}>
+                    <div className="min-w-0">
+                        <div className={`text-sm ${theme.text}`}>{t("style.photoBackground")}</div>
+                        <div id={photoDescId} className={`text-xs ${theme.textLight}`}>{t("style.photoBackgroundDesc")}</div>
+                    </div>
+                    <ToggleSwitch
+                        checked={backgroundImage}
+                        onChange={setBackgroundImage}
+                        label={t("style.photoBackground")}
+                        describedBy={photoDescId}
+                    />
+                </div>
+            )}
         </div>
     );
 }

@@ -57,7 +57,7 @@ export function SectorLabel({ x, y, anchor, name, score, iconId, compact, bounds
     const badgeX = cursor;
 
     return (
-        <g aria-hidden="true">
+        <g aria-hidden="true" data-sector-label="">
             {IconComponent && (
                 <IconComponent
                     x={iconX}

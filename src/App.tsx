@@ -241,7 +241,7 @@ export default function MentalWheelApp() {
 
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`}>
-            <div className="app-backdrop fixed inset-0" aria-hidden="true" />
+            <div className="app-backdrop app-backdrop--main fixed inset-0" aria-hidden="true" />
             <MainActionButtons
                 showStatsButton={statsVisibility.enabled}
                 onOpenStats={() => {
@@ -423,7 +423,12 @@ export default function MentalWheelApp() {
                     statsVisibility={statsVisibility}
                     setStatsVisibility={preferences.setStatsVisibility}
                 />
-                <ThemeSection style={preferences.style} setStyle={preferences.setStyle} />
+                <ThemeSection
+                    style={preferences.style}
+                    setStyle={preferences.setStyle}
+                    backgroundImage={preferences.backgroundImage}
+                    setBackgroundImage={preferences.setBackgroundImage}
+                />
                 <TutorialSection onRestartTutorial={restartTutorial} />
                 <LegalSection />
             </SettingsDrawer>
