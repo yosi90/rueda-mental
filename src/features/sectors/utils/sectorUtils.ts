@@ -33,12 +33,12 @@ const DEFAULT_SECTOR_LABELS: Record<Language, readonly string[]> = {
         "Learning",
     ],
     pt: [
-        "Familia",
+        "Família",
         "Amigos",
         "Dinheiro",
         "Amor",
         "Trabalho",
-        "Saude",
+        "Saúde",
         "Lazer",
         "Aprendizagem",
     ],
@@ -54,8 +54,9 @@ const DEFAULT_SECTOR_LABELS: Record<Language, readonly string[]> = {
     ],
 };
 
+// Sin tildes para reconocer también los nombres guardados por versiones anteriores ("Saude" = "Saúde").
 function normalizeLabel(label: string): string {
-    return label.trim().toLowerCase();
+    return label.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }
 
 export function defaultSectors(language: Language = "es"): Sector[] {
