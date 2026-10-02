@@ -7,38 +7,39 @@ Leyenda: `[ ]` pendiente · `[x]` hecho
 
 ---
 
-## Hito 1 — Correcciones y limpieza
+## Hito 1 — Correcciones y limpieza ✅
 
 Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 
 ### Bugs
-- [ ] **Fechas y zona horaria**: `new Date("YYYY-MM-DD")` se interpreta en UTC. Al oeste de Greenwich (Latinoamérica, Brasil) el botón `<` salta 2 días, `>` no avanza, el día de la semana de las estadísticas se desplaza, las etiquetas muestran un día menos y la racha queda en 0. Crear `parseDateInput` en `shared/utils/date.ts` y usarlo en todas partes.
-- [ ] **Días vacíos cuentan como datos**: visitar una fecha crea `{}` en `scoresByDate`; eso suma en «días registrados», en la racha y mete medias 0 en las gráficas.
-- [ ] **Slider del menú contextual**: usa `defaultValue` + `onMouseUp`, no guarda con teclado ni se sincroniza con el campo numérico.
-- [ ] **Contador de caracteres del comentario** no se actualiza al escribir.
-- [ ] **Menú contextual siempre oscuro** (`bg-neutral-800/90` fijo) aunque el tema sea claro.
-- [ ] **Tutorial bloqueable**: depende de `sectors[3]`; con menos de 4 sectores no avanza y no se puede saltar.
-- [ ] **Borrar sector desde Configuración** sin confirmación (borra su historial).
-- [ ] **Importar JSON** sobrescribe todo sin confirmar y sin validar la estructura.
-- [ ] **Heatmap** usa solo fechas registradas en vez de días de calendario; los huecos desaparecen.
-- [ ] **Tildes y caracteres especiales** ausentes en las traducciones (es, pt, de) y en los sectores por defecto.
+- [x] **Fechas y zona horaria**: `new Date("YYYY-MM-DD")` se interpreta en UTC. Al oeste de Greenwich (Latinoamérica, Brasil) el botón `<` salta 2 días, `>` no avanza, el día de la semana de las estadísticas se desplaza, las etiquetas muestran un día menos y la racha queda en 0. Crear `parseDateInput` en `shared/utils/date.ts` y usarlo en todas partes.
+- [x] **Días vacíos cuentan como datos**: visitar una fecha crea `{}` en `scoresByDate`; eso suma en «días registrados», en la racha y mete medias 0 en las gráficas.
+- [x] **Slider del menú contextual**: usa `defaultValue` + `onMouseUp`, no guarda con teclado ni se sincroniza con el campo numérico.
+- [x] **Contador de caracteres del comentario** no se actualiza al escribir.
+- [x] **Menú contextual siempre oscuro** (`bg-neutral-800/90` fijo) aunque el tema sea claro.
+- [x] **Tutorial bloqueable**: depende de `sectors[3]`; con menos de 4 sectores no avanza y no se puede saltar.
+- [x] **Borrar sector desde Configuración** sin confirmación (borra su historial).
+- [x] **Importar JSON** sobrescribe todo sin confirmar y sin validar la estructura.
+- [x] **Heatmap** usa solo fechas registradas en vez de días de calendario; los huecos desaparecen.
+- [x] **Tildes y caracteres especiales** ausentes en las traducciones (es, pt, de) y en los sectores por defecto.
 
 ### Limpieza
-- [ ] Eliminar código muerto: input de color oculto en `App.tsx`, `App.css`, `react.svg`, `vite.svg`, CSS de plantilla de Vite en `index.css`.
-- [ ] `onKeyPress` (obsoleto) → `onKeyDown`; `genId` con `crypto.randomUUID()`.
-- [ ] `index.html`: `lang="es"`, `type="image/png"` en el favicon.
-- [ ] Unificar la validación de `statsVisibility` (duplicada en `App.tsx` y en storage).
+- [x] Eliminar código muerto: input de color oculto en `App.tsx`, `App.css`, `react.svg`, `vite.svg`, CSS de plantilla de Vite en `index.css`.
+- [x] `onKeyPress` (obsoleto) → `onKeyDown`; `genId` con `crypto.randomUUID()`.
+- [x] `index.html`: `lang="es"`, `type="image/png"` en el favicon.
+- [x] Unificar la validación de `statsVisibility` (duplicada en `App.tsx` y en storage).
 
 ### Calidad
-- [ ] Añadir Vitest y tests de `scoreScale`, `date`, `sectorUtils` y `buildStatsData`.
-- [ ] CI: ejecutar lint y tests en las PR.
-- [ ] README con descripción, scripts y estructura.
+- [x] Añadir Vitest y tests de fechas (varias zonas horarias), `sectorUtils`, `buildStatsData`, copias de seguridad, traducciones y `scoreScale`.
+- [x] CI: ejecutar lint y tests en las PR.
+- [x] README con descripción, scripts y estructura.
+- [x] Script `npm run visual-check` (Playwright) con capturas y comprobaciones en navegador real.
 
 ---
 
 ## Hito 2 — Accesibilidad básica
 
-- [ ] Cajón de configuración cerrado con `inert` (ahora es navegable con Tab estando oculto).
+- [ ] Cajón de configuración cerrado con `inert` (ahora es navegable con Tab y visible para lectores de pantalla estando oculto; además su sombra asoma por el borde derecho).
 - [ ] Modales con `role="dialog"`, `aria-modal`, `aria-labelledby`, trampa de foco, devolución del foco y cierre con Esc.
 - [ ] Nombre accesible en botones de solo icono (cerrar, tema…); interruptores con `role="switch"` + `aria-checked`; emojis con `aria-hidden`.
 - [ ] `<label htmlFor>` en los textarea del resumen y en los nombres de sector.
@@ -70,6 +71,7 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 - [ ] Reducir props de `SettingsDrawer` (contexto o reducer).
 - [ ] Interacciones de la rueda con Pointer Events y estado de pan en refs.
 - [ ] Paleta de gráficas coherente con la app y con los colores de los sectores.
+- [ ] Heatmap: distinguir «sin datos» de «media muy baja» (hoy comparten color).
 - [ ] Tutorial con color menos alarmante y flecha hacia el elemento señalado.
 - [ ] Ajustar contraste del modo claro.
 - [ ] «Rueda fantasma»: contorno de ayer o de la media semanal sobre la rueda actual.
