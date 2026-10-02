@@ -134,7 +134,7 @@ export function WheelLayers({
         if (val <= 0) return null;
         const path = sectorPath(cx, cy, 0, levelOuterRadius(val), s.a0, s.a1);
         return (
-            <path key={`v-${s.id}`} d={path} fill={s.color} opacity={0.6} stroke={s.color} strokeOpacity={0.9} />
+            <path key={`v-${s.id}`} d={path} fill={s.color} style={{ opacity: "var(--wheel-sector-opacity, 0.6)" }} stroke={s.color} strokeOpacity={0.9} />
         );
     });
 

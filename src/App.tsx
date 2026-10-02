@@ -316,7 +316,7 @@ export default function MentalWheelApp() {
                         preserveAspectRatio="xMidYMid meet"
                     >
                         <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>
-                            <circle cx={cx} cy={cy} r={radius} fill={theme.svgBg} />
+                            <circle cx={cx} cy={cy} r={radius} fill={theme.svgBg} style={{ fillOpacity: "var(--wheel-bg-opacity, 1)" }} />
                             <WheelLayers
                                 cx={cx}
                                 cy={cy}

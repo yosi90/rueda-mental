@@ -7,6 +7,8 @@
 /* Claro y oscuro: sin fondo decorativo y con la tipografía del sistema */
 [data-style="light"],
 [data-style="dark"] {
+  --wheel-bg-opacity: 1;
+  --wheel-sector-opacity: 0.6;
   --app-backdrop: none;
   /* Pila explícita: «inherit» en una variable heredaría el valor del estilo del documento */
   --font-display: system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -14,6 +16,9 @@
 
 /* ---------- Aurora: rosa nocturno ---------- */
 [data-style="aurora"] {
+  /* Fondo del círculo algo translúcido para que asome el fondo; sectores al 100 % */
+  --wheel-bg-opacity: 0.75;
+  --wheel-sector-opacity: 1;
   color-scheme: dark;
   --ui-page: #1f1528;
   --ui-surface: #2a1d35;
@@ -60,6 +65,9 @@
 
 /* ---------- Playa ---------- */
 [data-style="beach"] {
+  /* Fondo del círculo algo translúcido para que asome el fondo; sectores al 100 % */
+  --wheel-bg-opacity: 0.75;
+  --wheel-sector-opacity: 1;
   color-scheme: light;
   --ui-page: #fbefe0;
   --ui-surface: #fffaf3;
@@ -104,6 +112,9 @@
 
 /* ---------- Rock ---------- */
 [data-style="rock"] {
+  /* Fondo del círculo algo translúcido para que asome el fondo; sectores al 100 % */
+  --wheel-bg-opacity: 0.75;
+  --wheel-sector-opacity: 1;
   color-scheme: dark;
   --ui-page: #121212;
   --ui-surface: #1c1c1c;
@@ -150,6 +161,9 @@
 
 /* ---------- Montaña ---------- */
 [data-style="mountain"] {
+  /* Fondo del círculo algo translúcido para que asome el fondo; sectores al 100 % */
+  --wheel-bg-opacity: 0.75;
+  --wheel-sector-opacity: 1;
   color-scheme: light;
   --ui-page: #e4ebe2;
   --ui-surface: #f8faf6;

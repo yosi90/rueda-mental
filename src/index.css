@@ -69,6 +69,9 @@
 
   /* Colores de la rueda y de las gráficas (tema claro) */
   --wheel-bg: #ffffff;
+  /* Opacidad del fondo del círculo y de los rellenos de los sectores (los estilos con fondo las cambian) */
+  --wheel-bg-opacity: 1;
+  --wheel-sector-opacity: 0.6;
   --wheel-grid: hsl(0 0% 80% / 0.7);
   --wheel-text: hsl(0 0% 20%);
   --wheel-center: #ffffff;
