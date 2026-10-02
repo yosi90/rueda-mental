@@ -1,6 +1,6 @@
 import type { Scores, ScoresByDate, Sector } from "../../../shared/types/mentalWheel";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
-import { formatDateInput } from "../../../shared/utils/date";
+import { addDaysToDateInput, parseDateInput } from "../../../shared/utils/date";
 import type { Last7AllSectorsPoint, StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "./sectorSeriesKey";
 
@@ -16,27 +16,24 @@ interface BuildStatsDataParams {
     todayLabel: string;
 }
 
-function calculateStreak(sortedDates: string[]): number {
-    if (sortedDates.length === 0) return 0;
+const HEAT_MAP_DAYS = 60;
 
+function hasScores(dayScores: Scores | undefined): boolean {
+    return Boolean(dayScores) && Object.values(dayScores!).some((score) => score > 0);
+}
+
+function average(values: number[]): number {
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+}
+
+// Días consecutivos con datos hasta hoy. Si hoy aún no hay datos, la racha se cuenta desde ayer.
+export function calculateStreak(datesWithData: ReadonlySet<string>, todayStr: string): number {
+    let cursor = datesWithData.has(todayStr) ? todayStr : addDaysToDateInput(todayStr, -1);
     let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = sortedDates.length - 1; i >= 0; i--) {
-        const date = new Date(sortedDates[i]);
-        date.setHours(0, 0, 0, 0);
-
-        const expectedDate = new Date(today);
-        expectedDate.setDate(today.getDate() - streak);
-
-        if (date.getTime() === expectedDate.getTime()) {
-            streak++;
-        } else {
-            break;
-        }
+    while (datesWithData.has(cursor)) {
+        streak++;
+        cursor = addDaysToDateInput(cursor, -1);
     }
-
     return streak;
 }
 
@@ -51,58 +48,38 @@ export function buildStatsData({
     weekDaysShort,
     todayLabel,
 }: BuildStatsDataParams): StatsData {
-    const allDates = Object.keys(scoresByDate).sort();
     const mapScore = (score: number): number => toDisplayScore(score, ringCount, isScaleInverted);
-
-    const firstDateWithData = allDates.find((date) => {
-        const dayScores = scoresByDate[date];
-        const values = Object.values(dayScores);
-        return values.some((score) => score > 0);
+    const formatShort = (date: string): string => parseDateInput(date).toLocaleDateString(locale, {
+        day: "2-digit",
+        month: "short",
     });
+    // Media de un día: solo sectores puntuados (0 = sin nota).
+    const dayAverage = (date: string): number => average(
+        Object.values(scoresByDate[date] ?? {}).filter((score) => score > 0).map(mapScore)
+    );
 
-    const dates = firstDateWithData
-        ? allDates.filter((date) => date >= firstDateWithData && date <= todayStr)
-        : [];
+    const dates = Object.keys(scoresByDate)
+        .filter((date) => date <= todayStr && hasScores(scoresByDate[date]))
+        .sort();
+    const datesWithData = new Set(dates);
 
-    const dailyAverage = dates.map((date) => {
-        const dayScores = scoresByDate[date];
-        const values = Object.values(dayScores).map(mapScore);
-        const avg = values.length > 0
-            ? values.reduce((a, b) => a + b, 0) / values.length
-            : 0;
-        return {
-            date,
-            media: parseFloat(avg.toFixed(2)),
-            displayDate: new Date(date).toLocaleDateString(locale, {
-                day: "2-digit",
-                month: "short",
-            }),
-        };
-    });
+    const dailyAverage = dates.map((date) => ({
+        date,
+        media: parseFloat(dayAverage(date).toFixed(2)),
+        displayDate: formatShort(date),
+    }));
 
-    const sectorProgress = (sectorId: string) => {
-        return dates.map((date) => {
-            const score = mapScore(scoresByDate[date][sectorId] || 0);
-            return {
-                date,
-                puntuacion: score,
-                displayDate: new Date(date).toLocaleDateString(locale, {
-                    day: "2-digit",
-                    month: "short",
-                }),
-            };
-        });
-    };
+    const sectorProgress = (sectorId: string) => dates.map((date) => ({
+        date,
+        puntuacion: mapScore(scoresByDate[date][sectorId] || 0),
+        displayDate: formatShort(date),
+    }));
 
     const sectorComparison = sectors.map((sector) => {
-        const allScores = dates.map((date) => mapScore(scoresByDate[date][sector.id] || 0));
-        const avg = allScores.length > 0
-            ? allScores.reduce((a, b) => a + b, 0) / allScores.length
-            : 0;
-        const current = mapScore(scores[sector.id] || 0);
+        const avg = average(dates.map((date) => mapScore(scoresByDate[date][sector.id] || 0)));
         return {
             sector: sector.name,
-            actual: current,
+            actual: mapScore(scores[sector.id] || 0),
             promedio: parseFloat(avg.toFixed(2)),
             color: sector.color,
         };
@@ -115,13 +92,10 @@ export function buildStatsData({
     }));
 
     const historicalSectorScores = sectors.map((sector) => {
-        const allScores = dates
+        const avg = average(dates
             .map((date) => scoresByDate[date][sector.id] || 0)
             .filter((s) => s > 0)
-            .map(mapScore);
-        const avg = allScores.length > 0
-            ? allScores.reduce((a, b) => a + b, 0) / allScores.length
-            : 0;
+            .map(mapScore));
         return {
             sector: sector.name,
             score: parseFloat(avg.toFixed(2)),
@@ -129,42 +103,34 @@ export function buildStatsData({
     });
 
     const weeklyData = weekDaysShort.map((day, index) => {
-        const daysData = dates.filter((date) => new Date(date).getDay() === index);
-        const weekScores = daysData.flatMap((date) => Object.values(scoresByDate[date]).map(mapScore));
-        const avg = weekScores.length > 0
-            ? weekScores.reduce((a, b) => a + b, 0) / weekScores.length
-            : 0;
+        const weekScores = dates
+            .filter((date) => parseDateInput(date).getDay() === index)
+            .flatMap((date) => Object.values(scoresByDate[date]).filter((s) => s > 0).map(mapScore));
         return {
             dia: day,
-            media: parseFloat(avg.toFixed(2)),
+            media: parseFloat(average(weekScores).toFixed(2)),
         };
     });
 
-    const heatMapData = dates.slice(-60).map((date) => {
-        const dayScores = scoresByDate[date];
-        const values = Object.values(dayScores).map(mapScore);
-        const avg = values.length > 0
-            ? values.reduce((a, b) => a + b, 0) / values.length
-            : 0;
-        const dayOfWeek = new Date(date).getDay();
-        const weekNumber = Math.floor(dates.slice(-60).indexOf(date) / 7);
+    // Últimos 60 días de calendario (incluidos los días sin registro) para ver la constancia.
+    const heatMapData = Array.from({ length: HEAT_MAP_DAYS }, (_, index) => {
+        const date = addDaysToDateInput(todayStr, index - (HEAT_MAP_DAYS - 1));
+        const hasData = datesWithData.has(date);
         return {
             date,
-            displayDate: new Date(date).toLocaleDateString(locale, {
+            displayDate: parseDateInput(date).toLocaleDateString(locale, {
                 day: "2-digit",
                 month: "2-digit",
             }),
-            value: parseFloat(avg.toFixed(2)),
-            day: dayOfWeek,
-            week: weekNumber,
-            hasData: values.length > 0,
+            value: hasData ? parseFloat(dayAverage(date).toFixed(2)) : 0,
+            day: parseDateInput(date).getDay(),
+            week: Math.floor(index / 7),
+            hasData,
         };
     });
 
-    const daysWithAverage = dailyAverage.filter((day) => day.media > 0);
-
-    const bestHistoricalDay = daysWithAverage.length > 0
-        ? daysWithAverage.reduce((prev, current) => (
+    const bestHistoricalDay = dailyAverage.length > 0
+        ? dailyAverage.reduce((prev, current) => (
             isScaleInverted
                 ? (current.media < prev.media ? current : prev)
                 : (current.media > prev.media ? current : prev)
@@ -174,19 +140,11 @@ export function buildStatsData({
     const last7DaysAllSectors = () => {
         if (dates.length < 7) return null;
 
-        const last7Dates = dates.slice(-7);
-        const currentToday = formatDateInput(new Date());
-
-        return last7Dates.map((date) => {
-            const isToday = date === currentToday;
+        return dates.slice(-7).map((date) => {
+            const isToday = date === todayStr;
             const dataPoint: Last7AllSectorsPoint = {
                 date,
-                displayDate: isToday
-                    ? todayLabel
-                    : new Date(date).toLocaleDateString(locale, {
-                        day: "2-digit",
-                        month: "short",
-                    }),
+                displayDate: isToday ? todayLabel : formatShort(date),
                 isToday,
             };
 
@@ -209,6 +167,6 @@ export function buildStatsData({
         bestHistoricalDay,
         last7DaysAllSectors: last7DaysAllSectors(),
         totalDays: dates.length,
-        currentStreak: calculateStreak(dates),
+        currentStreak: calculateStreak(datesWithData, todayStr),
     };
 }

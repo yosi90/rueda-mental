@@ -5,6 +5,7 @@ import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel"
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
 import { isBetterScore, toDisplayScore, toRawScore } from "../../../shared/utils/scoreScale";
+import { parseDateInput } from "../../../shared/utils/date";
 import type { StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
 
@@ -521,7 +522,7 @@ export function StatsModal({
                                                                     <br />
                                                                     {statsData.bestHistoricalDay && (
                                                                         <>
-                                                                            <span className={`text-xs ${theme.textMuted}`}>{t("stats.insightsHistorical")}</span> {new Date(statsData.bestHistoricalDay.date).toLocaleDateString(locale, {
+                                                                            <span className={`text-xs ${theme.textMuted}`}>{t("stats.insightsHistorical")}</span> {parseDateInput(statsData.bestHistoricalDay.date).toLocaleDateString(locale, {
                                                                                 day: '2-digit',
                                                                                 month: 'long',
                                                                                 year: 'numeric'

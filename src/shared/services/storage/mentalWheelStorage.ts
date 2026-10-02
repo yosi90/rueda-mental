@@ -38,10 +38,17 @@ export function saveConfig(cfg: Sector[]): void {
 export function loadScores(): ScoresByDate {
     try {
         const raw = localStorage.getItem(STORAGE_KEYS.scores);
-        return raw ? JSON.parse(raw) : {};
+        return raw ? removeEmptyDays(JSON.parse(raw)) : {};
     } catch {
         return {};
     }
+}
+
+// Versiones anteriores guardaban `{}` en cada fecha visitada; se descartan al cargar.
+function removeEmptyDays(data: ScoresByDate): ScoresByDate {
+    return Object.fromEntries(
+        Object.entries(data).filter(([, dayScores]) => Object.keys(dayScores ?? {}).length > 0)
+    );
 }
 
 export function saveScores(data: ScoresByDate): void {

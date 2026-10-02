@@ -47,7 +47,7 @@ import type {
     StatsVisibility,
 } from "./shared/types/mentalWheel";
 import type { ThemeClasses } from "./shared/types/theme";
-import { formatDateInput } from "./shared/utils/date";
+import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/utils/date";
 import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
 
 // === Mental Performance Wheel ===
@@ -130,7 +130,6 @@ export default function MentalWheelApp() {
     const [infoMenuContextual, setInfoMenuContextual] = useState<InfoMenuContextual | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);               // Referencia al SVG principal
-    const selectorColorRef = useRef<HTMLInputElement>(null);   // Referencia a input color oculto
 
     const isTouchDevice = useTouchDeviceDetection();
 
@@ -194,13 +193,6 @@ export default function MentalWheelApp() {
     // Guardar en localStorage cuando cambia config o datos
     useEffect(() => saveConfig(sectors), [sectors]);
     useEffect(() => saveScores(scoresByDate), [scoresByDate]);
-
-    // Asegura que todos los sectores tengan un score en el día actual
-    useEffect(() => {
-        if (!scoresByDate[dateStr]) {
-            setScoresByDate((prev) => ({ ...prev, [dateStr]: {} }));
-        }
-    }, [dateStr, scoresByDate]);
 
     // Mantener selección válida de sector para estadísticas
     useEffect(() => {
@@ -374,7 +366,11 @@ export default function MentalWheelApp() {
         setScoresByDate((prev) => ({ ...prev, [dateStr]: { ...prev[dateStr], [id]: level } }));
     }
     function resetDay() {
-        setScoresByDate((prev) => ({ ...prev, [dateStr]: {} }));
+        setScoresByDate((prev) => {
+            const copy = { ...prev };
+            delete copy[dateStr];
+            return copy;
+        });
         setCommentsByDate((prev) => {
             const copy = { ...prev };
             delete copy[dateStr];
@@ -490,7 +486,7 @@ export default function MentalWheelApp() {
         return acc + toDisplayScore(rawScore, RING_COUNT, isScaleInverted);
     }, 0);
     const avg = sectors.length ? (total / sectors.length).toFixed(2) : "0.00";
-    const summaryDateLabel = new Date(`${dateStr}T00:00:00`).toLocaleDateString(locale, {
+    const summaryDateLabel = parseDateInput(dateStr).toLocaleDateString(locale, {
         weekday: "long",
         day: "2-digit",
         month: "long",
@@ -595,16 +591,8 @@ export default function MentalWheelApp() {
                     />
                 ) : null}
                 onDateChange={setDateStr}
-                onPrevDay={() => {
-                    const date = new Date(dateStr);
-                    date.setDate(date.getDate() - 1);
-                    setDateStr(formatDateInput(date));
-                }}
-                onNextDay={() => {
-                    const date = new Date(dateStr);
-                    date.setDate(date.getDate() + 1);
-                    setDateStr(formatDateInput(date));
-                }}
+                onPrevDay={() => setDateStr(addDaysToDateInput(dateStr, -1))}
+                onNextDay={() => setDateStr(addDaysToDateInput(dateStr, 1))}
                 onToday={() => setDateStr(todayStr)}
                 onOpenSos={() => setSosOpen(true)}
                 todayStr={todayStr}
@@ -690,21 +678,6 @@ export default function MentalWheelApp() {
                 deleteComment={deleteComment}
             />
 
-
-            {/* Input de color oculto para cambiar color de sector */}
-            <input
-                type="color"
-                ref={selectorColorRef}
-                className="hidden"
-                onChange={(e) => {
-                    if (!infoMenuContextual) return;
-                    const nuevoColor = e.target.value;
-                    setSectors(prev => prev.map(x =>
-                        x.id === infoMenuContextual.idSector ? { ...x, color: nuevoColor } : x
-                    ));
-                    setInfoMenuContextual(null);
-                }}
-            />
 
             <SummaryModal
                 open={summaryOpen}
