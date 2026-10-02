@@ -1,16 +1,14 @@
 import { useId, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWheel";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 
 interface SectorContextMenuProps {
     infoMenuContextual: InfoMenuContextual | null;
     menuRef: RefObject<HTMLDivElement | null>;
-    theme: Pick<ThemeClasses, "card" | "text" | "border" | "input" | "button" | "buttonPrimary" | "borderLight" | "textMuted">;
-    darkMode: boolean;
     sectors: Sector[];
     scores: Record<string, number>;
     dateStr: string;
@@ -28,8 +26,6 @@ interface SectorContextMenuProps {
 export function SectorContextMenu({
     infoMenuContextual,
     menuRef,
-    theme,
-    darkMode,
     sectors,
     scores,
     dateStr,
@@ -65,8 +61,6 @@ export function SectorContextMenu({
                     <SectorMenuContent
                         key={`${sector.id}-${dateStr}`}
                         sector={sector}
-                        theme={theme}
-                        darkMode={darkMode}
                         score={scores[sector.id] ?? 0}
                         dateStr={dateStr}
                         ringCount={ringCount}
@@ -88,7 +82,7 @@ export function SectorContextMenu({
 const COMMENT_MAX_LENGTH = 100;
 
 interface SectorMenuContentProps extends Pick<SectorContextMenuProps,
-    "theme" | "darkMode" | "dateStr" | "ringCount" | "isScaleInverted" | "onClose" | "setSectors"
+    "dateStr" | "ringCount" | "isScaleInverted" | "onClose" | "setSectors"
     | "removeSector" | "setScore" | "setComment" | "deleteComment"> {
     sector: Sector;
     score: number;
@@ -97,8 +91,6 @@ interface SectorMenuContentProps extends Pick<SectorContextMenuProps,
 
 function SectorMenuContent({
     sector,
-    theme,
-    darkMode,
     score,
     dateStr,
     ringCount,
@@ -166,7 +158,7 @@ function SectorMenuContent({
                         );
                     }}
                     aria-label={t("sectors.newPlaceholder")}
-                    className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-1 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                    className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-1 text-sm ${theme.focusRing}`}
                 />
 
                 <button
@@ -218,7 +210,7 @@ function SectorMenuContent({
                         const nuevoValor = parseInt(e.target.value, 10);
                         setScore(sector.id, nuevoValor);
                     }}
-                    className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"} flex-shrink-0`}
+                    className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center ${theme.focusRing} flex-shrink-0`}
                 />
             </div>
 
@@ -250,7 +242,7 @@ function SectorMenuContent({
                     maxLength={COMMENT_MAX_LENGTH}
                     rows={3}
                     placeholder={t("sectorMenu.commentPlaceholder")}
-                    className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                    className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-sm ${theme.focusRing}`}
                     onKeyDown={(e) => {
                         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") saveComment();
                     }}

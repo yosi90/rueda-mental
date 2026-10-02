@@ -1,14 +1,13 @@
 import { useId, useRef } from "react";
+import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { TranslationKey } from "../../../shared/i18n/translations";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
 
 interface SOSModalProps {
     open: boolean;
     onClose: () => void;
-    theme: Pick<ThemeClasses, "overlay" | "cardSolid" | "borderLight" | "text" | "textMuted" | "buttonPrimary" | "border" | "inputAlt">;
 }
 
 interface EmergencyContact {
@@ -70,7 +69,7 @@ function toTelHref(number: string): string {
     return `tel:${number.replace(/\s+/g, "")}`;
 }
 
-export function SOSModal({ open, onClose, theme }: SOSModalProps) {
+export function SOSModal({ open, onClose }: SOSModalProps) {
     const { t } = useI18n();
     const dialogRef = useRef<HTMLDivElement>(null);
     const titleId = useId();

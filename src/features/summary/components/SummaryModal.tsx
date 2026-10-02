@@ -1,18 +1,16 @@
 import { useId, useRef } from "react";
+import { theme } from "../../../shared/theme/theme";
 import type { DailySummary } from "../../../shared/types/mentalWheel";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { TranslationKey } from "../../../shared/i18n/translations";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
-import type { ThemeClasses } from "../../../shared/types/theme";
 
 interface SummaryModalProps {
     open: boolean;
     onClose: () => void;
-    theme: Pick<ThemeClasses, "overlay" | "cardSolid" | "borderLight" | "text" | "textMuted" | "border" | "inputAlt" | "input" | "buttonPrimary">;
     summaryDateLabel: string;
     dailySummary: DailySummary;
-    darkMode: boolean;
     onChangeField: (field: keyof DailySummary, text: string) => void;
 }
 
@@ -25,10 +23,8 @@ const SUMMARY_FIELDS: ReadonlyArray<{ field: keyof DailySummary; labelKey: Trans
 export function SummaryModal({
     open,
     onClose,
-    theme,
     summaryDateLabel,
     dailySummary,
-    darkMode,
     onChangeField,
 }: SummaryModalProps) {
     const { t } = useI18n();
@@ -87,7 +83,7 @@ export function SummaryModal({
                                         onChange={(e) => onChangeField(field, e.target.value)}
                                         rows={4}
                                         placeholder={t(placeholderKey)}
-                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                                        className={`w-full resize-y rounded-lg border ${theme.input} px-3 py-2 text-sm ${theme.focusRing}`}
                                     />
                                 </div>
                             );

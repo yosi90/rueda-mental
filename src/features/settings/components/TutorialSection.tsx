@@ -1,12 +1,11 @@
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import type { ThemeClasses } from "../../../shared/types/theme";
+import { theme } from "../../../shared/theme/theme";
 
 interface TutorialSectionProps {
-    theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight" | "buttonPrimary">;
     onRestartTutorial: () => void;
 }
 
-export function TutorialSection({ theme, onRestartTutorial }: TutorialSectionProps) {
+export function TutorialSection({ onRestartTutorial }: TutorialSectionProps) {
     const { t } = useI18n();
 
     return (

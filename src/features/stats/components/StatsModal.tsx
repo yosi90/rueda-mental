@@ -1,8 +1,8 @@
 import { useId, useRef, type Dispatch, type SetStateAction } from "react";
+import { chartTooltipStyle, theme } from "../../../shared/theme/theme";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
 import { isBetterScore, toDisplayScore, toRawScore } from "../../../shared/utils/scoreScale";
 import { parseDateInput } from "../../../shared/utils/date";
@@ -14,8 +14,6 @@ import { CloseIcon } from "../../../shared/components/CloseIcon";
 interface StatsModalProps {
     statsOpen: boolean;
     setStatsOpen: Dispatch<SetStateAction<boolean>>;
-    theme: ThemeClasses;
-    darkMode: boolean;
     statsData: StatsData;
     statsVisibility: StatsVisibility;
     ringCount: number;
@@ -30,8 +28,6 @@ interface StatsModalProps {
 export function StatsModal({
     statsOpen,
     setStatsOpen,
-    theme,
-    darkMode,
     statsData,
     statsVisibility,
     ringCount,
@@ -177,11 +173,7 @@ export function StatsModal({
                                                     />
                                                     <Tooltip
                                                         formatter={formatChartTooltipValue}
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
+                                                        contentStyle={chartTooltipStyle}
                                                     />
                                                     <Area
                                                         type="monotone"
@@ -204,7 +196,7 @@ export function StatsModal({
                                                 <select
                                                     value={selectedSectorId}
                                                     onChange={(e) => setSelectedSectorId(e.target.value)}
-                                                    className={`rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-neutral-100' : 'focus:ring-neutral-900'}`}
+                                                    className={`rounded-lg border ${theme.input} px-3 py-2 text-sm ${theme.focusRing}`}
                                                 >
                                                     {sectors.map(s => (
                                                         <option key={s.id} value={s.id}>{s.name}</option>
@@ -227,11 +219,7 @@ export function StatsModal({
                                                     />
                                                     <Tooltip
                                                         formatter={formatChartTooltipValue}
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
+                                                        contentStyle={chartTooltipStyle}
                                                     />
                                                     <Line
                                                         type="monotone"
@@ -267,11 +255,7 @@ export function StatsModal({
                                                     />
                                                     <Tooltip
                                                         formatter={formatChartTooltipValue}
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
+                                                        contentStyle={chartTooltipStyle}
                                                     />
                                                     <Legend />
                                                     {sectors.filter(s => visibleSectors[s.id]).map(sector => (
@@ -290,15 +274,15 @@ export function StatsModal({
                                             </ResponsiveContainer>
 
                                             {/* Checkboxes para mostrar/ocultar sectores */}
-                                            <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: theme.borderLight }}>
+                                            <div className={`mt-4 pt-4 border-t ${theme.borderLight}`}>
                                                 <p className={`text-xs font-semibold mb-3 ${theme.textMuted}`}>{t("stats.showSectors")}</p>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                                     {sectors.map(sector => (
                                                         <label
                                                             key={sector.id}
                                                             className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${visibleSectors[sector.id]
-                                                                ? darkMode ? 'bg-neutral-700' : 'bg-neutral-100'
-                                                                : darkMode ? 'bg-neutral-800' : 'bg-neutral-50'
+                                                                ? "bg-neutral-100 dark:bg-neutral-700"
+                                                                : "bg-neutral-50 dark:bg-neutral-800"
                                                                 }`}
                                                         >
                                                             <input
@@ -352,11 +336,7 @@ export function StatsModal({
                                                     />
                                                     <Tooltip
                                                         formatter={formatChartTooltipValue}
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
+                                                        contentStyle={chartTooltipStyle}
                                                     />
                                                     <Legend />
                                                     <Bar dataKey="actual" fill="#82ca9d" name={t("stats.actualLabel")} />
@@ -386,11 +366,7 @@ export function StatsModal({
                                                     />
                                                     <Tooltip
                                                         formatter={formatChartTooltipValue}
-                                                        contentStyle={{
-                                                            backgroundColor: darkMode ? '#262626' : '#fff',
-                                                            border: `1px solid ${darkMode ? '#404040' : '#e5e5e5'}`,
-                                                            borderRadius: '8px'
-                                                        }}
+                                                        contentStyle={chartTooltipStyle}
                                                     />
                                                     <Bar dataKey="media" fill="#ffc658" name={t("stats.insightsAverageSuffix")} />
                                                 </BarChart>
@@ -406,45 +382,40 @@ export function StatsModal({
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.heatMapChart")}</h3>
                                             <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
-                                                {statsData.heatMapData.map((day, index) => {
-                                                    const scoreForIntensity = day.hasData
-                                                        ? toRawScore(day.value, ringCount, isScaleInverted)
+                                                {statsData.heatMapData.map((day) => {
+                                                    // Niveles 1-4 solo para días con datos (mejor puntuación = color más intenso)
+                                                    const level = day.hasData
+                                                        ? 1 + Math.round((toRawScore(day.value, ringCount, isScaleInverted) / ringCount) * 3)
                                                         : 0;
-                                                    const intensity = day.hasData ? Math.round((scoreForIntensity / ringCount) * 4) : 0;
-                                                    const colors = darkMode
-                                                        ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
-                                                        : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
+                                                    const label = `${day.displayDate}: ${day.hasData ? day.value.toFixed(1) : t("stats.noDataShort")}`;
                                                     return (
                                                         <div
-                                                            key={index}
-                                                            className="aspect-square rounded-sm relative group cursor-pointer"
-                                                            style={{ backgroundColor: colors[intensity] }}
-                                                            title={`${day.displayDate}: ${day.hasData ? day.value.toFixed(1) : t("stats.noDataShort")}`}
+                                                            key={day.date}
+                                                            className={`aspect-square rounded-sm relative group ${level === 0 ? "border border-dashed border-neutral-300 dark:border-neutral-600" : ""}`}
+                                                            style={level > 0 ? { backgroundColor: `var(--heat-${level})` } : undefined}
+                                                            title={label}
                                                         >
-                                                            <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${theme.cardSolid} px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border ${theme.border}`}>
-                                                                {day.displayDate}: {day.hasData ? day.value.toFixed(1) : t("stats.noDataShort")}
+                                                            <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${theme.cardSolid} px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border ${theme.border}`} aria-hidden="true">
+                                                                {label}
                                                             </div>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
-                                            <div className="flex items-center justify-between mt-4 text-xs">
-                                                <span className={theme.textMuted}>{t("stats.worst")}</span>
-                                                <div className="flex gap-1">
-                                                    {[0, 1, 2, 3, 4].map(i => {
-                                                        const colors = darkMode
-                                                            ? ['#1a1a1a', '#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa']
-                                                            : ['#f3f4f6', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa'];
-                                                        return (
-                                                            <div
-                                                                key={i}
-                                                                className="w-4 h-4 rounded-sm"
-                                                                style={{ backgroundColor: colors[i] }}
-                                                            />
-                                                        );
-                                                    })}
-                                                </div>
-                                                <span className={theme.textMuted}>{t("stats.best")}</span>
+                                            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 text-xs">
+                                                <span className={`inline-flex items-center gap-1.5 ${theme.textMuted}`}>
+                                                    <span className="w-4 h-4 rounded-sm border border-dashed border-neutral-300 dark:border-neutral-600" aria-hidden="true" />
+                                                    {t("stats.noDataShort")}
+                                                </span>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <span className={theme.textMuted}>{t("stats.worst")}</span>
+                                                    <span className="flex gap-1" aria-hidden="true">
+                                                        {[1, 2, 3, 4].map((level) => (
+                                                            <span key={level} className="w-4 h-4 rounded-sm" style={{ backgroundColor: `var(--heat-${level})` }} />
+                                                        ))}
+                                                    </span>
+                                                    <span className={theme.textMuted}>{t("stats.best")}</span>
+                                                </span>
                                             </div>
                                         </div>
                                     )}
@@ -461,7 +432,7 @@ export function StatsModal({
                                                         weeklyScoresForInsights.length === 0
                                                     ) {
                                                         return (
-                                                            <div className={`p-3 rounded-lg ${darkMode ? "bg-neutral-700" : "bg-neutral-100"} ${theme.textMuted}`}>
+                                                            <div className={`p-3 rounded-lg ${theme.subtle} ${theme.textMuted}`}>
                                                                 {t("stats.insightsEmpty")}
                                                             </div>
                                                         );
@@ -494,7 +465,7 @@ export function StatsModal({
 
                                                     return (
                                                         <>
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <div className={`p-3 rounded-lg ${theme.subtle}`}>
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">{t("stats.insightsTrend")}</span>{' '}
                                                                     {performanceTrend > 0 ? (
@@ -507,7 +478,7 @@ export function StatsModal({
                                                                 </p>
                                                             </div>
 
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <div className={`p-3 rounded-lg ${theme.subtle}`}>
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">{t("stats.insightsBestSector")}</span>
                                                                     <br />
@@ -517,7 +488,7 @@ export function StatsModal({
                                                                 </p>
                                                             </div>
 
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <div className={`p-3 rounded-lg ${theme.subtle}`}>
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">{t("stats.insightsAreaToImprove")}</span>
                                                                     <br />
@@ -527,7 +498,7 @@ export function StatsModal({
                                                                 </p>
                                                             </div>
 
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-neutral-700' : 'bg-neutral-100'}`}>
+                                                            <div className={`p-3 rounded-lg ${theme.subtle}`}>
                                                                 <p className={theme.text}>
                                                                     <span className="font-semibold">{t("stats.insightsBestDay")}</span>
                                                                     <br />

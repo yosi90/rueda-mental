@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useI18n } from "../i18n/I18nContext";
+import { theme } from "../theme/theme";
 import { formatDateInput } from "../utils/date";
 
 interface FloatingInfoPanelProps {
-    cardClass: string;
-    textMutedClass: string;
-    textClass: string;
-    buttonClass: string;
-    buttonPrimaryClass: string;
-    darkMode: boolean;
     dateStr: string;
     locale: string;
     avg: string;
@@ -26,12 +21,6 @@ interface FloatingInfoPanelProps {
 }
 
 export function FloatingInfoPanel({
-    cardClass,
-    textMutedClass,
-    textClass,
-    buttonClass,
-    buttonPrimaryClass,
-    darkMode,
     dateStr,
     locale,
     avg,
@@ -136,19 +125,17 @@ export function FloatingInfoPanel({
         });
     }, [calendarMonth, firstDayOfWeek, dayLabelFormatter]);
 
-    const sosButtonClass = darkMode
-        ? "border border-red-400/40 bg-neutral-800/95 text-red-200 hover:bg-neutral-700"
-        : "border border-red-300 bg-white/95 text-red-700 hover:bg-red-50";
+    const sosButtonClass = "border border-red-300 bg-white/95 text-red-700 hover:bg-red-50 dark:border-red-400/40 dark:bg-neutral-800/95 dark:text-red-200 dark:hover:bg-neutral-700";
 
     return (
         <div className="fixed top-4 left-4 z-40 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
             <div className="flex flex-col gap-2 w-fit">
-                <div className={`rounded-xl sm:rounded-2xl ${cardClass} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg min-w-40 sm:min-w-none`}>
-                    <div className={`text-xs sm:text-sm ${textMutedClass}`}>
+                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg min-w-40 sm:min-w-none`}>
+                    <div className={`text-xs sm:text-sm ${theme.textMuted}`}>
                         {hasHoverInfo ? (
                             hoverInfoContent
                         ) : (
-                            <span>{t("panel.dailyAverage")}: <b className={`text-base sm:text-lg ${textClass}`}>{avg}</b></span>
+                            <span>{t("panel.dailyAverage")}: <b className={`text-base sm:text-lg ${theme.text}`}>{avg}</b></span>
                         )}
                     </div>
                 </div>
@@ -169,12 +156,12 @@ export function FloatingInfoPanel({
             </div>
 
             <div className="flex flex-col gap-2 mt-1 sm:mt-0">
-            <div className={`rounded-xl sm:rounded-2xl ${cardClass} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
+            <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg`}>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={onPrevDay}
-                        className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
+                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
                         title={`${t("panel.prevDay")} (←)`}
                         aria-keyshortcuts="ArrowLeft"
                         aria-label={t("panel.prevDay")}
@@ -186,7 +173,7 @@ export function FloatingInfoPanel({
                         <button
                             type="button"
                             onClick={() => setCalendarOpen((prev) => !prev)}
-                            className={`text-xs sm:text-sm border-0 bg-transparent px-1 py-0.5 rounded ${textClass} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
+                            className={`text-xs sm:text-sm border-0 bg-transparent px-1 py-0.5 rounded ${theme.text} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
                             aria-label={`${t("panel.selectDate")}: ${formattedDate}`}
                             aria-haspopup="dialog"
                             aria-expanded={calendarOpen}
@@ -205,23 +192,23 @@ export function FloatingInfoPanel({
                             <div
                                 role="dialog"
                                 aria-label={monthLabel}
-                                className={`absolute top-full left-0 mt-2 z-50 rounded-xl border p-3 shadow-xl backdrop-blur-sm ${cardClass} min-w-[250px]`}
+                                className={`absolute top-full left-0 mt-2 z-50 rounded-xl border p-3 shadow-xl backdrop-blur-sm ${theme.card} min-w-[250px]`}
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <button
                                         type="button"
                                         onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                                        className={`rounded-md min-h-8 min-w-8 px-2 text-sm font-bold ${buttonClass}`}
+                                        className={`rounded-md min-h-8 min-w-8 px-2 text-sm font-bold ${theme.button}`}
                                         title={t("panel.prevMonth")}
                                         aria-label={t("panel.prevMonth")}
                                     >
                                         <span aria-hidden="true">&lt;</span>
                                     </button>
-                                    <div className={`text-sm font-semibold capitalize ${textClass}`} aria-live="polite">{monthLabel}</div>
+                                    <div className={`text-sm font-semibold capitalize ${theme.text}`} aria-live="polite">{monthLabel}</div>
                                     <button
                                         type="button"
                                         onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                                        className={`rounded-md min-h-8 min-w-8 px-2 text-sm font-bold ${buttonClass}`}
+                                        className={`rounded-md min-h-8 min-w-8 px-2 text-sm font-bold ${theme.button}`}
                                         title={t("panel.nextMonth")}
                                         aria-label={t("panel.nextMonth")}
                                     >
@@ -231,7 +218,7 @@ export function FloatingInfoPanel({
 
                                 <div className="grid grid-cols-7 gap-1 mb-1" aria-hidden="true">
                                     {weekDayLabels.map((label) => (
-                                        <div key={label} className={`text-xs text-center uppercase ${textMutedClass}`}>
+                                        <div key={label} className={`text-xs text-center uppercase ${theme.textMuted}`}>
                                             {label}
                                         </div>
                                     ))}
@@ -247,22 +234,10 @@ export function FloatingInfoPanel({
                                         const isToday = cell.iso === todayStr;
                                         const hasData = daysWithData.has(cell.iso);
                                         const isFuture = cell.iso > todayStr;
-                                        const selectedClass = isSelected ? `${buttonPrimaryClass} font-semibold` : `${buttonClass}`;
-                                        const todayClass = isToday
-                                            ? darkMode
-                                                ? "ring-1 ring-inset ring-amber-300/90"
-                                                : "ring-1 ring-inset ring-amber-500/90"
-                                            : "";
-                                        const hasDataClass = hasData && !isSelected
-                                            ? darkMode
-                                                ? "bg-emerald-500/15"
-                                                : "bg-emerald-600/10"
-                                            : "";
-                                        const futureClass = isFuture
-                                            ? darkMode
-                                                ? "opacity-50 text-neutral-400 cursor-not-allowed"
-                                                : "opacity-50 text-neutral-500 cursor-not-allowed"
-                                            : "";
+                                        const selectedClass = isSelected ? `${theme.buttonPrimary} font-semibold` : `${theme.button}`;
+                                        const todayClass = isToday ? "ring-1 ring-inset ring-amber-500/90 dark:ring-amber-300/90" : "";
+                                        const hasDataClass = hasData && !isSelected ? "!bg-emerald-600/10 dark:!bg-emerald-500/15" : "";
+                                        const futureClass = isFuture ? "opacity-50 cursor-not-allowed" : "";
 
                                         return (
                                             <button
@@ -284,8 +259,8 @@ export function FloatingInfoPanel({
                                                     <span
                                                         className={`pointer-events-none absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${
                                                             isSelected
-                                                                ? darkMode ? "bg-neutral-900" : "bg-neutral-900"
-                                                                : darkMode ? "bg-emerald-300" : "bg-emerald-700"
+                                                                ? "bg-neutral-900"
+                                                                : "bg-emerald-700 dark:bg-emerald-300"
                                                         }`}
                                                     />
                                                 )}
@@ -300,7 +275,7 @@ export function FloatingInfoPanel({
                     <button
                         type="button"
                         onClick={onNextDay}
-                        className={`${buttonClass} ${darkMode ? "hover:!bg-neutral-400 hover:!text-neutral-900" : ""} rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 ${darkMode ? "focus-visible:ring-neutral-100" : "focus-visible:ring-neutral-900"}`}
+                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
                         title={`${t("panel.nextDay")} (→)`}
                         aria-keyshortcuts="ArrowRight"
                         aria-label={t("panel.nextDay")}
@@ -311,7 +286,7 @@ export function FloatingInfoPanel({
                     <button
                         type="button"
                         onClick={onToday}
-                        className={`${buttonPrimaryClass} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
+                        className={`${theme.buttonPrimary} rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-colors`}
                         title={`${t("panel.goToday")} (T)`}
                         aria-keyshortcuts="T"
                     >
@@ -325,7 +300,7 @@ export function FloatingInfoPanel({
                     type="button"
                     onClick={copySource.onCopy}
                     title={t("panel.copyFromTitle", { date: copySource.label })}
-                    className={`self-start inline-flex items-center gap-1.5 rounded-xl ${cardClass} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${textClass} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+                    className={`self-start inline-flex items-center gap-1.5 rounded-xl ${theme.card} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${theme.text} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
                 >
                     <span aria-hidden="true">↺</span>
                     {t("panel.copyFrom", { date: copySource.label })}

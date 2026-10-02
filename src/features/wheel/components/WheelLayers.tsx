@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from "react";
+import { theme } from "../../../shared/theme/theme";
 import type { HoverInfo, Sector, SectorWithAngles } from "../../../shared/types/mentalWheel";
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 
 interface WheelLayersProps {
@@ -19,7 +19,6 @@ interface WheelLayersProps {
     getComment: (date: string, sectorId: string) => string;
     levelOuterRadius: (level: number) => number;
     levelLabelRadius: (level: number) => number;
-    theme: Pick<ThemeClasses, "svgGrid" | "svgText">;
     /** id del texto con las instrucciones de teclado. */
     keyboardHintId: string;
     /** Puntuación en escala visible (0 = sin nota). */
@@ -66,7 +65,6 @@ export function WheelLayers({
     getComment,
     levelOuterRadius,
     levelLabelRadius,
-    theme,
     keyboardHintId,
     onKeyboardScore,
     onOpenSectorMenu,

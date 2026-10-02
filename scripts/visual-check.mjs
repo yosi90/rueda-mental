@@ -96,6 +96,7 @@ const report = [];
     await page.mouse.click(5, 790); // cerrar menú (overlay)
     await page.getByRole("button", { name: "Estadísticas" }).click();
     await page.waitForSelector("text=Racha actual");
+    await page.waitForTimeout(2000); // animación de entrada de las gráficas
     report.push(`subtítulo stats: ${await page.getByText(/días registrados/).textContent()}`);
     await page.screenshot({ path: `${OUT}/04-dark-stats-top.png` });
     await page.getByText("Mapa de Calor").scrollIntoViewIfNeeded();

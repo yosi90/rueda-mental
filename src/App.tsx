@@ -46,7 +46,7 @@ import type {
     StatsVisibility,
 } from "./shared/types/mentalWheel";
 import { parseBackup } from "./shared/services/io/backup";
-import type { ThemeClasses } from "./shared/types/theme";
+import { theme } from "./shared/theme/theme";
 import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/utils/date";
 import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
 import { dayHasScores, findPreviousDateWithScores } from "./shared/utils/scores";
@@ -604,35 +604,11 @@ export default function MentalWheelApp() {
         return days;
     }, [scoresByDate, commentsByDate, dailySummaryByDate]);
 
-    // Colores según tema
-    const theme: ThemeClasses = {
-        bg: darkMode ? "bg-neutral-600" : "bg-neutral-300",
-        card: darkMode ? "bg-neutral-800/90" : "bg-white/90",
-        cardSolid: darkMode ? "bg-neutral-800" : "bg-white",
-        text: darkMode ? "text-neutral-100" : "text-neutral-900",
-        textMuted: darkMode ? "text-neutral-300" : "text-neutral-600",
-        textLight: darkMode ? "text-neutral-300" : "text-neutral-600",
-        border: darkMode ? "border-neutral-600" : "border-neutral-300",
-        borderLight: darkMode ? "border-neutral-600" : "border-neutral-200",
-        input: darkMode ? "bg-neutral-700 border-neutral-600 text-neutral-100" : "bg-white border-neutral-300 text-neutral-900",
-        inputAlt: darkMode ? "bg-neutral-700 border-neutral-600 text-neutral-100" : "bg-neutral-50 border-neutral-200 text-neutral-900",
-        button: darkMode ? "bg-neutral-600 hover:bg-neutral-800" : "bg-neutral-100 hover:bg-neutral-200",
-        buttonPrimary: darkMode ? "bg-neutral-400 text-neutral-900 hover:bg-neutral-200" : "bg-neutral-100 text-black hover:bg-neutral-200",
-        svgBg: darkMode ? "hsl(0 0% 15%)" : "white",
-        svgGrid: darkMode ? "hsl(0 0% 35% / 0.5)" : "hsl(0 0% 85% / 0.6)",
-        svgText: darkMode ? "hsl(0 0% 80%)" : "hsl(0 0% 20%)",
-        svgCenter: darkMode ? "hsl(0 0% 20%)" : "white",
-        svgCenterBorder: darkMode ? "hsl(0 0% 40%)" : "hsl(0 0% 80%)",
-        overlay: darkMode ? "bg-black/60" : "bg-black/40",
-        chartGrid: darkMode ? "#444" : "#e0e0e0",
-        chartText: darkMode ? "#aaa" : "#666",
-    };
 
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`} style={{ margin: 0, padding: 0 }}>
             <TopRightButtons
                 showStatsButton={statsVisibility.enabled}
-                buttonPrimaryClass={theme.buttonPrimary}
                 onOpenStats={() => {
                     setSummaryOpen(false);
                     setStatsOpen(true);
@@ -657,12 +633,6 @@ export default function MentalWheelApp() {
             )}
 
             <FloatingInfoPanel
-                cardClass={theme.card}
-                textMutedClass={theme.textMuted}
-                textClass={theme.text}
-                buttonClass={theme.button}
-                buttonPrimaryClass={theme.buttonPrimary}
-                darkMode={darkMode}
                 dateStr={dateStr}
                 locale={locale}
                 avg={avg}
@@ -671,7 +641,6 @@ export default function MentalWheelApp() {
                     <HoverText
                         sectors={sectors}
                         hoverInfo={hoverInfo}
-                        darkMode={darkMode}
                         ringCount={RING_COUNT}
                         isScaleInverted={isScaleInverted}
                     />
@@ -736,7 +705,6 @@ export default function MentalWheelApp() {
                                 getComment={getComment}
                                 levelOuterRadius={levelOuterRadius}
                                 levelLabelRadius={levelLabelRadius}
-                                theme={{ svgGrid: theme.svgGrid, svgText: theme.svgText }}
                                 keyboardHintId="wheel-keyboard-hint"
                                 onKeyboardScore={setScore}
                                 onOpenSectorMenu={(idSector, x, y) => setInfoMenuContextual({ idSector, x, y })}
@@ -757,8 +725,6 @@ export default function MentalWheelApp() {
             <SectorContextMenu
                 infoMenuContextual={infoMenuContextual}
                 menuRef={menuRef}
-                theme={theme}
-                darkMode={darkMode}
                 sectors={sectors}
                 scores={scores}
                 dateStr={dateStr}
@@ -777,24 +743,19 @@ export default function MentalWheelApp() {
             <SummaryModal
                 open={summaryOpen}
                 onClose={() => setSummaryOpen(false)}
-                theme={theme}
                 summaryDateLabel={summaryDateLabel}
                 dailySummary={dailySummary}
-                darkMode={darkMode}
                 onChangeField={setDailySummaryField}
             />
             <SOSModal
                 open={sosOpen}
                 onClose={() => setSosOpen(false)}
-                theme={theme}
             />
             <Suspense fallback={null}>
                 {statsOpen && (
                     <StatsModal
                         statsOpen={statsOpen}
                         setStatsOpen={setStatsOpen}
-                        theme={theme}
-                        darkMode={darkMode}
                         statsData={statsData}
                         statsVisibility={statsVisibility}
                         ringCount={RING_COUNT}
@@ -811,7 +772,6 @@ export default function MentalWheelApp() {
             <SettingsDrawer
                 drawerOpen={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
-                theme={theme}
                 darkMode={darkMode}
                 setDarkMode={setDarkMode}
                 newName={newName}
@@ -844,18 +804,17 @@ export default function MentalWheelApp() {
 interface HoverTextProps {
     sectors: Sector[];
     hoverInfo: HoverInfo;
-    darkMode: boolean;
     ringCount: number;
     isScaleInverted: boolean;
 }
 
-function HoverText({ sectors, hoverInfo, darkMode, ringCount, isScaleInverted }: HoverTextProps) {
+function HoverText({ sectors, hoverInfo, ringCount, isScaleInverted }: HoverTextProps) {
     const s = sectors.find((x: Sector) => x.id === hoverInfo.sectorId);
     if (!s) return null;
     const displayLevel = toDisplayScore(hoverInfo.level, ringCount, isScaleInverted);
     return (
         <span>
-            {s.name}: <b className={`text-base sm:text-lg ${darkMode ? 'text-neutral-100' : 'text-neutral-900'}`}>{displayLevel}</b>
+            {s.name}: <b className={`text-base sm:text-lg ${theme.text}`}>{displayLevel}</b>
         </span>
     );
 }

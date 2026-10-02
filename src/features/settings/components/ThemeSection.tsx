@@ -1,16 +1,14 @@
 import { useId, type Dispatch, type SetStateAction } from "react";
+import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { ToggleSwitch } from "../../../shared/components/ToggleSwitch";
 
 interface ThemeSectionProps {
-    theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight">;
     darkMode: boolean;
     setDarkMode: Dispatch<SetStateAction<boolean>>;
 }
 
 export function ThemeSection({
-    theme,
     darkMode,
     setDarkMode,
 }: ThemeSectionProps) {

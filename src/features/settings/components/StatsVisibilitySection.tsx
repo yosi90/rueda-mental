@@ -1,12 +1,11 @@
 import { useId, type Dispatch, type SetStateAction } from "react";
+import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { TranslationKey } from "../../../shared/i18n/translations";
 import type { StatsVisibility } from "../../../shared/types/mentalWheel";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { ToggleSwitch } from "../../../shared/components/ToggleSwitch";
 
 interface StatsVisibilitySectionProps {
-    theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight" | "card">;
     statsVisibility: StatsVisibility;
     setStatsVisibility: Dispatch<SetStateAction<StatsVisibility>>;
 }
@@ -24,7 +23,6 @@ const STATS_VISIBILITY_OPTIONS: ReadonlyArray<{ key: StatsToggleKey; labelKey: T
 ] as const;
 
 export function StatsVisibilitySection({
-    theme,
     statsVisibility,
     setStatsVisibility,
 }: StatsVisibilitySectionProps) {

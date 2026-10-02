@@ -1,16 +1,14 @@
 import type { ChangeEvent } from "react";
+import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import type { ThemeClasses } from "../../../shared/types/theme";
 
 interface DataSettingsSectionProps {
-    theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight" | "button">;
     resetDay: () => void;
     exportJSON: () => void;
     importJSON: (evt: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function DataSettingsSection({
-    theme,
     resetDay,
     exportJSON,
     importJSON,

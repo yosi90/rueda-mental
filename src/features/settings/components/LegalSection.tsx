@@ -1,11 +1,7 @@
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import type { ThemeClasses } from "../../../shared/types/theme";
+import { theme } from "../../../shared/theme/theme";
 
-interface LegalSectionProps {
-    theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight">;
-}
-
-export function LegalSection({ theme }: LegalSectionProps) {
+export function LegalSection() {
     const { t } = useI18n();
 
     return (

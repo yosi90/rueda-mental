@@ -1,8 +1,8 @@
 import { useI18n } from "../i18n/I18nContext";
+import { theme } from "../theme/theme";
 
 interface TopRightButtonsProps {
     showStatsButton: boolean;
-    buttonPrimaryClass: string;
     onOpenStats: () => void;
     onOpenSummary: () => void;
     onOpenSettings: () => void;
@@ -10,7 +10,6 @@ interface TopRightButtonsProps {
 
 export function TopRightButtons({
     showStatsButton,
-    buttonPrimaryClass,
     onOpenStats,
     onOpenSummary,
     onOpenSettings,
@@ -23,7 +22,7 @@ export function TopRightButtons({
                 <button
                     type="button"
                     onClick={onOpenStats}
-                    className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
+                    className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                     title={t("top.stats")}
                     aria-label={t("top.stats")}
                     aria-haspopup="dialog"
@@ -40,7 +39,7 @@ export function TopRightButtons({
             <button
                 type="button"
                 onClick={onOpenSummary}
-                className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
+                className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                 title={t("top.summary")}
                 aria-label={t("top.summary")}
                 aria-haspopup="dialog"
@@ -56,7 +55,7 @@ export function TopRightButtons({
             <button
                 type="button"
                 onClick={onOpenSettings}
-                className={`rounded-lg ${buttonPrimaryClass} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
+                className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
                 title={t("top.settings")}
                 aria-label={t("top.settings")}
                 aria-haspopup="dialog"

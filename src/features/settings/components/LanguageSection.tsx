@@ -1,11 +1,7 @@
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import type { ThemeClasses } from "../../../shared/types/theme";
+import { theme } from "../../../shared/theme/theme";
 
-interface LanguageSectionProps {
-    theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight">;
-}
-
-export function LanguageSection({ theme }: LanguageSectionProps) {
+export function LanguageSection() {
     const { language, setLanguage, languages, t } = useI18n();
 
     return (

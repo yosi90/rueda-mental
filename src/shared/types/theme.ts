@@ -11,6 +11,10 @@ export interface ThemeClasses {
     inputAlt: string;
     button: string;
     buttonPrimary: string;
+    /** Fondo suave para bloques secundarios. */
+    subtle: string;
+    /** Anillo de foco para campos de texto. */
+    focusRing: string;
     svgBg: string;
     svgGrid: string;
     svgText: string;

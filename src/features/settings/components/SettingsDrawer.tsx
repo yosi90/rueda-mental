@@ -1,6 +1,6 @@
 import { useId, useRef, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
+import { theme } from "../../../shared/theme/theme";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { DataSettingsSection } from "./DataSettingsSection";
 import { LanguageSection } from "./LanguageSection";
 import { LegalSection } from "./LegalSection";
@@ -16,7 +16,6 @@ import { CloseIcon } from "../../../shared/components/CloseIcon";
 interface SettingsDrawerProps {
     drawerOpen: boolean;
     onClose: () => void;
-    theme: ThemeClasses;
     darkMode: boolean;
     setDarkMode: Dispatch<SetStateAction<boolean>>;
     newName: string;
@@ -43,7 +42,6 @@ interface SettingsDrawerProps {
 export function SettingsDrawer({
     drawerOpen,
     onClose,
-    theme,
     darkMode,
     setDarkMode,
     newName,
@@ -124,13 +122,11 @@ export function SettingsDrawer({
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
-                    <LanguageSection theme={theme} />
+                    <LanguageSection />
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
                     <SectorsSettingsSection
-                        theme={theme}
-                        darkMode={darkMode}
                         newName={newName}
                         setNewName={setNewName}
                         addSector={addSector}
@@ -147,7 +143,6 @@ export function SettingsDrawer({
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
                     <ScaleDirectionSection
-                        theme={theme}
                         isScaleInverted={isScaleInverted}
                         setIsScaleInverted={setIsScaleInverted}
                     />
@@ -155,7 +150,6 @@ export function SettingsDrawer({
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
                     <DataSettingsSection
-                        theme={theme}
                         resetDay={resetDay}
                         exportJSON={exportJSON}
                         importJSON={importJSON}
@@ -164,7 +158,6 @@ export function SettingsDrawer({
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
                     <StatsVisibilitySection
-                        theme={theme}
                         statsVisibility={statsVisibility}
                         setStatsVisibility={setStatsVisibility}
                     />
@@ -172,7 +165,6 @@ export function SettingsDrawer({
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
                     <ThemeSection
-                        theme={theme}
                         darkMode={darkMode}
                         setDarkMode={setDarkMode}
                     />
@@ -180,13 +172,12 @@ export function SettingsDrawer({
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
                     <TutorialSection
-                        theme={theme}
                         onRestartTutorial={onRestartTutorial}
                     />
 
                     <hr className={`my-6 ${theme.borderLight} border-t`} />
 
-                    <LegalSection theme={theme} />
+                    <LegalSection />
                 </div>
             </div>
         </>

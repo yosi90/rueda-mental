@@ -1,13 +1,11 @@
 import type { Dispatch, SetStateAction } from "react";
+import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { Sector } from "../../../shared/types/mentalWheel";
-import type { ThemeClasses } from "../../../shared/types/theme";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { rgbToHex } from "../../../shared/utils/color";
 
 interface SectorsSettingsSectionProps {
-    theme: Pick<ThemeClasses, "text" | "textMuted" | "border" | "input" | "inputAlt" | "button" | "buttonPrimary">;
-    darkMode: boolean;
     newName: string;
     setNewName: Dispatch<SetStateAction<string>>;
     addSector: () => void;
@@ -22,8 +20,6 @@ interface SectorsSettingsSectionProps {
 }
 
 export function SectorsSettingsSection({
-    theme,
-    darkMode,
     newName,
     setNewName,
     addSector,
@@ -47,7 +43,7 @@ export function SectorsSettingsSection({
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder={t("sectors.newPlaceholder")}
                     aria-label={t("sectors.newPlaceholder")}
-                    className={`flex-1 rounded-lg border ${theme.input} px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                    className={`flex-1 rounded-lg border ${theme.input} px-3 py-2 text-sm ${theme.focusRing}`}
                     onKeyDown={(e) => e.key === "Enter" && addSector()}
                 />
                 <button type="button" onClick={addSector} className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}>
@@ -79,7 +75,7 @@ export function SectorsSettingsSection({
                                         setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)))
                                     }
                                     aria-label={t("sectors.newPlaceholder")}
-                                    className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-2 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                                    className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-2 text-sm ${theme.focusRing}`}
                                 />
                                 <div className="flex gap-1">
                                     <button
@@ -132,7 +128,7 @@ export function SectorsSettingsSection({
                                     value={displayedScore}
                                     onChange={(e) => setScore(s.id, e.target.value)}
                                     aria-label={`${t("common.score")}: ${s.name}`}
-                                    className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"} flex-shrink-0`}
+                                    className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center ${theme.focusRing} flex-shrink-0`}
                                 />
                             </div>
                         </li>
