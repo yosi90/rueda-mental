@@ -1,4 +1,4 @@
-import type { Scores, ScoresByDate } from "../types/mentalWheel";
+import type { CommentsByDate, DailySummaryByDate, Scores, ScoresByDate } from "../types/mentalWheel";
 
 /** Un día cuenta como registrado si al menos un sector tiene nota (0 = sin nota). */
 export function dayHasScores(dayScores: Scores | undefined): boolean {
@@ -14,4 +14,23 @@ export function findPreviousDateWithScores(scoresByDate: ScoresByDate, dateStr: 
         }
     }
     return best;
+}
+
+/** Días con alguna puntuación, comentario o resumen (para marcarlos en el calendario). */
+export function collectDaysWithData(
+    scoresByDate: ScoresByDate,
+    commentsByDate: CommentsByDate,
+    dailySummaryByDate: DailySummaryByDate
+): Set<string> {
+    const days = new Set<string>();
+    for (const [date, dayScores] of Object.entries(scoresByDate)) {
+        if (dayHasScores(dayScores)) days.add(date);
+    }
+    for (const [date, dayComments] of Object.entries(commentsByDate)) {
+        if (Object.values(dayComments).some((text) => text.trim().length > 0)) days.add(date);
+    }
+    for (const [date, summary] of Object.entries(dailySummaryByDate)) {
+        if (Object.values(summary).some((text) => text.trim().length > 0)) days.add(date);
+    }
+    return days;
 }

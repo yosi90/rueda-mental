@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { Sector } from "../../../shared/types/mentalWheel";
@@ -6,25 +6,22 @@ import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { rgbToHex } from "../../../shared/utils/color";
 
 interface SectorsSettingsSectionProps {
-    newName: string;
-    setNewName: Dispatch<SetStateAction<string>>;
-    addSector: () => void;
+    addSector: (name: string) => void;
     sectors: Sector[];
-    setSectors: Dispatch<SetStateAction<Sector[]>>;
+    updateSector: (id: string, patch: Partial<Omit<Sector, "id">>) => void;
     moveSector: (id: string, dir: number) => void;
     removeSector: (id: string) => void;
     scores: Record<string, number>;
     ringCount: number;
-    setScore: (id: string, val: string | number) => void;
+    /** Puntuación en escala visible. */
+    setScore: (id: string, displayScore: number) => void;
     isScaleInverted: boolean;
 }
 
 export function SectorsSettingsSection({
-    newName,
-    setNewName,
     addSector,
     sectors,
-    setSectors,
+    updateSector,
     moveSector,
     removeSector,
     scores,
@@ -33,6 +30,12 @@ export function SectorsSettingsSection({
     isScaleInverted,
 }: SectorsSettingsSectionProps) {
     const { t } = useI18n();
+    const [newName, setNewName] = useState("");
+
+    function submitNewSector() {
+        addSector(newName);
+        setNewName("");
+    }
 
     return (
         <div>
@@ -44,9 +47,9 @@ export function SectorsSettingsSection({
                     placeholder={t("sectors.newPlaceholder")}
                     aria-label={t("sectors.newPlaceholder")}
                     className={`flex-1 rounded-lg border ${theme.input} px-3 py-2 text-sm ${theme.focusRing}`}
-                    onKeyDown={(e) => e.key === "Enter" && addSector()}
+                    onKeyDown={(e) => e.key === "Enter" && submitNewSector()}
                 />
-                <button type="button" onClick={addSector} className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}>
+                <button type="button" onClick={submitNewSector} className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}>
                     {t("sectors.add")}
                 </button>
             </div>
@@ -63,7 +66,7 @@ export function SectorsSettingsSection({
                                     type="color"
                                     value={rgbToHex(s.color)}
                                     onChange={(e) =>
-                                        setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, color: e.target.value } : x)))
+                                        updateSector(s.id, { color: e.target.value })
                                     }
                                     title={t("common.color")}
                                     aria-label={`${t("common.color")}: ${s.name}`}
@@ -72,7 +75,7 @@ export function SectorsSettingsSection({
                                 <input
                                     value={s.name}
                                     onChange={(e) =>
-                                        setSectors((prev) => prev.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)))
+                                        updateSector(s.id, { name: e.target.value })
                                     }
                                     aria-label={t("sectors.newPlaceholder")}
                                     className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-2 text-sm ${theme.focusRing}`}
@@ -117,7 +120,7 @@ export function SectorsSettingsSection({
                                     min={0}
                                     max={ringCount}
                                     value={displayedScore}
-                                    onChange={(e) => setScore(s.id, e.target.value)}
+                                    onChange={(e) => setScore(s.id, Number(e.target.value) || 0)}
                                     aria-label={`${t("common.score")}: ${s.name}`}
                                     className="flex-1 min-w-0 h-6"
                                 />
@@ -126,7 +129,7 @@ export function SectorsSettingsSection({
                                     min={0}
                                     max={ringCount}
                                     value={displayedScore}
-                                    onChange={(e) => setScore(s.id, e.target.value)}
+                                    onChange={(e) => setScore(s.id, Number(e.target.value) || 0)}
                                     aria-label={`${t("common.score")}: ${s.name}`}
                                     className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center ${theme.focusRing} flex-shrink-0`}
                                 />

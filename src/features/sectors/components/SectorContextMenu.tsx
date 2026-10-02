@@ -1,4 +1,4 @@
-import { useId, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
@@ -7,42 +7,61 @@ import { rgbToHex } from "../../../shared/utils/color";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 
 interface SectorContextMenuProps {
-    infoMenuContextual: InfoMenuContextual | null;
-    menuRef: RefObject<HTMLDivElement | null>;
+    menu: InfoMenuContextual | null;
     sectors: Sector[];
     scores: Record<string, number>;
     dateStr: string;
     ringCount: number;
     isScaleInverted: boolean;
     onClose: () => void;
-    setSectors: Dispatch<SetStateAction<Sector[]>>;
+    updateSector: (id: string, patch: Partial<Omit<Sector, "id">>) => void;
     removeSector: (id: string) => void;
-    setScore: (id: string, val: string | number) => void;
+    /** Puntuación en escala visible. */
+    setScore: (id: string, displayScore: number) => void;
     getComment: (date: string, sectorId: string) => string;
     setComment: (date: string, sectorId: string, text: string) => void;
     deleteComment: (date: string, sectorId: string) => void;
 }
 
+const VIEWPORT_MARGIN = 8;
+
 export function SectorContextMenu({
-    infoMenuContextual,
-    menuRef,
+    menu,
     sectors,
     scores,
     dateStr,
     ringCount,
     isScaleInverted,
     onClose,
-    setSectors,
+    updateSector,
     removeSector,
     setScore,
     getComment,
     setComment,
     deleteComment,
 }: SectorContextMenuProps) {
-    useDialogA11y(Boolean(infoMenuContextual), onClose, menuRef);
-    if (!infoMenuContextual) return null;
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+    useDialogA11y(Boolean(menu), onClose, menuRef);
 
-    const sector = sectors.find((s) => s.id === infoMenuContextual.idSector);
+    // Coloca el menú junto al punto pedido sin que se salga de la ventana.
+    useLayoutEffect(() => {
+        if (!menu || !menuRef.current) {
+            setPosition(null);
+            return;
+        }
+        const rect = menuRef.current.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width - VIEWPORT_MARGIN;
+        const maxY = window.innerHeight - rect.height - VIEWPORT_MARGIN;
+        setPosition({
+            x: Math.max(VIEWPORT_MARGIN, Math.min(menu.x, maxX)),
+            y: Math.max(VIEWPORT_MARGIN, Math.min(menu.y, maxY)),
+        });
+    }, [menu]);
+
+    if (!menu) return null;
+
+    const sector = sectors.find((s) => s.id === menu.idSector);
 
     return (
         <>
@@ -55,7 +74,10 @@ export function SectorContextMenu({
                 aria-label={sector?.name}
                 tabIndex={-1}
                 className={`fixed z-50 w-[240px] sm:w-[300px] rounded-xl border ${theme.border} ${theme.card} ${theme.text} backdrop-blur-sm p-4 shadow-xl outline-none`}
-                style={{ top: `${infoMenuContextual.y}px`, left: `${infoMenuContextual.x}px` }}
+                style={{
+                    left: `${position?.x ?? menu.x}px`,
+                    top: `${position?.y ?? menu.y}px`,
+                }}
             >
                 {sector && (
                     <SectorMenuContent
@@ -66,7 +88,7 @@ export function SectorContextMenu({
                         ringCount={ringCount}
                         isScaleInverted={isScaleInverted}
                         onClose={onClose}
-                        setSectors={setSectors}
+                        updateSector={updateSector}
                         removeSector={removeSector}
                         setScore={setScore}
                         initialComment={getComment(dateStr, sector.id)}
@@ -82,7 +104,7 @@ export function SectorContextMenu({
 const COMMENT_MAX_LENGTH = 100;
 
 interface SectorMenuContentProps extends Pick<SectorContextMenuProps,
-    "dateStr" | "ringCount" | "isScaleInverted" | "onClose" | "setSectors"
+    "dateStr" | "ringCount" | "isScaleInverted" | "onClose" | "updateSector"
     | "removeSector" | "setScore" | "setComment" | "deleteComment"> {
     sector: Sector;
     score: number;
@@ -96,7 +118,7 @@ function SectorMenuContent({
     ringCount,
     isScaleInverted,
     onClose,
-    setSectors,
+    updateSector,
     removeSector,
     setScore,
     initialComment,
@@ -122,14 +144,7 @@ function SectorMenuContent({
                 <input
                     type="color"
                     defaultValue={rgbToHex(sector.color)}
-                    onChange={(e) => {
-                        const nuevoColor = e.target.value;
-                        setSectors((prev) =>
-                            prev.map((s) =>
-                                s.id === sector.id ? { ...s, color: nuevoColor } : s
-                            )
-                        );
-                    }}
+                    onChange={(e) => updateSector(sector.id, { color: e.target.value })}
                     title={t("common.color")}
                     aria-label={t("common.color")}
                     className="h-8 w-8 cursor-pointer rounded-md border flex-shrink-0"
@@ -140,23 +155,11 @@ function SectorMenuContent({
                     defaultValue={sector.name}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                            const nombre = (e.target as HTMLInputElement).value;
-                            setSectors((prev) =>
-                                prev.map((s) =>
-                                    s.id === sector.id ? { ...s, name: nombre } : s
-                                )
-                            );
+                            updateSector(sector.id, { name: e.currentTarget.value });
                             onClose();
                         }
                     }}
-                    onBlur={(e) => {
-                        const nombre = e.target.value;
-                        setSectors((prev) =>
-                            prev.map((s) =>
-                                s.id === sector.id ? { ...s, name: nombre } : s
-                            )
-                        );
-                    }}
+                    onBlur={(e) => updateSector(sector.id, { name: e.target.value })}
                     aria-label={t("sectors.newPlaceholder")}
                     className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-1 text-sm ${theme.focusRing}`}
                 />
@@ -183,7 +186,7 @@ function SectorMenuContent({
                         min={0}
                         max={ringCount}
                         value={valorActual}
-                        onChange={(e) => setScore(sector.id, e.target.value)}
+                        onChange={(e) => setScore(sector.id, Number(e.target.value))}
                         aria-label={t("common.score")}
                         className={`flex-1 min-w-0 h-2 bg-gray-400 rounded-lg appearance-none cursor-pointer
                             [&::-webkit-slider-thumb]:appearance-none
@@ -206,10 +209,7 @@ function SectorMenuContent({
                     min={0}
                     max={ringCount}
                     value={valorActual}
-                    onChange={(e) => {
-                        const nuevoValor = parseInt(e.target.value, 10);
-                        setScore(sector.id, nuevoValor);
-                    }}
+                    onChange={(e) => setScore(sector.id, Number(e.target.value) || 0)}
                     className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center ${theme.focusRing} flex-shrink-0`}
                 />
             </div>

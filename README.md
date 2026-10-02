@@ -31,9 +31,10 @@ npm run preview   # sirve el build localmente
 
 ```
 src/
-  App.tsx                 Componente raíz: estado, persistencia y composición
+  App.tsx                 Componente raíz: acciones (confirmación, deshacer) y composición de la interfaz
+  app/                    Hooks de la aplicación: datos del usuario, preferencias y atajos de teclado
   features/
-    wheel/                Rueda SVG e interacciones (clic, zoom, pan, pulsación larga)
+    wheel/                Rueda SVG, geometría e interacciones (clic, zoom, pan, pulsación larga)
     sectors/              Menú contextual y utilidades de sectores
     stats/                Modal de estadísticas (carga diferida) y cálculo de datos
     summary/              Resumen diario
@@ -41,9 +42,11 @@ src/
     support/              Modal SOS
     tutorial/             Tutorial interactivo
   shared/
+    feedback/             Confirmaciones y avisos (con «Deshacer»)
+    theme/                Clases de tema con variante dark: (colores de SVG en variables CSS de index.css)
     i18n/                 Traducciones y contexto de idioma
     services/storage/     Lectura/escritura en localStorage
-    services/io/          Validación de copias de seguridad
+    services/io/          Exportación, lectura y validación de copias de seguridad
     utils/                Fechas, escala de puntuación, colores
 ```
 

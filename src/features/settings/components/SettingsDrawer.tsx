@@ -1,14 +1,5 @@
-import { useId, useRef, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
+import { Children, Fragment, useId, useRef, type ReactNode } from "react";
 import { theme } from "../../../shared/theme/theme";
-import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
-import { DataSettingsSection } from "./DataSettingsSection";
-import { LanguageSection } from "./LanguageSection";
-import { LegalSection } from "./LegalSection";
-import { ScaleDirectionSection } from "./ScaleDirectionSection";
-import { SectorsSettingsSection } from "./SectorsSettingsSection";
-import { StatsVisibilitySection } from "./StatsVisibilitySection";
-import { ThemeSection } from "./ThemeSection";
-import { TutorialSection } from "./TutorialSection";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
@@ -16,54 +7,12 @@ import { CloseIcon } from "../../../shared/components/CloseIcon";
 interface SettingsDrawerProps {
     drawerOpen: boolean;
     onClose: () => void;
-    darkMode: boolean;
-    setDarkMode: Dispatch<SetStateAction<boolean>>;
-    newName: string;
-    setNewName: Dispatch<SetStateAction<string>>;
-    addSector: () => void;
-    sectors: Sector[];
-    setSectors: Dispatch<SetStateAction<Sector[]>>;
-    moveSector: (id: string, dir: number) => void;
-    removeSector: (id: string) => void;
-    scores: Record<string, number>;
-    ringCount: number;
-    setScore: (id: string, val: string | number) => void;
-    isScaleInverted: boolean;
-    setIsScaleInverted: Dispatch<SetStateAction<boolean>>;
-    resetDay: () => void;
-    exportJSON: () => void;
-    importJSON: (evt: ChangeEvent<HTMLInputElement>) => void;
-    statsVisibility: StatsVisibility;
-    setStatsVisibility: Dispatch<SetStateAction<StatsVisibility>>;
-    onRestartTutorial: () => void;
     onOpenSOS: () => void;
+    /** Secciones de configuración; se muestran separadas por una línea. */
+    children: ReactNode;
 }
 
-export function SettingsDrawer({
-    drawerOpen,
-    onClose,
-    darkMode,
-    setDarkMode,
-    newName,
-    setNewName,
-    addSector,
-    sectors,
-    setSectors,
-    moveSector,
-    removeSector,
-    scores,
-    ringCount,
-    setScore,
-    isScaleInverted,
-    setIsScaleInverted,
-    resetDay,
-    exportJSON,
-    importJSON,
-    statsVisibility,
-    setStatsVisibility,
-    onRestartTutorial,
-    onOpenSOS,
-}: SettingsDrawerProps) {
+export function SettingsDrawer({ drawerOpen, onClose, onOpenSOS, children }: SettingsDrawerProps) {
     const { t } = useI18n();
     const drawerRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
@@ -106,6 +55,7 @@ export function SettingsDrawer({
                         </button>
                     </div>
 
+                    {/* En móvil el botón SOS del panel no se muestra: acceso rápido aquí */}
                     <div className={`mb-6 p-4 rounded-xl border ${theme.border} sm:hidden`}>
                         <div className={`text-sm font-semibold ${theme.text}`}>{t("settings.quickSos.title")}</div>
                         <p className={`text-xs mt-1 ${theme.textLight}`}>
@@ -114,70 +64,18 @@ export function SettingsDrawer({
                         <button
                             type="button"
                             onClick={onOpenSOS}
-                            className={`mt-3 w-full rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 px-3 py-2 text-sm font-semibold transition-colors`}
+                            className="mt-3 w-full rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/40 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60 px-3 py-2 text-sm font-semibold transition-colors"
                         >
                             {t("settings.quickSos.button")}
                         </button>
                     </div>
 
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <LanguageSection />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <SectorsSettingsSection
-                        newName={newName}
-                        setNewName={setNewName}
-                        addSector={addSector}
-                        sectors={sectors}
-                        setSectors={setSectors}
-                        moveSector={moveSector}
-                        removeSector={removeSector}
-                        scores={scores}
-                        ringCount={ringCount}
-                        setScore={setScore}
-                        isScaleInverted={isScaleInverted}
-                    />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <ScaleDirectionSection
-                        isScaleInverted={isScaleInverted}
-                        setIsScaleInverted={setIsScaleInverted}
-                    />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <DataSettingsSection
-                        resetDay={resetDay}
-                        exportJSON={exportJSON}
-                        importJSON={importJSON}
-                    />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <StatsVisibilitySection
-                        statsVisibility={statsVisibility}
-                        setStatsVisibility={setStatsVisibility}
-                    />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <ThemeSection
-                        darkMode={darkMode}
-                        setDarkMode={setDarkMode}
-                    />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <TutorialSection
-                        onRestartTutorial={onRestartTutorial}
-                    />
-
-                    <hr className={`my-6 ${theme.borderLight} border-t`} />
-
-                    <LegalSection />
+                    {Children.toArray(children).map((section, index) => (
+                        <Fragment key={index}>
+                            <hr className={`my-6 ${theme.borderLight} border-t`} />
+                            {section}
+                        </Fragment>
+                    ))}
                 </div>
             </div>
         </>

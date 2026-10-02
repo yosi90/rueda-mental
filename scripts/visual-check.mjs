@@ -267,6 +267,35 @@ const report = [];
     await context.close();
 }
 
+// 9. Copia de seguridad: exportar, modificar e importar
+{
+    const { page, context, errors } = await newPage(browser, {}, { acceptDownloads: true });
+    await page.getByRole("button", { name: "Configuración" }).click();
+    await page.waitForTimeout(400);
+    const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name: "Exportar JSON" }).click(),
+    ]);
+    const backupPath = `${OUT}/backup-test.json`;
+    await download.saveAs(backupPath);
+
+    // Borrar «Ocio» y luego importar la copia: debe volver
+    await page.getByRole("button", { name: "Eliminar: Ocio" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Eliminar" }).click();
+    const afterDelete = await page.getByRole("button", { name: "Eliminar: Ocio" }).count();
+    await page.locator('input[type="file"]').setInputFiles(backupPath);
+    await page.getByRole("alertdialog").getByRole("button", { name: "Importar JSON" }).click();
+    await page.waitForTimeout(200);
+    const restored = await page.getByRole("button", { name: "Eliminar: Ocio" }).count();
+    report.push(`copia: descargada ${download.suggestedFilename()} · tras borrar Ocio: ${afterDelete} · tras importar: ${restored}`);
+
+    // Un archivo inválido muestra un aviso de error
+    await page.locator('input[type="file"]').setInputFiles({ name: "malo.json", mimeType: "application/json", buffer: Buffer.from("{nope") });
+    report.push(`archivo inválido → aviso: ${await page.getByRole("alert").textContent()}`);
+    report.push(`errores copia: ${JSON.stringify(errors)}`);
+    await context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

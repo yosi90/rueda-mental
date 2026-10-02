@@ -1,4 +1,4 @@
-import { useId, useRef, type Dispatch, type SetStateAction } from "react";
+import { useId, useRef, useState } from "react";
 import { chartTooltipStyle, theme } from "../../../shared/theme/theme";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useI18n } from "../../../shared/i18n/I18nContext";
@@ -12,36 +12,31 @@ import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
 
 interface StatsModalProps {
-    statsOpen: boolean;
-    setStatsOpen: Dispatch<SetStateAction<boolean>>;
+    onClose: () => void;
     statsData: StatsData;
     statsVisibility: StatsVisibility;
     ringCount: number;
     isScaleInverted: boolean;
-    selectedSectorId: string;
-    setSelectedSectorId: Dispatch<SetStateAction<string>>;
     sectors: Sector[];
-    visibleSectors: Record<string, boolean>;
-    setVisibleSectors: Dispatch<SetStateAction<Record<string, boolean>>>;
 }
 
 export function StatsModal({
-    statsOpen,
-    setStatsOpen,
+    onClose,
     statsData,
     statsVisibility,
     ringCount,
     isScaleInverted,
-    selectedSectorId,
-    setSelectedSectorId,
     sectors,
-    visibleSectors,
-    setVisibleSectors,
 }: StatsModalProps) {
     const { t, locale } = useI18n();
     const dialogRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
-    useDialogA11y(statsOpen, () => setStatsOpen(false), dialogRef);
+    useDialogA11y(true, onClose, dialogRef);
+    // El modal solo se monta abierto: la selección empieza en el primer sector y con todos visibles.
+    const [selectedSectorId, setSelectedSectorId] = useState(() => sectors[0]?.id ?? "");
+    const [visibleSectors, setVisibleSectors] = useState<Record<string, boolean>>(() =>
+        Object.fromEntries(sectors.map((s) => [s.id, true]))
+    );
     const yAxisDomain: [number, number] = [0, ringCount];
     const nonZeroTodayScores = statsData.todaySectorScores.filter((item) => item.score > 0);
     const todayScoresForInsights = nonZeroTodayScores.length > 0 ? nonZeroTodayScores : statsData.todaySectorScores;
@@ -101,11 +96,11 @@ export function StatsModal({
     return (
         <>
             {/* Modal de Estadísticas */}
-            {statsOpen && (
+            {(
                 <>
                     <div
                         className={`fixed inset-0 ${theme.overlay} z-50 transition-opacity`}
-                        onClick={() => setStatsOpen(false)}
+                        onClick={onClose}
                         aria-hidden="true"
                     />
                     <div
@@ -126,7 +121,7 @@ export function StatsModal({
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setStatsOpen(false)}
+                                onClick={onClose}
                                 className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
                                 title={t("common.close")}
                                 aria-label={t("common.close")}

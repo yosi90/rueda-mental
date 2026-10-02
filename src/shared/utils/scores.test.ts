@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayHasScores, findPreviousDateWithScores } from "./scores";
+import { collectDaysWithData, dayHasScores, findPreviousDateWithScores } from "./scores";
 
 describe("scores", () => {
     it("dayHasScores ignora días vacíos o solo con ceros", () => {
@@ -19,5 +19,14 @@ describe("scores", () => {
         expect(findPreviousDateWithScores(scores, "2026-10-02")).toBe("2026-09-28");
         expect(findPreviousDateWithScores(scores, "2026-10-03")).toBe("2026-10-02");
         expect(findPreviousDateWithScores(scores, "2026-09-28")).toBeNull();
+    });
+
+    it("collectDaysWithData une puntuaciones, comentarios y resúmenes no vacíos", () => {
+        const days = collectDaysWithData(
+            { "2026-10-01": { a: 3 }, "2026-10-02": { a: 0 } },
+            { "2026-10-03": { a: "nota" }, "2026-10-04": { a: "  " } },
+            { "2026-10-05": { good: "", bad: "x", howFacedBad: "" } }
+        );
+        expect([...days].sort()).toEqual(["2026-10-01", "2026-10-03", "2026-10-05"]);
     });
 });

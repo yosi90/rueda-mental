@@ -1,17 +1,16 @@
-import type { ChangeEvent } from "react";
 import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 
 interface DataSettingsSectionProps {
     resetDay: () => void;
     exportJSON: () => void;
-    importJSON: (evt: ChangeEvent<HTMLInputElement>) => void;
+    onImportFile: (file: File) => void;
 }
 
 export function DataSettingsSection({
     resetDay,
     exportJSON,
-    importJSON,
+    onImportFile,
 }: DataSettingsSectionProps) {
     const { t } = useI18n();
 
@@ -42,9 +41,18 @@ export function DataSettingsSection({
                     {t("data.exportJson")}
                 </button>
 
-                <label className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm cursor-pointer text-center transition-colors`}>
+                <label className={`flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm cursor-pointer text-center transition-colors focus-within:ring-2 focus-within:ring-blue-500`}>
                     {t("data.importJson")}
-                    <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
+                    <input
+                        type="file"
+                        accept="application/json"
+                        className="sr-only"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            if (file) onImportFile(file);
+                        }}
+                    />
                 </label>
             </div>
         </div>

@@ -3,6 +3,7 @@ import type {
     CommentsByDate,
     DailySummary,
     DailySummaryByDate,
+    MentalWheelBackup,
     Scores,
     ScoresByDate,
     Sector,
@@ -89,4 +90,24 @@ export function parseBackup(raw: string): ParsedBackup | null {
 
     const hasData = result.config || result.scoresByDate || result.commentsByDate || result.dailySummaryByDate;
     return hasData ? result : null;
+}
+
+/** Descarga la copia de seguridad como archivo JSON. */
+export function downloadBackup(backup: MentalWheelBackup, filename: string): void {
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+/** Lee y valida un archivo de copia de seguridad; null si no es válido. */
+export async function readBackupFile(file: File): Promise<ParsedBackup | null> {
+    try {
+        return parseBackup(await file.text());
+    } catch {
+        return null;
+    }
 }
