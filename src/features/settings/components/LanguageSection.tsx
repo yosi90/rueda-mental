@@ -21,8 +21,8 @@ export function LanguageSection() {
                             onClick={() => setLanguage(option.code)}
                             className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                                 isActive
-                                    ? "border-blue-500 bg-blue-100 text-blue-900"
-                                    : `${theme.border} ${theme.text} hover:bg-neutral-100/60 dark:hover:bg-neutral-700/60`
+                                    ? "border-accent bg-accent-soft text-fg"
+                                    : `${theme.border} ${theme.text} hover:bg-subtle`
                             }`}
                             title={option.name}
                             aria-pressed={isActive}

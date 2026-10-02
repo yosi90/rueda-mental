@@ -101,18 +101,18 @@ function ConfirmDialog({ options, onConfirm, onCancel }: {
 
     const confirmClass = options.danger
         ? "bg-red-600 hover:bg-red-700 text-white"
-        : "bg-neutral-900 hover:bg-neutral-700 text-white dark:bg-neutral-100 dark:hover:bg-neutral-300 dark:text-neutral-900";
+        : "bg-inverse text-inverse-fg hover:opacity-90";
 
     return (
         <>
-            <div className="fixed inset-0 z-[80] bg-black/50 dark:bg-black/60" onClick={onCancel} aria-hidden="true" />
+            <div className="fixed inset-0 z-[80] bg-overlay" onClick={onCancel} aria-hidden="true" />
             <div
                 ref={dialogRef}
                 role="alertdialog"
                 aria-modal="true"
                 aria-describedby={messageId}
                 tabIndex={-1}
-                className="fixed left-1/2 top-1/2 z-[81] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl outline-none bg-white text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
+                className="fixed left-1/2 top-1/2 z-[81] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl outline-none bg-surface text-fg"
             >
                 <p id={messageId} className="text-sm leading-relaxed">{options.message}</p>
                 <div className="mt-5 flex justify-end gap-2">
@@ -120,7 +120,7 @@ function ConfirmDialog({ options, onConfirm, onCancel }: {
                         ref={cancelRef}
                         type="button"
                         onClick={onCancel}
-                        className="min-h-9 rounded-lg px-4 text-sm font-medium bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        className="min-h-9 rounded-lg px-4 text-sm font-medium bg-control hover:bg-control-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                         {t("common.cancel")}
                     </button>
@@ -150,7 +150,7 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
 
     const toneClass = toast.tone === "error"
         ? "bg-red-700 text-white"
-        : "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900";
+        : "bg-inverse text-inverse-fg";
 
     return (
         <div

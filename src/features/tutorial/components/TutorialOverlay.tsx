@@ -21,7 +21,7 @@ export function TutorialOverlay({
             <button
                 type="button"
                 onClick={onSkip}
-                className="pointer-events-auto min-h-8 rounded-md px-2 text-xs font-semibold text-white underline underline-offset-2 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="pointer-events-auto min-h-8 rounded-md px-2 text-xs font-semibold text-accent-fg underline underline-offset-2 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-fg"
             >
                 {t("tutorial.skip")}
             </button>
@@ -31,7 +31,7 @@ export function TutorialOverlay({
     return (
         <>
             {tutorialStep === 1 && (
-                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-accent-strong text-accent-fg shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step1.title")}
                     </p>
@@ -46,7 +46,7 @@ export function TutorialOverlay({
             )}
 
             {tutorialStep === 2 && (
-                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-accent-strong text-accent-fg shadow-lg w-[90%] max-w-sm" style={{ top: "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step2.title")}
                     </p>
@@ -61,7 +61,7 @@ export function TutorialOverlay({
             )}
 
             {tutorialStep === 3 && (
-                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm left-1/2" style={{ top: isTouchDevice ? "150px" : "200px", left: "50%", transform: "translateX(-50%)" }}>
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-accent-strong text-accent-fg shadow-lg w-[90%] max-w-sm left-1/2" style={{ top: isTouchDevice ? "150px" : "200px", left: "50%", transform: "translateX(-50%)" }}>
                     <p className={`text-sm sm:text-lg text-justify`}>
                         {t("tutorial.step3.p1")}
                     </p>
@@ -77,7 +77,7 @@ export function TutorialOverlay({
 
             {tutorialStep === 4 && (
                 <div
-                    role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm"
+                    role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-accent-strong text-accent-fg shadow-lg w-[90%] max-w-sm"
                     style={isTouchDevice ? { top: "84px", left: "50%", transform: "translateX(-50%)" } : { top: "84px", right: "16px" }}
                 >
                     <p className={`text-sm sm:text-lg text-center`}>
@@ -87,7 +87,7 @@ export function TutorialOverlay({
                         {t("tutorial.step4.body")}
                     </p>
                     <div className="mt-4 flex justify-center">
-                        <div className="inline-flex items-center gap-2 rounded-lg bg-white text-black p-2 sm:px-4 sm:py-2 shadow-lg border border-black/20">
+                        <div className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-fg p-2 sm:px-4 sm:py-2 shadow-lg border border-line">
                             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <rect x="4" y="3" width="16" height="18" rx="2" />
                                 <line x1="8" y1="8" x2="16" y2="8" />
@@ -106,7 +106,7 @@ export function TutorialOverlay({
 
             {tutorialStep === 5 && (
                 <div
-                    role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-md left-1/2 -translate-x-1/2"
+                    role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-accent-strong text-accent-fg shadow-lg w-[90%] max-w-md left-1/2 -translate-x-1/2"
                     style={{ top: isTouchDevice ? "86px" : "96px" }}
                 >
                     <p className={`text-sm sm:text-lg text-center`}>
@@ -123,7 +123,7 @@ export function TutorialOverlay({
             )}
 
             {tutorialStep === 6 && (
-                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-indigo-700 text-white shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2">
+                <div role="status" className="fixed z-[70] pointer-events-none p-4 rounded-xl bg-accent-strong text-accent-fg shadow-lg w-[90%] max-w-sm left-1/2 bottom-24 -translate-x-1/2">
                     <p className={`text-sm sm:text-lg text-center`}>
                         {t("tutorial.step6.title")}
                     </p>

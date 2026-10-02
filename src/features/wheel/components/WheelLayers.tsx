@@ -202,8 +202,8 @@ export function WheelLayers({
         return (
             <path
                 d={sectorPath(cx, cy, 0, radius, s.a0, s.a1)}
-                fill="rgb(67 56 202 / 0.08)"
-                stroke="#4338ca"
+                fill="var(--ui-accent-soft)"
+                stroke="var(--ui-accent)"
                 strokeWidth={3}
                 strokeLinejoin="round"
                 className="tutorial-highlight"

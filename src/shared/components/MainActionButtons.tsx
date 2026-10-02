@@ -28,7 +28,7 @@ export function MainActionButtons({
         <nav
             aria-label={t("top.navigation")}
             className={`fixed z-[45] inset-x-0 bottom-0 flex gap-1 border-t ${theme.borderLight} ${theme.cardSolid} px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]
-                sm:inset-x-auto sm:bottom-auto sm:top-4 sm:right-4 sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0 sm:dark:bg-transparent`}
+                sm:inset-x-auto sm:bottom-auto sm:top-4 sm:right-4 sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0`}
         >
             {showStatsButton && (
                 <ActionButton label={t("top.stats")} onClick={onOpenStats}>
@@ -65,10 +65,10 @@ function ActionButton({ label, onClick, highlight = false, children }: {
             onClick={onClick}
             title={label}
             aria-haspopup="dialog"
-            className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs font-medium transition-colors touch-manipulation ${theme.text} hover:bg-neutral-100 dark:hover:bg-neutral-700
-                sm:flex-none sm:px-4 sm:py-2 sm:shadow-lg sm:bg-neutral-100 sm:text-neutral-900 sm:hover:bg-neutral-200 sm:dark:bg-neutral-300 sm:dark:text-neutral-900 sm:dark:hover:bg-neutral-200
+            className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs font-medium transition-colors touch-manipulation ${theme.text} hover:bg-subtle
+                sm:flex-none sm:px-4 sm:py-2 sm:shadow-lg sm:bg-primary sm:text-primary-fg sm:hover:bg-primary-hover
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                ${highlight ? "ring-4 ring-indigo-600 ring-offset-2 motion-safe:animate-pulse" : ""}`}
+                ${highlight ? "ring-4 ring-accent ring-offset-2 motion-safe:animate-pulse" : ""}`}
         >
             <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 {children}

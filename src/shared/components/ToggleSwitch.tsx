@@ -20,8 +20,8 @@ export function ToggleSwitch({
     label,
     describedBy,
     title,
-    onClass = "bg-green-600",
-    offClass = "bg-neutral-500",
+    onClass = "bg-accent",
+    offClass = "bg-fg-muted/70",
     knobContent,
 }: ToggleSwitchProps) {
     return (

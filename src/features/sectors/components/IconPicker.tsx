@@ -74,14 +74,14 @@ function IconPickerDialog({ sectorName, value, onSelect, onClose }: {
     const chipClass = (active: boolean) =>
         `shrink-0 rounded-full border px-3 min-h-8 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             active
-                ? "border-indigo-600 bg-indigo-600 text-white"
-                : `${theme.border} ${theme.text} hover:bg-neutral-100 dark:hover:bg-neutral-700`
+                ? "border-accent bg-accent text-accent-fg"
+                : `${theme.border} ${theme.text} hover:bg-subtle`
         }`;
     const cellClass = (selected: boolean) =>
         `flex aspect-square items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             selected
-                ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200"
-                : `border-transparent ${theme.text} hover:bg-neutral-100 dark:hover:bg-neutral-700`
+                ? "border-accent bg-accent-soft text-fg"
+                : `border-transparent ${theme.text} hover:bg-subtle`
         }`;
 
     return (

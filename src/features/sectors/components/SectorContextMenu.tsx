@@ -195,19 +195,19 @@ function SectorMenuContent({
                         value={valorActual}
                         onChange={(e) => setScore(sector.id, Number(e.target.value))}
                         aria-label={t("common.score")}
-                        className={`flex-1 min-w-0 h-2 bg-gray-400 rounded-lg appearance-none cursor-pointer
+                        className={`flex-1 min-w-0 h-2 bg-line rounded-lg appearance-none cursor-pointer
                             [&::-webkit-slider-thumb]:appearance-none
                             [&::-webkit-slider-thumb]:w-4
                             [&::-webkit-slider-thumb]:h-4
                             [&::-webkit-slider-thumb]:rounded-full
-                            [&::-webkit-slider-thumb]:bg-blue-600
+                            [&::-webkit-slider-thumb]:bg-accent
                             [&::-webkit-slider-thumb]:cursor-pointer
                             [&::-webkit-slider-thumb]:transition
-                            [&::-webkit-slider-thumb]:hover:bg-blue-700
+                            [&::-webkit-slider-thumb]:hover:bg-accent-strong
                             [&::-moz-range-thumb]:w-4
                             [&::-moz-range-thumb]:h-4
                             [&::-moz-range-thumb]:rounded-full
-                            [&::-moz-range-thumb]:bg-blue-600`}
+                            [&::-moz-range-thumb]:bg-accent`}
                     />
                 )}
                 <input

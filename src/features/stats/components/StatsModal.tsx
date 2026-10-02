@@ -11,8 +11,8 @@ import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
 
-// Tarjetas de gráficas: en oscuro sobre neutral-800 para que la paleta (validada) mantenga 3:1 de contraste
-const CHART_CARD = "bg-neutral-50 dark:bg-neutral-800";
+// Tarjetas de gráficas: fondo propio (--ui-chart-card) para que la paleta validada mantenga 3:1 de contraste
+const CHART_CARD = "bg-chart-card";
 // El texto de la leyenda usa el color de texto; el marcador de color identifica la serie
 const legendText = (value: string) => <span style={{ color: "var(--chart-text)" }}>{value}</span>;
 const ANIMATE_CHARTS = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -285,8 +285,8 @@ export function StatsModal({
                                                         <label
                                                             key={sector.id}
                                                             className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${visibleSectors[sector.id]
-                                                                ? "bg-neutral-100 dark:bg-neutral-700"
-                                                                : "bg-neutral-50 dark:bg-neutral-800"
+                                                                ? "bg-subtle"
+                                                                : "bg-surface-alt"
                                                                 }`}
                                                         >
                                                             <input
@@ -395,7 +395,7 @@ export function StatsModal({
                                                     return (
                                                         <div
                                                             key={day.date}
-                                                            className={`aspect-square rounded-sm relative group ${level === 0 ? "border border-dashed border-neutral-300 dark:border-neutral-600" : ""}`}
+                                                            className={`aspect-square rounded-sm relative group ${level === 0 ? "border border-dashed border-line" : ""}`}
                                                             style={level > 0 ? { backgroundColor: `var(--heat-${level})` } : undefined}
                                                             title={label}
                                                         >
@@ -408,7 +408,7 @@ export function StatsModal({
                                             </div>
                                             <div className="flex flex-wrap items-center justify-between gap-3 mt-4 text-xs">
                                                 <span className={`inline-flex items-center gap-1.5 ${theme.textMuted}`}>
-                                                    <span className="w-4 h-4 rounded-sm border border-dashed border-neutral-300 dark:border-neutral-600" aria-hidden="true" />
+                                                    <span className="w-4 h-4 rounded-sm border border-dashed border-line" aria-hidden="true" />
                                                     {t("stats.noDataShort")}
                                                 </span>
                                                 <span className="inline-flex items-center gap-2">

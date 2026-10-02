@@ -128,7 +128,7 @@ export function FloatingInfoPanel({
         });
     }, [calendarMonth, firstDayOfWeek, dayLabelFormatter]);
 
-    const sosButtonClass = "border border-red-300 bg-white/95 text-red-700 hover:bg-red-50 dark:border-red-400/40 dark:bg-neutral-800/95 dark:text-red-200 dark:hover:bg-neutral-700";
+    const sosButtonClass = "border border-red-300 bg-surface/95 text-red-700 hover:bg-red-50 dark:border-red-400/40 dark:text-red-200 dark:hover:bg-subtle";
 
     return (
         <div className="fixed z-40 inset-x-0 top-0 flex flex-col gap-2 sm:inset-x-auto sm:top-4 sm:left-4 sm:flex-row sm:items-start sm:gap-3">
@@ -161,12 +161,12 @@ export function FloatingInfoPanel({
 
             <div className="flex flex-col gap-2">
             {/* En móvil, barra superior a todo el ancho; desde sm, tarjeta flotante */}
-            <div className={`border-b ${theme.borderLight} bg-white dark:bg-neutral-800 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:rounded-2xl sm:border-0 sm:bg-white/90 sm:dark:bg-neutral-800/90 sm:backdrop-blur-sm sm:px-4 sm:py-3 sm:shadow-lg`}>
+            <div className={`border-b ${theme.borderLight} bg-surface px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:rounded-2xl sm:border-0 sm:bg-surface/90 sm:backdrop-blur-sm sm:px-4 sm:py-3 sm:shadow-lg`}>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={onPrevDay}
-                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 inline-flex items-center justify-center min-h-9 min-w-9 sm:min-h-0 sm:min-w-0 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
+                        className={`${theme.button} inline-flex items-center justify-center min-h-9 min-w-9 sm:min-h-0 sm:min-w-0 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg`}
                         title={`${t("panel.prevDay")} (←)`}
                         aria-keyshortcuts="ArrowLeft"
                         aria-label={t("panel.prevDay")}
@@ -178,7 +178,7 @@ export function FloatingInfoPanel({
                         <button
                             type="button"
                             onClick={() => setCalendarOpen((prev) => !prev)}
-                            className={`text-sm min-h-9 border-0 bg-transparent px-2 py-0.5 rounded ${theme.text} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
+                            className={`text-sm min-h-9 border-0 bg-transparent px-2 py-0.5 rounded ${theme.text} flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg`}
                             aria-label={`${t("panel.selectDate")}: ${formattedDate}`}
                             aria-haspopup="dialog"
                             aria-expanded={calendarOpen}
@@ -264,7 +264,7 @@ export function FloatingInfoPanel({
                                                     <span
                                                         className={`pointer-events-none absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${
                                                             isSelected
-                                                                ? "bg-neutral-900"
+                                                                ? "bg-primary-fg"
                                                                 : "bg-emerald-700 dark:bg-emerald-300"
                                                         }`}
                                                     />
@@ -280,7 +280,7 @@ export function FloatingInfoPanel({
                     <button
                         type="button"
                         onClick={onNextDay}
-                        className={`${theme.button} dark:hover:!bg-neutral-400 dark:hover:!text-neutral-900 inline-flex items-center justify-center min-h-9 min-w-9 sm:min-h-0 sm:min-w-0 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-neutral-100`}
+                        className={`${theme.button} inline-flex items-center justify-center min-h-9 min-w-9 sm:min-h-0 sm:min-w-0 rounded-md px-2 py-1 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg`}
                         title={`${t("panel.nextDay")} (→)`}
                         aria-keyshortcuts="ArrowRight"
                         aria-label={t("panel.nextDay")}
