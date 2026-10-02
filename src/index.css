@@ -40,8 +40,10 @@
   }
 }
 
-:root {
-  /* Interfaz (tema claro) */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  /* Interfaz (tema claro). También en elementos sueltos con data-theme="light" (vistas previas) */
   --ui-page: #e5e5e5;
   --ui-surface: #ffffff;
   --ui-surface-alt: #fafafa;

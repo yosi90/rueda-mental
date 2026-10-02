@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SECTOR_ICONS, getSectorIcon, searchSectorIcons, SECTOR_ICONS } from "./sectorIcons";
+import { DEFAULT_SECTOR_ICONS, getSectorIcon, searchSectorIcons, SECTOR_ICONS, suggestSectorIcon } from "./sectorIcons";
 import { withDefaultIcons } from "../utils/sectorUtils";
 
 describe("sectorIcons", () => {
@@ -16,11 +16,20 @@ describe("sectorIcons", () => {
     });
 });
 
+describe("suggestSectorIcon", () => {
+    it("sugiere icono por palabras del nombre, sin tildes", () => {
+        expect(suggestSectorIcon("Lectura")).toBe("book-open");
+        expect(suggestSectorIcon("Hobbies")).toBe("gamepad-2");
+        expect(suggestSectorIcon("Meditación diaria")).toBe("flower-2");
+        expect(suggestSectorIcon("Xyz")).toBeUndefined();
+    });
+});
+
 describe("withDefaultIcons", () => {
     it("asigna icono a los sectores predefinidos sin icono y respeta el resto", () => {
         const result = withDefaultIcons([
             { id: "1", name: "Saude", color: "#000" },
-            { id: "2", name: "Meditación", color: "#000" },
+            { id: "2", name: "Qwerty", color: "#000" },
             { id: "3", name: "Trabajo", color: "#000", icon: "" },
             { id: "4", name: "Amor", color: "#000", icon: "star" },
         ]);

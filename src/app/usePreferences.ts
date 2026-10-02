@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_STATS_VISIBILITY } from "../shared/constants/mentalWheel";
 import {
-    loadDarkMode,
+    loadAppStyle,
     loadScaleInverted,
     loadShowReference,
     loadStatsVisibility,
-    saveDarkMode,
+    saveAppStyle,
     saveScaleInverted,
     saveShowReference,
     saveStatsVisibility,
 } from "../shared/services/storage/mentalWheelStorage";
 import type { StatsVisibility } from "../shared/types/mentalWheel";
+import { APP_STYLE_DEFINITIONS, applyAppStyle, type AppStyle } from "../shared/theme/styles";
 
-/** Preferencias de visualización persistidas: tema, escala, estadísticas visibles y día de referencia. */
+/** Preferencias de visualización persistidas: estilo, escala, estadísticas visibles y día de referencia. */
 export function usePreferences() {
-    const [darkMode, setDarkMode] = useState<boolean>(() => loadDarkMode());
+    const [style, setStyle] = useState<AppStyle>(() => loadAppStyle());
     const [isScaleInverted, setIsScaleInverted] = useState<boolean>(() => loadScaleInverted());
     const [statsVisibility, setStatsVisibility] = useState<StatsVisibility>(() =>
         loadStatsVisibility(DEFAULT_STATS_VISIBILITY)
@@ -22,16 +23,17 @@ export function usePreferences() {
     const [showReference, setShowReference] = useState<boolean>(() => loadShowReference());
 
     useEffect(() => {
-        saveDarkMode(darkMode);
-        document.documentElement.dataset.theme = darkMode ? "dark" : "light";
-    }, [darkMode]);
+        saveAppStyle(style);
+        applyAppStyle(style);
+    }, [style]);
     useEffect(() => saveScaleInverted(isScaleInverted), [isScaleInverted]);
     useEffect(() => saveStatsVisibility(statsVisibility), [statsVisibility]);
     useEffect(() => saveShowReference(showReference), [showReference]);
 
     return {
-        darkMode,
-        setDarkMode,
+        style,
+        setStyle,
+        darkMode: APP_STYLE_DEFINITIONS[style].mode === "dark",
         isScaleInverted,
         setIsScaleInverted,
         statsVisibility,

@@ -98,18 +98,19 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 
 ### Iconos
 - [x] Iconos en los sectores predefinidos (lucide, SVG ligeros que siguen el color del tema).
-- [x] Selector de icono para cualquier sector (menú del sector y Configuración): ~150-200 iconos por categorías y con buscador.
-- [x] Puntuación de nuevo junto al nombre: icono + nombre + pastilla, sin recortes en los laterales.
+- [x] Selector de icono para cualquier sector (menú del sector y Configuración): ~190 iconos por categorías y con buscador.
+- [x] Icono sugerido por nombre para sectores personalizados (p. ej. «Lectura» → libro, «Hobbies» → mando).
+- [x] Puntuación de nuevo junto al nombre: icono + nombre + pastilla; solo se desplaza si se saldría de la ventana.
 - [x] Móvil: solo icono + puntuación (nombre si el sector no tiene icono; siempre accesible por lector de pantalla).
 - [x] El icono se guarda en la copia de seguridad; los sectores por defecto existentes reciben su icono al cargar.
 
 ### Estilos visuales
-- [ ] Base: colores restantes como variables (superficies, acento, rueda, sectores por defecto) para cambiar de estilo sin tocar componentes.
-- [ ] Selector de estilo en Configuración (claro y oscuro se mantienen como opciones).
-- [ ] Aurora: rosa nocturno (fondo CSS/SVG: cielo, estrellas).
-- [ ] Playa, Rock y Montaña.
-- [ ] Tipografía de títulos por estilo, alojada en la propia web (sin Google Fonts, por privacidad).
-- [ ] Contraste validado en cada estilo (texto, rueda y gráficas).
+- [x] Base: tokens de interfaz (--ui-*) registrados en Tailwind; ningún color fijo en componentes.
+- [x] Selector de estilo en Configuración con vistas previas reales (claro y oscuro se mantienen).
+- [x] Aurora: rosa nocturno (fondo CSS/SVG: cielo, estrellas).
+- [x] Playa, Rock y Montaña (fondos CSS/SVG: olas, focos con grano, cumbres).
+- [x] Tipografía de títulos por estilo, alojada en la propia web (sin Google Fonts, por privacidad).
+- [x] Contraste validado en cada estilo (texto, botones, acento, rueda y gráficas ≥ 4.5:1); halo en los nombres de la rueda.
 - [ ] Fondos ilustrados (imágenes generadas aparte) en WebP comprimido, con capa para legibilidad y opción «sin imagen».
 
 ---

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { defaultSectors, genId, hslFor, translateDefaultSectorName, withDefaultIcons } from "../features/sectors/utils/sectorUtils";
+import { suggestSectorIcon } from "../features/sectors/icons/sectorIcons";
 import type { Language } from "../shared/i18n/translations";
 import type { ParsedBackup } from "../shared/services/io/backup";
 import {
@@ -73,7 +74,7 @@ export function useMentalWheelData(language: Language) {
     function addSector(name: string): void {
         setSectors((prev) => [
             ...prev,
-            { id: genId(), name: name.trim() || `Sector ${prev.length + 1}`, color: hslFor(prev.length) },
+            { id: genId(), name: name.trim() || `Sector ${prev.length + 1}`, color: hslFor(prev.length), icon: suggestSectorIcon(name) },
         ]);
     }
 

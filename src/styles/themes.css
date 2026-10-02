@@ -1,0 +1,205 @@
+/*
+ * Estilos visuales. Cada [data-style] redefine los tokens de interfaz (--ui-*), los de la rueda
+ * y las gráficas, la tipografía de títulos y el fondo (--app-backdrop).
+ * También funcionan en un elemento suelto (vistas previas del selector de estilo).
+ */
+
+/* Claro y oscuro: sin fondo decorativo y con la tipografía del sistema */
+[data-style="light"],
+[data-style="dark"] {
+  --app-backdrop: none;
+  /* Pila explícita: «inherit» en una variable heredaría el valor del estilo del documento */
+  --font-display: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* ---------- Aurora: rosa nocturno ---------- */
+[data-style="aurora"] {
+  color-scheme: dark;
+  --ui-page: #1f1528;
+  --ui-surface: #2a1d35;
+  --ui-surface-alt: #33233f;
+  --ui-field: #33233f;
+  --ui-fg: #fbeff7;
+  --ui-fg-muted: #dcc6d9;
+  --ui-line: #523b5e;
+  --ui-line-soft: #3f2c4a;
+  --ui-subtle: #3a2846;
+  --ui-control: #46304f;
+  --ui-control-hover: #5a3d63;
+  --ui-primary: #f9a8d4;
+  --ui-primary-hover: #fbcfe8;
+  --ui-primary-fg: #3b0a2a;
+  --ui-accent: #f472b6;
+  --ui-accent-strong: #f9a8d4;
+  --ui-accent-soft: rgb(244 114 182 / 0.22);
+  --ui-accent-fg: #3b0a2a;
+  --ui-inverse: #fbeff7;
+  --ui-inverse-fg: #2a1d35;
+  --ui-overlay: rgb(12 5 18 / 0.65);
+  --ui-chart-card: #2a1d35;
+
+  --wheel-bg: #241830;
+  --wheel-grid: rgb(240 180 220 / 0.22);
+  --wheel-text: #f6dfee;
+  --wheel-center: #2f2039;
+  --wheel-center-border: #6b4a78;
+  --chart-grid: #4d3758;
+  --chart-text: #dcc6d9;
+  --chart-tooltip-bg: #2a1d35;
+  --chart-tooltip-border: #523b5e;
+  --chart-tooltip-text: #fbeff7;
+
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --app-backdrop:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='23' cy='41' r='1' opacity='.8'/%3E%3Ccircle cx='97' cy='12' r='.7' opacity='.6'/%3E%3Ccircle cx='160' cy='88' r='1.2' opacity='.9'/%3E%3Ccircle cx='211' cy='31' r='.6' opacity='.5'/%3E%3Ccircle cx='288' cy='64' r='1' opacity='.7'/%3E%3Ccircle cx='352' cy='19' r='.8' opacity='.6'/%3E%3Ccircle cx='401' cy='97' r='1.1' opacity='.8'/%3E%3Ccircle cx='58' cy='150' r='.7' opacity='.5'/%3E%3Ccircle cx='131' cy='201' r='1' opacity='.7'/%3E%3Ccircle cx='247' cy='166' r='.6' opacity='.5'/%3E%3Ccircle cx='318' cy='224' r='1.3' opacity='.9'/%3E%3Ccircle cx='384' cy='181' r='.7' opacity='.6'/%3E%3Ccircle cx='17' cy='276' r='1' opacity='.7'/%3E%3Ccircle cx='92' cy='331' r='.6' opacity='.5'/%3E%3Ccircle cx='183' cy='294' r='.9' opacity='.7'/%3E%3Ccircle cx='264' cy='362' r='.7' opacity='.6'/%3E%3Ccircle cx='339' cy='311' r='1' opacity='.8'/%3E%3Ccircle cx='405' cy='386' r='.6' opacity='.5'/%3E%3Ccircle cx='151' cy='399' r='1.1' opacity='.7'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgb(244 114 182 / 0.32), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgb(139 92 246 / 0.26), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 0% 85%, rgb(236 72 153 / 0.18), transparent 70%),
+    linear-gradient(180deg, #2b1742 0%, #1f1528 55%, #170f1f 100%);
+}
+
+/* ---------- Playa ---------- */
+[data-style="beach"] {
+  color-scheme: light;
+  --ui-page: #fbefe0;
+  --ui-surface: #fffaf3;
+  --ui-surface-alt: #fbf1e4;
+  --ui-field: #fffaf3;
+  --ui-fg: #2b2118;
+  --ui-fg-muted: #65533f;
+  --ui-line: #e3cfb4;
+  --ui-line-soft: #efe2cf;
+  --ui-subtle: #f6eadb;
+  --ui-control: #f3e3cf;
+  --ui-control-hover: #ead4b8;
+  --ui-primary: #0e7490;
+  --ui-primary-hover: #155e75;
+  --ui-primary-fg: #ffffff;
+  --ui-accent: #0e7490;
+  --ui-accent-strong: #155e75;
+  --ui-accent-soft: #cff3f8;
+  --ui-accent-fg: #ffffff;
+  --ui-inverse: #2b2118;
+  --ui-inverse-fg: #fffaf3;
+  --ui-overlay: rgb(43 33 24 / 0.38);
+  --ui-chart-card: #fffaf3;
+
+  --wheel-bg: #fffaf3;
+  --wheel-grid: rgb(14 116 144 / 0.2);
+  --wheel-text: #3b2f22;
+  --wheel-center: #fffaf3;
+  --wheel-center-border: #e3cfb4;
+  --chart-grid: #ecdcc6;
+  --chart-text: #65533f;
+  --chart-tooltip-bg: #fffaf3;
+  --chart-tooltip-border: #e3cfb4;
+  --chart-tooltip-text: #2b2118;
+
+  --font-display: "Fredoka", system-ui, sans-serif;
+  --app-backdrop:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 220' preserveAspectRatio='none'%3E%3Cpath fill='%2367c5d6' fill-opacity='.35' d='M0 110c120 30 240 40 360 20s240-60 360-50 240 60 360 60 240-40 360-50v140H0z'/%3E%3Cpath fill='%230e7490' fill-opacity='.22' d='M0 150c140 20 260 10 380-10s260-30 380 0 240 50 360 40 220-30 320-40v80H0z'/%3E%3C/svg%3E") bottom / 100% 22vh no-repeat,
+    radial-gradient(circle at 85% 12%, rgb(253 186 116 / 0.55), transparent 22%),
+    linear-gradient(180deg, #bfe7ef 0%, #e6f3ef 30%, #fbefe0 62%, #f3dcbc 100%);
+}
+
+/* ---------- Rock ---------- */
+[data-style="rock"] {
+  color-scheme: dark;
+  --ui-page: #121212;
+  --ui-surface: #1c1c1c;
+  --ui-surface-alt: #242424;
+  --ui-field: #242424;
+  --ui-fg: #f5f5f5;
+  --ui-fg-muted: #c8c8c8;
+  --ui-line: #3d3d3d;
+  --ui-line-soft: #2e2e2e;
+  --ui-subtle: #262626;
+  --ui-control: #2e2e2e;
+  --ui-control-hover: #404040;
+  --ui-primary: #dc2626;
+  --ui-primary-hover: #b91c1c;
+  --ui-primary-fg: #ffffff;
+  --ui-accent: #dc2626;
+  --ui-accent-strong: #991b1b;
+  --ui-accent-soft: rgb(220 38 38 / 0.22);
+  --ui-accent-fg: #ffffff;
+  --ui-inverse: #f5f5f5;
+  --ui-inverse-fg: #121212;
+  --ui-overlay: rgb(0 0 0 / 0.7);
+  --ui-chart-card: #1c1c1c;
+
+  --wheel-bg: #181818;
+  --wheel-grid: rgb(255 255 255 / 0.14);
+  --wheel-text: #ececec;
+  --wheel-center: #202020;
+  --wheel-center-border: #dc2626;
+  --chart-grid: #333333;
+  --chart-text: #c8c8c8;
+  --chart-tooltip-bg: #1c1c1c;
+  --chart-tooltip-border: #3d3d3d;
+  --chart-tooltip-text: #f5f5f5;
+
+  --font-display: "Oswald", "Arial Narrow", sans-serif;
+  --app-backdrop:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E"),
+    conic-gradient(from 160deg at 15% -10%, transparent 0deg, rgb(220 38 38 / 0.28) 12deg, transparent 26deg),
+    conic-gradient(from 175deg at 85% -10%, transparent 0deg, rgb(245 158 11 / 0.2) 10deg, transparent 22deg),
+    radial-gradient(ellipse 80% 40% at 50% 105%, rgb(220 38 38 / 0.22), transparent 70%),
+    linear-gradient(180deg, #161616 0%, #0e0e0e 100%);
+}
+
+/* ---------- Montaña ---------- */
+[data-style="mountain"] {
+  color-scheme: light;
+  --ui-page: #e4ebe2;
+  --ui-surface: #f8faf6;
+  --ui-surface-alt: #eef3ec;
+  --ui-field: #f8faf6;
+  --ui-fg: #1d281d;
+  --ui-fg-muted: #4a594a;
+  --ui-line: #c6d2c3;
+  --ui-line-soft: #dbe3d8;
+  --ui-subtle: #e8eee5;
+  --ui-control: #e2e9de;
+  --ui-control-hover: #d2dccd;
+  --ui-primary: #166534;
+  --ui-primary-hover: #14532d;
+  --ui-primary-fg: #ffffff;
+  --ui-accent: #15803d;
+  --ui-accent-strong: #166534;
+  --ui-accent-soft: #dcfce7;
+  --ui-accent-fg: #ffffff;
+  --ui-inverse: #1d281d;
+  --ui-inverse-fg: #f8faf6;
+  --ui-overlay: rgb(20 32 20 / 0.42);
+  --ui-chart-card: #f8faf6;
+
+  --wheel-bg: #f8faf6;
+  --wheel-grid: rgb(22 101 52 / 0.18);
+  --wheel-text: #263326;
+  --wheel-center: #f8faf6;
+  --wheel-center-border: #c6d2c3;
+  --chart-grid: #d8e1d4;
+  --chart-text: #4a594a;
+  --chart-tooltip-bg: #f8faf6;
+  --chart-tooltip-border: #c6d2c3;
+  --chart-tooltip-text: #1d281d;
+
+  --font-display: "Bitter", Georgia, serif;
+  --app-backdrop:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%2386a796' fill-opacity='.45' d='M0 240L140 130L260 200L430 50L580 170L700 90L880 220L1020 130L1180 240L1340 120L1440 180V320H0z'/%3E%3Cpath fill='%23376b4d' fill-opacity='.45' d='M0 280L120 220L230 260L380 170L520 250L650 200L810 270L960 210L1110 260L1260 190L1440 240V320H0z'/%3E%3C/svg%3E") bottom / 100% 28vh no-repeat,
+    radial-gradient(circle at 18% 14%, rgb(254 215 170 / 0.6), transparent 20%),
+    linear-gradient(180deg, #cfe3ea 0%, #e8efe6 45%, #e4ebe2 100%);
+}
+
+/* Capa de fondo decorativo (detrás de la interfaz) */
+.app-backdrop {
+  background-color: var(--ui-page);
+  background: var(--app-backdrop, none), var(--ui-page);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display, system-ui, sans-serif);
+}

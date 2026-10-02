@@ -1,6 +1,6 @@
 import type { Language } from "../../../shared/i18n/translations";
 import type { Sector } from "../../../shared/types/mentalWheel";
-import { DEFAULT_SECTOR_ICONS } from "../icons/sectorIcons";
+import { DEFAULT_SECTOR_ICONS, suggestSectorIcon } from "../icons/sectorIcons";
 
 export function genId(): string {
     // randomUUID solo existe en contextos seguros (https/localhost)
@@ -79,17 +79,18 @@ export function translateDefaultSectorName(name: string, targetLanguage: Languag
 }
 
 /**
- * Asigna el icono por defecto a los sectores predefinidos que aún no tienen icono
- * (datos guardados antes de que existieran los iconos). Respeta los iconos elegidos o quitados.
+ * Asigna icono a los sectores que nunca lo han tenido (datos anteriores a los iconos):
+ * el suyo a los predefinidos y uno sugerido por el nombre al resto. Respeta los iconos elegidos o quitados.
  */
 export function withDefaultIcons(sectors: Sector[]): Sector[] {
     let changed = false;
     const result = sectors.map((sector) => {
         if (sector.icon !== undefined) return sector;
         const index = defaultSectorIndex(sector.name);
-        if (index < 0) return sector;
+        const icon = index >= 0 ? DEFAULT_SECTOR_ICONS[index] : suggestSectorIcon(sector.name);
+        if (!icon) return sector;
         changed = true;
-        return { ...sector, icon: DEFAULT_SECTOR_ICONS[index] };
+        return { ...sector, icon };
     });
     return changed ? result : sectors;
 }

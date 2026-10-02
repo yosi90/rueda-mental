@@ -4,6 +4,7 @@ import type { HoverInfo, Sector, SectorWithAngles } from "../../../shared/types/
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { SectorLabel } from "./SectorLabel";
+import type { LabelBounds } from "../hooks/useVisibleLabelBounds";
 
 interface WheelLayersProps {
     cx: number;
@@ -17,6 +18,8 @@ interface WheelLayersProps {
     scores: Record<string, number>;
     /** Pantallas pequeñas: etiquetas con solo icono + puntuación. */
     compactLabels: boolean;
+    /** Franja visible para las etiquetas (unidades del viewBox). */
+    labelBounds: LabelBounds;
     /** Sector resaltado (lo señala el tutorial). */
     highlightSectorId?: string | null;
     /** Puntuaciones de otro día dibujadas como contorno discontinuo (referencia). */
@@ -72,6 +75,7 @@ export function WheelLayers({
     referenceScores,
     highlightSectorId,
     compactLabels,
+    labelBounds,
     hoverInfo,
     dateStr,
     getComment,
@@ -150,6 +154,7 @@ export function WheelLayers({
                     score={toDisplayScore(scores[s.id] ?? 0, ringCount, isScaleInverted)}
                     iconId={s.icon}
                     compact={compactLabels}
+                    bounds={labelBounds}
                 />
 
                 {hasComment && (

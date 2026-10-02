@@ -376,6 +376,24 @@ const report = [];
     await context.close();
 }
 
+// 12. Estilos visuales: elegir, aplicar y persistir
+{
+    const { page, context, errors } = await newPage(browser);
+    await page.getByRole("button", { name: "Configuración" }).click();
+    await page.waitForTimeout(400);
+    const styleOf = () => page.evaluate(() => `${document.documentElement.dataset.style}/${document.documentElement.dataset.theme}`);
+    report.push(`estilo inicial: ${await styleOf()}`);
+    for (const name of ["Aurora", "Playa", "Rock", "Montaña"]) {
+        await page.getByRole("button", { name, exact: true }).click();
+        report.push(`«${name}» → ${await styleOf()} · pulsado: ${await page.getByRole("button", { name, exact: true }).getAttribute("aria-pressed")}`);
+    }
+    await page.reload();
+    await page.waitForSelector("svg");
+    report.push(`tras recargar: ${await styleOf()}`);
+    report.push(`errores estilos: ${JSON.stringify(errors)}`);
+    await context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

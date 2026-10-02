@@ -5,6 +5,7 @@ import type {
     Sector,
     StatsVisibility,
 } from "../../types/mentalWheel";
+import { APP_STYLE_DEFINITIONS, isAppStyle, type AppStyle } from "../../theme/styles";
 import { normalizeStatsVisibility } from "../../utils/statsVisibility";
 
 const STORAGE_KEYS = {
@@ -14,6 +15,7 @@ const STORAGE_KEYS = {
     dailySummary: "mental-wheel-daily-summary-v1",
     scaleInverted: "mental-wheel-scale-inverted-v1",
     darkMode: "mental-wheel-dark-mode",
+    style: "mental-wheel-style-v1",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
     language: "mental-wheel-language-v1",
@@ -205,6 +207,27 @@ export function loadShowReference(): boolean {
 export function saveShowReference(show: boolean): void {
     try {
         localStorage.setItem(STORAGE_KEYS.showReference, String(show));
+    } catch {
+        // noop
+    }
+}
+
+/** Estilo visual guardado; si no hay (versiones anteriores), se deriva del modo oscuro guardado o del sistema. */
+export function loadAppStyle(): AppStyle {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEYS.style);
+        if (isAppStyle(saved)) return saved;
+    } catch {
+        // noop
+    }
+    return loadDarkMode() ? "dark" : "light";
+}
+
+export function saveAppStyle(style: AppStyle): void {
+    try {
+        localStorage.setItem(STORAGE_KEYS.style, style);
+        // Se mantiene también el modo oscuro por compatibilidad con copias y versiones anteriores
+        saveDarkMode(APP_STYLE_DEFINITIONS[style].mode === "dark");
     } catch {
         // noop
     }

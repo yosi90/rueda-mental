@@ -60,7 +60,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["pill", Pill, "medicacion pastilla medication pill"],
         ["syringe", Syringe, "vacuna inyeccion vaccine injection"],
         ["hospital", Hospital, "hospital clinica clinic"],
-        ["brain", Brain, "mente cerebro salud mental mind brain mental health"],
+        ["brain", Brain, "mente cerebro salud mental psicologia mind brain mental health"],
         ["eye", Eye, "vista ojos sight eyes"],
         ["bed", Bed, "sueno dormir descanso sleep rest"],
         ["moon", Moon, "noche sueno night sleep"],
@@ -76,7 +76,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["laugh", Laugh, "risa humor laugh"],
     ],
     sport: [
-        ["dumbbell", Dumbbell, "gimnasio pesas gym weights"],
+        ["dumbbell", Dumbbell, "gimnasio pesas ejercicio deporte gym weights exercise sport"],
         ["biceps-flexed", BicepsFlexed, "fuerza musculo strength muscle"],
         ["bike", Bike, "bici ciclismo bicycle cycling"],
         ["footprints", Footprints, "caminar pasos correr walk steps run"],
@@ -95,7 +95,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["sparkles", Sparkles, "bienestar magia wellbeing magic"],
         ["leaf", Leaf, "calma naturaleza calm nature"],
         ["flower", Flower, "flor autocuidado flower selfcare"],
-        ["flower-2", Flower2, "meditacion flor meditation"],
+        ["flower-2", Flower2, "meditacion meditar yoga mindfulness flor meditation"],
         ["wind", Wind, "respiracion aire breathing air"],
         ["feather", Feather, "ligereza escritura lightness writing"],
         ["star", Star, "favorito estrella favorite star"],
@@ -119,7 +119,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["monitor", Monitor, "pantalla oficina screen office"],
         ["code", Code, "programar codigo programming code"],
         ["graduation-cap", GraduationCap, "aprendizaje estudios universidad learning studies"],
-        ["book-open", BookOpen, "lectura estudiar reading study"],
+        ["book-open", BookOpen, "lectura leer libros estudiar reading read study"],
         ["book", Book, "libro lectura book reading"],
         ["library", Library, "biblioteca libros library books"],
         ["school", School, "colegio escuela school"],
@@ -165,7 +165,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["recycle", Recycle, "reciclar sostenible recycle sustainable"],
     ],
     leisure: [
-        ["gamepad-2", Gamepad2, "ocio videojuegos leisure games"],
+        ["gamepad-2", Gamepad2, "ocio videojuegos hobbies hobby aficiones leisure games"],
         ["joystick", Joystick, "juegos retro games"],
         ["dice-5", Dice5, "juegos de mesa dados board games dice"],
         ["puzzle", Puzzle, "puzle rompecabezas puzzle"],
@@ -199,7 +199,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["map-pin", MapPin, "lugar destino place destination"],
         ["globe", Globe, "mundo viajar world travel"],
         ["earth", Earth, "planeta ecologia planet ecology"],
-        ["plane", Plane, "avion vacaciones plane holidays"],
+        ["plane", Plane, "viajes viajar avion vacaciones travel plane holidays"],
         ["luggage", Luggage, "maleta viaje suitcase trip"],
         ["ship", Ship, "barco crucero ship cruise"],
         ["sailboat", Sailboat, "vela navegar sailing"],
@@ -217,7 +217,7 @@ const BY_CATEGORY: Record<IconCategory, Entry[]> = {
         ["telescope", Telescope, "astronomia estrellas astronomy stars"],
     ],
     food: [
-        ["utensils", Utensils, "comer comida eat food"],
+        ["utensils", Utensils, "comer comida alimentacion eat food nutrition"],
         ["chef-hat", ChefHat, "cocinar recetas cook recipes"],
         ["coffee", Coffee, "cafe desayuno coffee breakfast"],
         ["soup", Soup, "sopa cena soup dinner"],
@@ -276,4 +276,17 @@ export function searchSectorIcons(query: string, category?: IconCategory | null)
         (!category || icon.category === category)
         && terms.every((term) => icon.keywords.includes(term) || icon.id.includes(term))
     );
+}
+
+/**
+ * Icono sugerido para el nombre de un sector: el primero cuyas palabras clave contengan
+ * alguna palabra del nombre (p. ej. «Lectura» → libro, «Hobbies» → mando). undefined si no hay.
+ */
+export function suggestSectorIcon(name: string): string | undefined {
+    const words = normalize(name).split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+    if (words.length === 0) return undefined;
+    return SECTOR_ICONS.find((icon) => {
+        const keywords = icon.keywords.split(" ");
+        return words.some((word) => keywords.includes(word));
+    })?.id;
 }

@@ -1,4 +1,5 @@
 import { isLanguage, type Language } from "../../i18n/translations";
+import { isAppStyle, type AppStyle } from "../../theme/styles";
 import type {
     CommentsByDate,
     DailySummary,
@@ -18,6 +19,7 @@ export interface ParsedBackup {
     dailySummaryByDate?: DailySummaryByDate;
     scaleInverted?: boolean;
     darkMode?: boolean;
+    style?: AppStyle;
     language?: Language;
     tutorialShown?: boolean;
     statsVisibility?: StatsVisibility;
@@ -84,6 +86,7 @@ export function parseBackup(raw: string): ParsedBackup | null {
 
     if (typeof data.scaleInverted === "boolean") result.scaleInverted = data.scaleInverted;
     if (typeof data.darkMode === "boolean") result.darkMode = data.darkMode;
+    if (isAppStyle(data.style)) result.style = data.style;
     if (typeof data.language === "string" && isLanguage(data.language)) result.language = data.language;
     if (typeof data.tutorialShown === "boolean") result.tutorialShown = data.tutorialShown;
     const statsVisibility = normalizeStatsVisibility(data.statsVisibility);

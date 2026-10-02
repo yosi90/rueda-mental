@@ -1,44 +1,53 @@
-import { useId, type Dispatch, type SetStateAction } from "react";
-import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
-import { ToggleSwitch } from "../../../shared/components/ToggleSwitch";
+import { theme } from "../../../shared/theme/theme";
+import { APP_STYLE_DEFINITIONS, APP_STYLES, type AppStyle } from "../../../shared/theme/styles";
 
 interface ThemeSectionProps {
-    darkMode: boolean;
-    setDarkMode: Dispatch<SetStateAction<boolean>>;
+    style: AppStyle;
+    setStyle: (style: AppStyle) => void;
 }
 
-export function ThemeSection({
-    darkMode,
-    setDarkMode,
-}: ThemeSectionProps) {
+/** Selector de estilo visual. Cada tarjeta es una vista previa real (lleva su propio data-style). */
+export function ThemeSection({ style, setStyle }: ThemeSectionProps) {
     const { t } = useI18n();
-    const descId = useId();
 
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
-            <div className="flex items-center justify-between">
-                <div>
-                    <div className={`text-sm font-medium ${theme.text}`}>{t("theme.title")}</div>
-                    <div id={descId} className={`text-xs ${theme.textLight}`}>
-                        {darkMode ? t("theme.darkEnabled") : t("theme.lightEnabled")}
-                    </div>
-                </div>
-                <ToggleSwitch
-                    checked={darkMode}
-                    onChange={setDarkMode}
-                    label={t("theme.darkMode")}
-                    describedBy={descId}
-                    knobContent={darkMode ? (
-                        <svg className="h-6 w-6 p-1 text-neutral-900" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                        </svg>
-                    ) : (
-                        <svg className="h-6 w-6 p-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                        </svg>
-                    )}
-                />
+            <div className={`text-sm font-medium ${theme.text}`}>{t("style.title")}</div>
+            <div className={`text-xs ${theme.textLight} mt-1`}>{t("style.description")}</div>
+
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2" role="group" aria-label={t("style.title")}>
+                {APP_STYLES.map((id) => {
+                    const definition = APP_STYLE_DEFINITIONS[id];
+                    const active = id === style;
+                    return (
+                        <button
+                            key={id}
+                            type="button"
+                            onClick={() => setStyle(id)}
+                            aria-pressed={active}
+                            aria-label={t(definition.labelKey)}
+                            data-style={id}
+                            data-theme={definition.mode}
+                            className={`app-backdrop relative overflow-hidden rounded-xl border-2 p-2 text-left transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 motion-safe:hover:-translate-y-0.5 ${
+                                active ? "border-accent" : "border-line"
+                            }`}
+                        >
+                            <span className="flex h-16 flex-col justify-between rounded-lg bg-surface/85 p-2 text-fg shadow-sm" aria-hidden="true">
+                                <span className="text-lg leading-none" style={{ fontFamily: "var(--font-display, system-ui, sans-serif)" }}>Aa</span>
+                                <span className="flex items-center gap-1" aria-hidden="true">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+                                    <span className="h-2.5 w-6 rounded-full bg-primary" />
+                                    <span className="h-2.5 w-4 rounded-full bg-line" />
+                                </span>
+                            </span>
+                            <span className="mt-1.5 flex items-center justify-between gap-1 rounded-md bg-surface/85 px-1.5 py-0.5 text-xs font-semibold text-fg">
+                                {t(definition.labelKey)}
+                                {active && <span aria-hidden="true">✓</span>}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );

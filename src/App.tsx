@@ -20,6 +20,7 @@ import { TutorialOverlay } from "./features/tutorial/components/TutorialOverlay"
 import { useTutorialFlow } from "./features/tutorial/hooks/useTutorialFlow";
 import { WheelLayers } from "./features/wheel/components/WheelLayers";
 import { useWheelInteractions } from "./features/wheel/hooks/useWheelInteractions";
+import { useVisibleLabelBounds } from "./features/wheel/hooks/useVisibleLabelBounds";
 import {
     computeSectorAngles,
     createWheelGeometry,
@@ -68,6 +69,7 @@ export default function MentalWheelApp() {
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [sosOpen, setSosOpen] = useState(false);
     const svgRef = useRef<SVGSVGElement>(null);
+    const labelBounds = useVisibleLabelBounds(svgRef, SIZE);
 
     const scores = useMemo(() => scoresByDate[dateStr] ?? {}, [scoresByDate, dateStr]);
     const dailySummary = dailySummaryByDate[dateStr] ?? EMPTY_DAILY_SUMMARY;
@@ -185,13 +187,14 @@ export default function MentalWheelApp() {
 
     function exportBackup(): void {
         downloadBackup({
-            version: 2,
+            version: 3,
             config: sectors,
             scoresByDate,
             commentsByDate,
             dailySummaryByDate,
             scaleInverted: isScaleInverted,
             darkMode: preferences.darkMode,
+            style: preferences.style,
             language,
             tutorialShown: hasTutorialBeenShown(),
             statsVisibility,
@@ -214,7 +217,8 @@ export default function MentalWheelApp() {
         const snapshot = data.takeSnapshot();
         data.importData(backup);
         if (backup.scaleInverted !== undefined) preferences.setIsScaleInverted(backup.scaleInverted);
-        if (backup.darkMode !== undefined) preferences.setDarkMode(backup.darkMode);
+        if (backup.style) preferences.setStyle(backup.style);
+        else if (backup.darkMode !== undefined) preferences.setStyle(backup.darkMode ? "dark" : "light");
         if (backup.statsVisibility) preferences.setStatsVisibility(backup.statsVisibility);
         if (backup.language) setLanguage(backup.language);
         if (backup.tutorialShown !== undefined) saveTutorialShown(backup.tutorialShown);
@@ -237,6 +241,7 @@ export default function MentalWheelApp() {
 
     return (
         <div className={`fixed inset-0 ${theme.bg} ${theme.text} overflow-hidden`}>
+            <div className="app-backdrop fixed inset-0" aria-hidden="true" />
             <MainActionButtons
                 showStatsButton={statsVisibility.enabled}
                 onOpenStats={() => {
@@ -307,7 +312,7 @@ export default function MentalWheelApp() {
                         height="100%"
                         viewBox={`0 0 ${SIZE} ${SIZE}`}
                         className="select-none touch-none drop-shadow-2xl"
-                        style={{ maxWidth: "100%", maxHeight: "100%", cursor: scale === 1 ? "pointer" : isPanning ? "grabbing" : "grab", touchAction: "none" }}
+                        style={{ maxWidth: "100%", maxHeight: "100%", overflow: "visible", cursor: scale === 1 ? "pointer" : isPanning ? "grabbing" : "grab", touchAction: "none" }}
                         preserveAspectRatio="xMidYMid meet"
                     >
                         <g transform={`translate(${SIZE / 2 + translateX} ${SIZE / 2 + translateY}) scale(${scale}) translate(${-SIZE / 2} ${-SIZE / 2})`}>
@@ -324,6 +329,7 @@ export default function MentalWheelApp() {
                                 scores={scores}
                                 referenceScores={referenceDate ? scoresByDate[referenceDate] : null}
                                 compactLabels={isSmallScreen}
+                                labelBounds={labelBounds}
                                 highlightSectorId={tutorialStep === 1 || tutorialStep === 2 ? tutorialSector?.id : null}
                                 hoverInfo={hoverInfo}
                                 dateStr={dateStr}
@@ -417,7 +423,7 @@ export default function MentalWheelApp() {
                     statsVisibility={statsVisibility}
                     setStatsVisibility={preferences.setStatsVisibility}
                 />
-                <ThemeSection darkMode={preferences.darkMode} setDarkMode={preferences.setDarkMode} />
+                <ThemeSection style={preferences.style} setStyle={preferences.setStyle} />
                 <TutorialSection onRestartTutorial={restartTutorial} />
                 <LegalSection />
             </SettingsDrawer>

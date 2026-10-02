@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { getSectorIcon } from "../../sectors/icons/sectorIcons";
 import { theme } from "../../../shared/theme/theme";
-import { WHEEL_SIZE } from "../utils/wheelGeometry";
+import type { LabelBounds } from "../hooks/useVisibleLabelBounds";
 
 interface SectorLabelProps {
     x: number;
@@ -13,16 +13,18 @@ interface SectorLabelProps {
     iconId?: string;
     /** Pantallas pequeñas: solo icono + puntuación (el nombre, si no hay icono). */
     compact: boolean;
+    /** Franja visible (unidades del viewBox): solo se desplaza la etiqueta si se saldría de ella. */
+    bounds: LabelBounds;
 }
 
 const EDGE_MARGIN = 4;
 
 /**
  * Etiqueta exterior de un sector: icono + nombre + pastilla con la puntuación.
- * El conjunto respeta el anclaje (izquierda, derecha o centrado) y se desplaza hacia dentro
- * si fuera a salirse del lienzo.
+ * El conjunto respeta el anclaje (izquierda, derecha o centrado) y solo se desplaza hacia dentro
+ * si fuera a salirse de la parte visible de la ventana.
  */
-export function SectorLabel({ x, y, anchor, name, score, iconId, compact }: SectorLabelProps) {
+export function SectorLabel({ x, y, anchor, name, score, iconId, compact, bounds }: SectorLabelProps) {
     const nameRef = useRef<SVGTextElement>(null);
     const [nameWidth, setNameWidth] = useState(0);
     const icon = getSectorIcon(iconId);
@@ -45,7 +47,7 @@ export function SectorLabel({ x, y, anchor, name, score, iconId, compact }: Sect
     const total = parts.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, parts.length - 1);
 
     let left = anchor === "start" ? x : anchor === "end" ? x - total : x - total / 2;
-    left = Math.max(EDGE_MARGIN, Math.min(left, WHEEL_SIZE - EDGE_MARGIN - total));
+    left = Math.max(bounds.minX + EDGE_MARGIN, Math.min(left, bounds.maxX - EDGE_MARGIN - total));
 
     let cursor = left;
     const iconX = cursor;
@@ -66,7 +68,21 @@ export function SectorLabel({ x, y, anchor, name, score, iconId, compact }: Sect
                 />
             )}
             {showName && (
-                <text ref={nameRef} x={nameX} y={y} fontSize={fontSize} textAnchor="start" dominantBaseline="central" fill={theme.svgText}>
+                <text
+                    ref={nameRef}
+                    x={nameX}
+                    y={y}
+                    fontSize={fontSize}
+                    textAnchor="start"
+                    dominantBaseline="central"
+                    fill={theme.svgText}
+                    // Halo del color de fondo: legible sobre fondos ilustrados
+                    stroke="var(--ui-page)"
+                    strokeWidth={3}
+                    strokeOpacity={0.85}
+                    strokeLinejoin="round"
+                    paintOrder="stroke"
+                >
                     {name}
                 </text>
             )}
