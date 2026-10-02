@@ -248,6 +248,7 @@ export default function MentalWheelApp() {
                     setSummaryOpen(true);
                 }}
                 onOpenSettings={() => setDrawerOpen(true)}
+                highlightSummary={tutorialStep === 4}
             />
 
             {(scale !== 1 || translateX !== 0 || translateY !== 0) && (
@@ -321,6 +322,7 @@ export default function MentalWheelApp() {
                                 sectorsWithAngles={sectorsWithAngles}
                                 scores={scores}
                                 referenceScores={referenceDate ? scoresByDate[referenceDate] : null}
+                                highlightSectorId={tutorialStep === 1 || tutorialStep === 2 ? tutorialSector?.id : null}
                                 hoverInfo={hoverInfo}
                                 dateStr={dateStr}
                                 getComment={data.getComment}

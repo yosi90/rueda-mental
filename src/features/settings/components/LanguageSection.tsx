@@ -25,8 +25,10 @@ export function LanguageSection() {
                                     : `${theme.border} ${theme.text} hover:bg-neutral-100/60 dark:hover:bg-neutral-700/60`
                             }`}
                             title={option.name}
+                            aria-pressed={isActive}
+                            lang={option.code}
                         >
-                            <span className="mr-2" aria-hidden="true">{option.flag}</span>
+                            <span className="mr-2 inline-block min-w-6 rounded px-1 text-xs font-semibold uppercase tracking-wide opacity-70 border border-current" aria-hidden="true">{option.code}</span>
                             {option.name}
                         </button>
                     );

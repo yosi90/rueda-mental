@@ -6,6 +6,8 @@ interface TopRightButtonsProps {
     onOpenStats: () => void;
     onOpenSummary: () => void;
     onOpenSettings: () => void;
+    /** Resalta el botón del resumen (lo señala el tutorial). */
+    highlightSummary?: boolean;
 }
 
 export function TopRightButtons({
@@ -13,6 +15,7 @@ export function TopRightButtons({
     onOpenStats,
     onOpenSummary,
     onOpenSettings,
+    highlightSummary = false,
 }: TopRightButtonsProps) {
     const { t } = useI18n();
 
@@ -39,7 +42,7 @@ export function TopRightButtons({
             <button
                 type="button"
                 onClick={onOpenSummary}
-                className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation`}
+                className={`rounded-lg ${theme.buttonPrimary} p-2 sm:px-4 sm:py-2 shadow-lg transition-colors touch-manipulation ${highlightSummary ? "ring-4 ring-indigo-600 ring-offset-2 motion-safe:animate-pulse" : ""}`}
                 title={t("top.summary")}
                 aria-label={t("top.summary")}
                 aria-haspopup="dialog"

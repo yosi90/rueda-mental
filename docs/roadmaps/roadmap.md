@@ -67,20 +67,21 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 
 ---
 
-## Hito 4 — Refactor y sistema visual
+## Hito 4 — Refactor y sistema visual ✅
 
-- [ ] Dividir `App.tsx`: `useMentalWheelData` (estado, persistencia, import/export), `useWheelGeometry`, tema.
-- [ ] Tema con variante `dark:` de Tailwind / variables CSS en vez del objeto `theme` por props (la variante ya existe vía `data-theme`; la usan los avisos y la confirmación).
-- [ ] Reducir props de `SettingsDrawer` (contexto o reducer).
-- [ ] Interacciones de la rueda con Pointer Events y estado de pan en refs.
-- [ ] Paleta de gráficas coherente con la app y con los colores de los sectores.
-- [ ] Heatmap: distinguir «sin datos» de «media muy baja» (hoy comparten color).
+- [x] Dividir `App.tsx` (821 → ~440 líneas): `useMentalWheelData`, `usePreferences`, `useGlobalShortcuts` (en `src/app/`) y geometría pura en `wheelGeometry.ts`.
+- [x] Tema con variante `dark:` de Tailwind / variables CSS en vez del objeto `theme` por props (la variante ya existe vía `data-theme`; la usan los avisos y la confirmación).
+- [x] Reducir props de `SettingsDrawer`: ahora es un contenedor y App compone las secciones.
+- [x] Interacciones de la rueda con Pointer Events y estado de pan en refs.
+- [x] Paleta de gráficas validada para daltonismo en ambos temas; leyendas en color de texto; sin animaciones con movimiento reducido.
+- [x] Heatmap: distinguir «sin datos» de «media muy baja» (hoy comparten color).
 - [x] Tutorial con color menos alarmante (índigo, hecho en el hito 2).
-- [ ] Tutorial con flecha hacia el elemento señalado.
-- [ ] Ajustar contraste del modo claro.
-- [ ] «Rueda fantasma»: contorno de ayer o de la media semanal sobre la rueda actual.
-- [ ] Optimizar el favicon (70 KB).
-- [ ] Banderas del selector de idioma: en Windows los emojis de bandera se ven como «ES», «GB»… (usar SVG o quitar).
+- [x] Tutorial: en lugar de flecha, se resalta el elemento señalado (sector en la rueda, botón del resumen).
+- [x] Ajustar contraste de los fondos (claro más luminoso, oscuro más contrastado).
+- [x] «Rueda fantasma»: contorno discontinuo del último día registrado (desactivable en Configuración).
+- [x] Optimizar el favicon (70 KB → 3 KB) y añadir icono para iOS, descripción y color de tema.
+- [x] Banderas del selector de idioma sustituidas por el código de idioma (las banderas son de países, no de idiomas).
+- [x] Zoom con la rueda del ratón sin error de listener pasivo; importar JSON accesible con teclado.
 
 ---
 

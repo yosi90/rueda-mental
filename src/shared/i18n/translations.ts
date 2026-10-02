@@ -4,7 +4,6 @@ export type Language = (typeof SUPPORTED_LANGUAGES)[number];
 
 export interface LanguageDetails {
     code: Language;
-    flag: string;
     name: string;
     locale: string;
     weekDaysShort: [string, string, string, string, string, string, string];
@@ -14,7 +13,6 @@ export interface LanguageDetails {
 export const LANGUAGE_DETAILS: Record<Language, LanguageDetails> = {
     es: {
         code: "es",
-        flag: "🇪🇸",
         name: "Español",
         locale: "es-ES",
         weekDaysShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
@@ -22,7 +20,6 @@ export const LANGUAGE_DETAILS: Record<Language, LanguageDetails> = {
     },
     en: {
         code: "en",
-        flag: "🇬🇧",
         name: "English",
         locale: "en-US",
         weekDaysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
@@ -30,7 +27,6 @@ export const LANGUAGE_DETAILS: Record<Language, LanguageDetails> = {
     },
     pt: {
         code: "pt",
-        flag: "🇵🇹",
         name: "Português",
         locale: "pt-PT",
         weekDaysShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
@@ -38,7 +34,6 @@ export const LANGUAGE_DETAILS: Record<Language, LanguageDetails> = {
     },
     de: {
         code: "de",
-        flag: "🇩🇪",
         name: "Deutsch",
         locale: "de-DE",
         weekDaysShort: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],

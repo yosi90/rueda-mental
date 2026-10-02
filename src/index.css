@@ -93,6 +93,19 @@ select {
   fill: rgb(37 99 235 / 0.08);
 }
 
+/* Sector señalado por el tutorial */
+@media (prefers-reduced-motion: no-preference) {
+  .tutorial-highlight {
+    animation: tutorial-highlight 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes tutorial-highlight {
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
 .padding-esp {
   padding: 2px 4px;
 }

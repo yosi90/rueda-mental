@@ -14,6 +14,8 @@ interface WheelLayersProps {
     sectors: Sector[];
     sectorsWithAngles: SectorWithAngles[];
     scores: Record<string, number>;
+    /** Sector resaltado (lo señala el tutorial). */
+    highlightSectorId?: string | null;
     /** Puntuaciones de otro día dibujadas como contorno discontinuo (referencia). */
     referenceScores?: Record<string, number> | null;
     hoverInfo: HoverInfo | null;
@@ -63,6 +65,7 @@ export function WheelLayers({
     sectorsWithAngles,
     scores,
     referenceScores,
+    highlightSectorId,
     hoverInfo,
     dateStr,
     getComment,
@@ -183,6 +186,23 @@ export function WheelLayers({
             );
         });
 
+    const highlightPath = (() => {
+        const s = highlightSectorId ? sectorsWithAngles.find((x) => x.id === highlightSectorId) : null;
+        if (!s) return null;
+        return (
+            <path
+                d={sectorPath(cx, cy, 0, radius, s.a0, s.a1)}
+                fill="rgb(67 56 202 / 0.08)"
+                stroke="#4338ca"
+                strokeWidth={3}
+                strokeLinejoin="round"
+                className="tutorial-highlight"
+                pointerEvents="none"
+                aria-hidden="true"
+            />
+        );
+    })();
+
     const hoverLayer = (() => {
         if (!hoverInfo) return null;
         const s = sectorsWithAngles.find((x) => x.id === hoverInfo.sectorId);
@@ -250,6 +270,7 @@ export function WheelLayers({
             {labels}
             {ringNumbers}
             {hoverLayer}
+            {highlightPath}
             {keyboardSliders}
         </>
     );
