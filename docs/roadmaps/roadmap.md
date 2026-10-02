@@ -87,7 +87,7 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 - [x] Pantallas pequeñas: fecha como barra superior a todo el ancho y acciones (estadísticas, resumen, configuración) en barra inferior; sin «Media del día».
 - [x] Avisos a todo el ancho y por encima de la barra inferior en móvil; animación de entrada corregida.
 - [x] Sin aviso al poner o cambiar una puntuación (solo al quitarla, con «Deshacer»).
-- [x] Puntuación en pastilla circular entre la rueda y el nombre (distinguible, centrada y sin recortes).
+- [x] Puntuación en un círculo dentro del sector, en el centro de su tramo exterior relleno.
 - [x] Textos del tutorial sin referencias a posiciones («arriba a la derecha»).
 
 ---

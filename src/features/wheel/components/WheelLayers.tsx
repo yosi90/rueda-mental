@@ -31,9 +31,8 @@ interface WheelLayersProps {
     onOpenSectorMenu: (sectorId: string, x: number, y: number) => void;
 }
 
-const LABEL_OFFSET = 30; // distancia del nombre al borde de la rueda
-const BADGE_OFFSET = 12; // distancia de la pastilla de puntuación al borde
-const BADGE_RADIUS = 9;
+const LABEL_OFFSET = 24; // distancia del nombre al borde de la rueda
+const BADGE_RADIUS = 8.5;
 
 function toRad(deg: number): number {
     return (deg * Math.PI) / 180;
@@ -106,6 +105,21 @@ export function WheelLayers({
         })
         : null;
 
+    // Puntuación dentro del sector, en el centro del tramo exterior relleno
+    const scoreBadges = sectorsWithAngles.map((s) => {
+        const raw = Math.max(0, Math.min(ringCount, scores[s.id] ?? 0));
+        if (raw <= 0) return null;
+        const [bx, by] = polar(cx, cy, levelLabelRadius(raw), s.mid);
+        return (
+            <g key={`score-${s.id}`} aria-hidden="true" pointerEvents="none">
+                <circle cx={bx} cy={by} r={BADGE_RADIUS} fill={theme.svgText} />
+                <text x={bx} y={by} fontSize={10} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={theme.svgBg}>
+                    {toDisplayScore(raw, ringCount, isScaleInverted)}
+                </text>
+            </g>
+        );
+    });
+
     const gridRings = Array.from({ length: ringCount }, (_, i) => (
         <circle
             key={`r-${i + 1}`}
@@ -134,27 +148,15 @@ export function WheelLayers({
 
     const labels = sectorsWithAngles.map((s) => {
         const [tx, ty] = polar(cx, cy, radius + LABEL_OFFSET, s.mid);
-        // La puntuación va en una pastilla entre el borde de la rueda y el nombre:
-        // no añade ancho a la etiqueta (no se recorta en los laterales) y queda centrada en su propio eje.
-        const [bx, by] = polar(cx, cy, radius + BADGE_OFFSET, s.mid);
         const cosv = Math.cos(toRad(s.mid));
         const anchor = cosv > 0.25 ? "start" : cosv < -0.25 ? "end" : "middle";
         const hasComment = !!getComment(dateStr, s.id);
-        const displayScore = toDisplayScore(scores[s.id] ?? 0, ringCount, isScaleInverted);
 
         return (
             <g key={`lab-${s.id}`}>
                 <text x={tx} y={ty} fontSize={12} textAnchor={anchor} dominantBaseline="central" fill={theme.svgText} aria-hidden="true">
                     {s.name}
                 </text>
-                {displayScore > 0 && (
-                    <g aria-hidden="true">
-                        <circle cx={bx} cy={by} r={BADGE_RADIUS} fill={theme.svgText} />
-                        <text x={bx} y={by} fontSize={11} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={theme.svgBg}>
-                            {displayScore}
-                        </text>
-                    </g>
-                )}
 
                 {hasComment && (
                     <text
@@ -281,6 +283,7 @@ export function WheelLayers({
                 {gridLines}
             </g>
             {referenceArcs}
+            {scoreBadges}
             {labels}
             {ringNumbers}
             {hoverLayer}
