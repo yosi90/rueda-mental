@@ -113,6 +113,7 @@ const es = {
     "statsVisibility.insights": "💡 Insights",
 
     "theme.title": "Tema",
+    "theme.darkMode": "Modo oscuro",
     "theme.darkEnabled": "Modo oscuro activado",
     "theme.lightEnabled": "Modo claro activado",
 
@@ -296,6 +297,7 @@ const en: Record<keyof typeof es, string> = {
     "statsVisibility.insights": "💡 Insights",
 
     "theme.title": "Theme",
+    "theme.darkMode": "Dark mode",
     "theme.darkEnabled": "Dark mode enabled",
     "theme.lightEnabled": "Light mode enabled",
 
@@ -478,6 +480,7 @@ const pt: Record<keyof typeof es, string> = {
     "statsVisibility.heatmap": "🔥 Mapa de calor (60 dias)",
 
     "theme.title": "Tema",
+    "theme.darkMode": "Modo escuro",
     "theme.darkEnabled": "Modo escuro ativado",
     "theme.lightEnabled": "Modo claro ativado",
 
@@ -660,6 +663,7 @@ const de: Record<keyof typeof es, string> = {
     "statsVisibility.heatmap": "🔥 Heatmap (60 Tage)",
 
     "theme.title": "Thema",
+    "theme.darkMode": "Dunkelmodus",
     "theme.darkEnabled": "Dunkelmodus aktiviert",
     "theme.lightEnabled": "Hellmodus aktiviert",
 

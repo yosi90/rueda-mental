@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useId, useRef, type Dispatch, type SetStateAction } from "react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
@@ -8,6 +8,8 @@ import { isBetterScore, toDisplayScore, toRawScore } from "../../../shared/utils
 import { parseDateInput } from "../../../shared/utils/date";
 import type { StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
+import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
+import { CloseIcon } from "../../../shared/components/CloseIcon";
 
 interface StatsModalProps {
     statsOpen: boolean;
@@ -41,6 +43,9 @@ export function StatsModal({
     setVisibleSectors,
 }: StatsModalProps) {
     const { t, locale } = useI18n();
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
+    useDialogA11y(statsOpen, () => setStatsOpen(false), dialogRef);
     const yAxisDomain: [number, number] = [0, ringCount];
     const nonZeroTodayScores = statsData.todaySectorScores.filter((item) => item.score > 0);
     const todayScoresForInsights = nonZeroTodayScores.length > 0 ? nonZeroTodayScores : statsData.todaySectorScores;
@@ -105,24 +110,32 @@ export function StatsModal({
                     <div
                         className={`fixed inset-0 ${theme.overlay} z-50 transition-opacity`}
                         onClick={() => setStatsOpen(false)}
+                        aria-hidden="true"
                     />
-                    <div className={`fixed inset-4 md:inset-8 lg:inset-16 ${theme.cardSolid} shadow-2xl z-50 rounded-2xl overflow-hidden flex flex-col`}>
+                    <div
+                        ref={dialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={titleId}
+                        tabIndex={-1}
+                        className={`fixed inset-4 md:inset-8 lg:inset-16 ${theme.cardSolid} shadow-2xl z-50 rounded-2xl overflow-hidden flex flex-col outline-none`}
+                    >
                         {/* Header del modal */}
                         <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme.borderLight}`}>
                             <div>
-                                <h2 className={`text-xl md:text-2xl font-bold ${theme.text}`}>{t("stats.title")}</h2>
+                                <h2 id={titleId} className={`text-xl md:text-2xl font-bold ${theme.text}`}>{t("stats.title")}</h2>
                                 <p className={`text-xs md:text-sm ${theme.textMuted} mt-1`}>
                                     {t("stats.subtitle", { days: statsData.totalDays, streak: statsData.currentStreak })}
                                 </p>
                             </div>
                             <button
+                                type="button"
                                 onClick={() => setStatsOpen(false)}
                                 className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
+                                title={t("common.close")}
+                                aria-label={t("common.close")}
                             >
-                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
+                                <CloseIcon />
                             </button>
                         </div>
 
@@ -130,7 +143,7 @@ export function StatsModal({
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
                             {statsData.dailyAverage.length === 0 ? (
                                 <div className={`text-center py-12 ${theme.textMuted}`}>
-                                    <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <svg aria-hidden="true" className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                     </svg>
                                     <p className="text-lg">{t("stats.noDataTitle")}</p>
@@ -379,7 +392,7 @@ export function StatsModal({
                                                             borderRadius: '8px'
                                                         }}
                                                     />
-                                                    <Bar dataKey="media" fill="#ffc658" name="Media" />
+                                                    <Bar dataKey="media" fill="#ffc658" name={t("stats.insightsAverageSuffix")} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                             <p className={`text-xs ${theme.textMuted} mt-2 text-center`}>
@@ -439,7 +452,7 @@ export function StatsModal({
                                     {/* Resumen de Insights */}
                                     {statsVisibility.showInsights && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt}`}>
-                                            <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>💡 Insights</h3>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>{t("statsVisibility.insights")}</h3>
                                             <div className="space-y-2 text-sm">
                                                 {(() => {
                                                     if (

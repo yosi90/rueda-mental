@@ -1,4 +1,4 @@
-import type { ChangeEvent, Dispatch, SetStateAction } from "react";
+import { useId, useRef, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
 import type { Sector, StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { DataSettingsSection } from "./DataSettingsSection";
@@ -10,6 +10,8 @@ import { StatsVisibilitySection } from "./StatsVisibilitySection";
 import { ThemeSection } from "./ThemeSection";
 import { TutorialSection } from "./TutorialSection";
 import { useI18n } from "../../../shared/i18n/I18nContext";
+import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
+import { CloseIcon } from "../../../shared/components/CloseIcon";
 
 interface SettingsDrawerProps {
     drawerOpen: boolean;
@@ -65,6 +67,9 @@ export function SettingsDrawer({
     onOpenSOS,
 }: SettingsDrawerProps) {
     const { t } = useI18n();
+    const drawerRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
+    useDialogA11y(drawerOpen, onClose, drawerRef);
 
     return (
         <>
@@ -72,26 +77,34 @@ export function SettingsDrawer({
                 <div
                     className={`fixed inset-0 ${theme.overlay} z-40 transition-opacity`}
                     onClick={onClose}
+                    aria-hidden="true"
                 />
             )}
 
+            {/* Cerrado: inert (fuera del orden de tabulación y de los lectores de pantalla) e invisible al terminar la animación */}
             <div
-                className={`fixed top-0 right-0 h-full w-full max-w-lg ${theme.cardSolid} shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto`}
+                ref={drawerRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                tabIndex={-1}
+                inert={!drawerOpen}
+                className={`fixed top-0 right-0 h-full w-full max-w-lg ${theme.cardSolid} shadow-2xl z-50 transform transition-[transform,visibility] duration-300 ease-in-out motion-reduce:transition-none overflow-y-auto outline-none ${drawerOpen ? "visible" : "invisible"}`}
                 style={{
                     transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
                 }}
             >
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className={`text-2xl font-bold ${theme.text}`}>{t("settings.title")}</h2>
+                        <h2 id={titleId} className={`text-2xl font-bold ${theme.text}`}>{t("settings.title")}</h2>
                         <button
+                            type="button"
                             onClick={onClose}
                             className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
+                            title={t("common.close")}
+                            aria-label={t("common.close")}
                         >
-                            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                            <CloseIcon />
                         </button>
                     </div>
 

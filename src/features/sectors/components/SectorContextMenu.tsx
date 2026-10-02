@@ -1,5 +1,6 @@
-import { useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { useId, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { useI18n } from "../../../shared/i18n/I18nContext";
+import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
 import { rgbToHex } from "../../../shared/utils/color";
@@ -42,17 +43,22 @@ export function SectorContextMenu({
     setComment,
     deleteComment,
 }: SectorContextMenuProps) {
+    useDialogA11y(Boolean(infoMenuContextual), onClose, menuRef);
     if (!infoMenuContextual) return null;
 
     const sector = sectors.find((s) => s.id === infoMenuContextual.idSector);
 
     return (
         <>
-            <div className="fixed inset-0 z-40" onClick={onClose} />
+            <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
 
             <div
                 ref={menuRef}
-                className={`fixed z-50 w-[200px] sm:w-[300px] rounded-xl border ${theme.border} ${theme.card} ${theme.text} backdrop-blur-sm p-4 shadow-xl`}
+                role="dialog"
+                aria-modal="true"
+                aria-label={sector?.name}
+                tabIndex={-1}
+                className={`fixed z-50 w-[240px] sm:w-[300px] rounded-xl border ${theme.border} ${theme.card} ${theme.text} backdrop-blur-sm p-4 shadow-xl outline-none`}
                 style={{ top: `${infoMenuContextual.y}px`, left: `${infoMenuContextual.x}px` }}
             >
                 {sector && (
@@ -106,6 +112,7 @@ function SectorMenuContent({
     deleteComment,
 }: SectorMenuContentProps) {
     const { t } = useI18n();
+    const idPrefix = useId();
     const [commentDraft, setCommentDraft] = useState(initialComment);
     const valorActual = toDisplayScore(score, ringCount, isScaleInverted);
     const isMobile = window.innerWidth <= 768;
@@ -131,7 +138,9 @@ function SectorMenuContent({
                             )
                         );
                     }}
-                    className="h-4 w-4 sm:h-8 sm:w-8 cursor-pointer rounded-md border flex-shrink-0"
+                    title={t("common.color")}
+                    aria-label={t("common.color")}
+                    className="h-8 w-8 cursor-pointer rounded-md border flex-shrink-0"
                 />
 
                 <input
@@ -156,12 +165,15 @@ function SectorMenuContent({
                             )
                         );
                     }}
-                    className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-1 sm:px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                    aria-label={t("sectors.newPlaceholder")}
+                    className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-1 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
                 />
 
                 <button
+                    type="button"
                     title={t("sectorMenu.deleteTitle")}
-                    className={`rounded-md border ${theme.border} ${theme.button} px-1 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] sm:text-xs transition-colors flex-shrink-0`}
+                    aria-label={t("sectorMenu.deleteTitle")}
+                    className={`inline-flex items-center justify-center min-h-8 min-w-8 rounded-md border ${theme.border} ${theme.button} px-2 text-xs transition-colors flex-shrink-0`}
                     onClick={() => {
                         if (confirm(t("sectors.deleteConfirm", { name: sector.name }))) {
                             removeSector(sector.id);
@@ -169,12 +181,12 @@ function SectorMenuContent({
                         }
                     }}
                 >
-                    🗑️
+                    <span aria-hidden="true">🗑️</span>
                 </button>
             </div>
 
             <div className="flex items-center gap-2">
-                <label className={`text-xs ${theme.textMuted} flex-shrink-0`}>{t("sectors.scoreLabel")}</label>
+                <label htmlFor={`${idPrefix}-score`} className={`text-xs ${theme.textMuted} flex-shrink-0`}>{t("sectors.scoreLabel")}</label>
                 {!isMobile && (
                     <input
                         type="range"
@@ -182,23 +194,24 @@ function SectorMenuContent({
                         max={ringCount}
                         value={valorActual}
                         onChange={(e) => setScore(sector.id, e.target.value)}
-                        aria-label={t("sectors.scoreLabel")}
-                        className={`flex-1 min-w-0 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer
+                        aria-label={t("common.score")}
+                        className={`flex-1 min-w-0 h-2 bg-gray-400 rounded-lg appearance-none cursor-pointer
                             [&::-webkit-slider-thumb]:appearance-none
-                            [&::-webkit-slider-thumb]:w-3
-                            [&::-webkit-slider-thumb]:h-3
+                            [&::-webkit-slider-thumb]:w-4
+                            [&::-webkit-slider-thumb]:h-4
                             [&::-webkit-slider-thumb]:rounded-full
                             [&::-webkit-slider-thumb]:bg-blue-600
                             [&::-webkit-slider-thumb]:cursor-pointer
                             [&::-webkit-slider-thumb]:transition
                             [&::-webkit-slider-thumb]:hover:bg-blue-700
-                            [&::-moz-range-thumb]:w-3
-                            [&::-moz-range-thumb]:h-3
+                            [&::-moz-range-thumb]:w-4
+                            [&::-moz-range-thumb]:h-4
                             [&::-moz-range-thumb]:rounded-full
                             [&::-moz-range-thumb]:bg-blue-600`}
                     />
                 )}
                 <input
+                    id={`${idPrefix}-score`}
                     type="number"
                     min={0}
                     max={ringCount}
@@ -207,7 +220,7 @@ function SectorMenuContent({
                         const nuevoValor = parseInt(e.target.value, 10);
                         setScore(sector.id, nuevoValor);
                     }}
-                    className={`w-12 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"} flex-shrink-0`}
+                    className={`w-14 sm:w-16 rounded-md border ${theme.input} px-1 sm:px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"} flex-shrink-0`}
                 />
             </div>
 
@@ -215,10 +228,11 @@ function SectorMenuContent({
 
             <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                    <label className={`text-xs ${theme.textMuted}`}>{t("sectorMenu.comment")}</label>
+                    <label htmlFor={`${idPrefix}-comment`} className={`text-xs ${theme.textMuted}`}>{t("sectorMenu.comment")}</label>
 
                     {initialComment && (
                         <button
+                            type="button"
                             className={`text-xs px-2 py-1 rounded ${theme.buttonPrimary}`}
                             onClick={() => {
                                 deleteComment(dateStr, sector.id);
@@ -232,31 +246,34 @@ function SectorMenuContent({
                 </div>
 
                 <textarea
+                    id={`${idPrefix}-comment`}
                     value={commentDraft}
                     onChange={(e) => setCommentDraft(e.target.value)}
                     maxLength={COMMENT_MAX_LENGTH}
                     rows={3}
                     placeholder={t("sectorMenu.commentPlaceholder")}
-                    className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-xs sm:text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
+                    className={`w-full resize-none rounded-md border ${theme.input} px-2 py-1 text-sm focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-neutral-100" : "focus:ring-neutral-900"}`}
                     onKeyDown={(e) => {
                         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") saveComment();
                     }}
                 />
 
                 <div className="flex items-center justify-between">
-                    <span className={`text-[10px] ${theme.textMuted}`}>
+                    <span className={`text-xs ${theme.textMuted}`}>
                         {commentDraft.length}/{COMMENT_MAX_LENGTH}
                     </span>
 
                     <div className="flex gap-2">
                         <button
-                            className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.button}`}
+                            type="button"
+                            className={`text-xs min-h-8 px-3 rounded ${theme.button}`}
                             onClick={onClose}
                         >
                             {t("common.cancel")}
                         </button>
                         <button
-                            className={`text-xs px-1.5 sm:px-3 py-1 rounded ${theme.buttonPrimary}`}
+                            type="button"
+                            className={`text-xs min-h-8 px-3 rounded ${theme.buttonPrimary}`}
                             onClick={saveComment}
                         >
                             {t("common.save")}
@@ -269,8 +286,9 @@ function SectorMenuContent({
 
             {isMobile && (
                 <button
+                    type="button"
                     onClick={onClose}
-                    className={`text-xs ${theme.buttonPrimary} px-3 py-1 rounded w-full`}
+                    className={`text-xs ${theme.buttonPrimary} min-h-8 px-3 rounded w-full`}
                 >
                     {t("sectorMenu.mobileClose")}
                 </button>

@@ -1,8 +1,9 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useId, type Dispatch, type SetStateAction } from "react";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { TranslationKey } from "../../../shared/i18n/translations";
 import type { StatsVisibility } from "../../../shared/types/mentalWheel";
 import type { ThemeClasses } from "../../../shared/types/theme";
+import { ToggleSwitch } from "../../../shared/components/ToggleSwitch";
 
 interface StatsVisibilitySectionProps {
     theme: Pick<ThemeClasses, "inputAlt" | "border" | "text" | "textLight" | "card">;
@@ -28,28 +29,25 @@ export function StatsVisibilitySection({
     setStatsVisibility,
 }: StatsVisibilitySectionProps) {
     const { t } = useI18n();
+    const descId = useId();
 
     return (
         <div className={`mb-6 p-4 rounded-xl ${theme.inputAlt} ${theme.border} border`}>
             <div className="flex items-center justify-between mb-3">
                 <div>
                     <div className={`text-lg font-semibold ${theme.text}`}>{t("statsVisibility.title")}</div>
-                    <div className={`text-xs ${theme.textLight}`}>
+                    <div id={descId} className={`text-xs ${theme.textLight}`}>
                         {t("statsVisibility.description")}
                     </div>
                 </div>
 
-                <button
-                    onClick={() =>
-                        setStatsVisibility((v) => ({ ...v, enabled: !v.enabled }))
-                    }
-                    className={`relative inline-flex h-8 w-14 items-center justify-start rounded-full transition-colors ${statsVisibility.enabled ? "bg-green-500/70" : "bg-neutral-400/60"} padding-esp`}
+                <ToggleSwitch
+                    checked={statsVisibility.enabled}
+                    onChange={(enabled) => setStatsVisibility((v) => ({ ...v, enabled }))}
+                    label={t("statsVisibility.title")}
+                    describedBy={descId}
                     title={t("statsVisibility.toggleTitle")}
-                >
-                    <span
-                        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${statsVisibility.enabled ? "translate-x-6" : "translate-x-0"}`}
-                    />
-                </button>
+                />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">

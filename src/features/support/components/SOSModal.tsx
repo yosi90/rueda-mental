@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useId, useRef } from "react";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { TranslationKey } from "../../../shared/i18n/translations";
 import type { ThemeClasses } from "../../../shared/types/theme";
+import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
+import { CloseIcon } from "../../../shared/components/CloseIcon";
 
 interface SOSModalProps {
     open: boolean;
@@ -70,17 +72,9 @@ function toTelHref(number: string): string {
 
 export function SOSModal({ open, onClose, theme }: SOSModalProps) {
     const { t } = useI18n();
-
-    useEffect(() => {
-        if (!open) return;
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [open, onClose]);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
+    useDialogA11y(open, onClose, dialogRef);
 
     if (!open) return null;
 
@@ -89,28 +83,35 @@ export function SOSModal({ open, onClose, theme }: SOSModalProps) {
             <div
                 className={`fixed inset-0 ${theme.overlay} z-[60] transition-opacity`}
                 onClick={onClose}
+                aria-hidden="true"
             />
-            <div className={`fixed inset-3 sm:inset-8 md:inset-x-20 md:inset-y-12 lg:inset-x-48 lg:inset-y-16 ${theme.cardSolid} shadow-2xl z-[61] rounded-2xl overflow-hidden flex flex-col`}>
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                tabIndex={-1}
+                className={`fixed inset-3 sm:inset-8 md:inset-x-20 md:inset-y-12 lg:inset-x-48 lg:inset-y-16 ${theme.cardSolid} shadow-2xl z-[61] rounded-2xl overflow-hidden flex flex-col outline-none`}
+            >
                 <div className={`flex items-start justify-between gap-3 p-4 md:p-6 border-b ${theme.borderLight}`}>
                     <div>
                         <div className="inline-flex items-center gap-2 rounded-full border border-red-300 bg-red-50 text-red-700 px-3 py-1 text-xs font-semibold">
                             <span aria-hidden="true">!</span>
                             {t("sos.badge")}
                         </div>
-                        <h2 className={`text-lg sm:text-xl md:text-2xl font-bold mt-3 ${theme.text}`}>{t("sos.title")}</h2>
+                        <h2 id={titleId} className={`text-lg sm:text-xl md:text-2xl font-bold mt-3 ${theme.text}`}>{t("sos.title")}</h2>
                         <p className={`text-xs sm:text-sm mt-1 ${theme.textMuted}`}>
                             {t("sos.urgent")}
                         </p>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
                         className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
                         title={t("sos.closeTitle")}
+                        aria-label={t("sos.closeTitle")}
                     >
-                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                        <CloseIcon />
                     </button>
                 </div>
 
@@ -160,6 +161,7 @@ export function SOSModal({ open, onClose, theme }: SOSModalProps) {
                         {t("sos.call112")}
                     </a>
                     <button
+                        type="button"
                         onClick={onClose}
                         className={`rounded-lg ${theme.buttonPrimary} px-4 py-2 text-sm transition-colors`}
                     >
