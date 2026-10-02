@@ -5,6 +5,8 @@ import { theme } from "../theme/theme";
 interface MainActionButtonsProps {
     showStatsButton: boolean;
     onOpenStats: () => void;
+    /** Intención de abrir estadísticas (hover/foco/toque): precarga su código. */
+    onPrefetchStats?: () => void;
     onOpenSummary: () => void;
     onOpenSettings: () => void;
     /** Resalta el botón del resumen (lo señala el tutorial). */
@@ -18,6 +20,7 @@ interface MainActionButtonsProps {
 export function MainActionButtons({
     showStatsButton,
     onOpenStats,
+    onPrefetchStats,
     onOpenSummary,
     onOpenSettings,
     highlightSummary = false,
@@ -31,7 +34,7 @@ export function MainActionButtons({
                 sm:inset-x-auto sm:bottom-auto sm:top-4 sm:right-4 sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0`}
         >
             {showStatsButton && (
-                <ActionButton label={t("top.stats")} onClick={onOpenStats}>
+                <ActionButton label={t("top.stats")} onClick={onOpenStats} onIntent={onPrefetchStats}>
                     <path d="M3 3v18h18" />
                     <path d="M18 17V9" />
                     <path d="M13 17V5" />
@@ -53,9 +56,10 @@ export function MainActionButtons({
     );
 }
 
-function ActionButton({ label, onClick, highlight = false, children }: {
+function ActionButton({ label, onClick, onIntent, highlight = false, children }: {
     label: string;
     onClick: () => void;
+    onIntent?: () => void;
     highlight?: boolean;
     children: ReactNode;
 }) {
@@ -63,6 +67,9 @@ function ActionButton({ label, onClick, highlight = false, children }: {
         <button
             type="button"
             onClick={onClick}
+            onPointerEnter={onIntent}
+            onFocus={onIntent}
+            onTouchStart={onIntent}
             title={label}
             aria-haspopup="dialog"
             className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs font-medium transition-colors touch-manipulation ${theme.text} hover:bg-subtle

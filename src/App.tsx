@@ -16,6 +16,7 @@ import { StatsVisibilitySection } from "./features/settings/components/StatsVisi
 import { ThemeSection } from "./features/settings/components/ThemeSection";
 import { TutorialSection } from "./features/settings/components/TutorialSection";
 import { buildStatsData } from "./features/stats/utils/buildStatsData";
+import { StatsLoading } from "./features/stats/components/StatsLoading";
 import { SummaryModal } from "./features/summary/components/SummaryModal";
 import { SOSModal } from "./features/support/components/SOSModal";
 import { TutorialOverlay } from "./features/tutorial/components/TutorialOverlay";
@@ -43,9 +44,17 @@ import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/ut
 import { toDisplayScore, toRawScore } from "./shared/utils/scoreScale";
 import { collectDaysWithData, dayHasScores, findPreviousDateWithScores } from "./shared/utils/scores";
 
-const StatsModal = lazy(() =>
-    import("./features/stats/components/StatsModal").then((module) => ({ default: module.StatsModal }))
-);
+// Las estadísticas (y la librería de gráficas) van en un bloque aparte que se precarga en segundo plano.
+// Una vez cargado se usa el componente directamente: React.lazy siempre suspende la primera vez y
+// el Suspense retrasa ~300 ms la aparición del contenido aunque el código ya esté descargado.
+type StatsModalModule = typeof import("./features/stats/components/StatsModal");
+let statsModulePromise: Promise<StatsModalModule> | null = null;
+let loadedStatsModal: StatsModalModule["StatsModal"] | null = null;
+const loadStatsModal = () => (statsModulePromise ??= import("./features/stats/components/StatsModal").then((module) => {
+    loadedStatsModal = module.StatsModal;
+    return module;
+}));
+const LazyStatsModal = lazy(() => loadStatsModal().then((module) => ({ default: module.StatsModal })));
 
 const geometry = createWheelGeometry();
 const { size: SIZE, cx, cy, radius } = geometry;
@@ -118,6 +127,17 @@ export default function MentalWheelApp() {
     );
     // Último día anterior con puntuaciones: se puede copiar a un día vacío y se dibuja como referencia
     usePwaUpdates();
+    const StatsModalComponent = loadedStatsModal ?? LazyStatsModal;
+
+    // Precarga de las estadísticas cuando la app queda inactiva tras arrancar
+    useEffect(() => {
+        if ("requestIdleCallback" in window) {
+            const id = window.requestIdleCallback(() => void loadStatsModal(), { timeout: 4000 });
+            return () => window.cancelIdleCallback(id);
+        }
+        const timer = setTimeout(() => void loadStatsModal(), 2000);
+        return () => clearTimeout(timer);
+    }, []);
     const { canInstall, install } = useInstallPrompt();
     useDataProtection(daysWithData.size, () => exportBackup());
 
@@ -262,6 +282,7 @@ export default function MentalWheelApp() {
                     setSummaryOpen(true);
                 }}
                 onOpenSettings={() => setDrawerOpen(true)}
+                onPrefetchStats={() => void loadStatsModal()}
                 highlightSummary={tutorialStep === 4}
             />
 
@@ -386,9 +407,9 @@ export default function MentalWheelApp() {
                 onChangeField={(field, text) => data.setSummaryField(dateStr, field, text)}
             />
             <SOSModal open={sosOpen} onClose={() => setSosOpen(false)} />
-            <Suspense fallback={null}>
+            <Suspense fallback={<StatsLoading onClose={() => setStatsOpen(false)} />}>
                 {statsOpen && (
-                    <StatsModal
+                    <StatsModalComponent
                         onClose={() => setStatsOpen(false)}
                         statsData={statsData}
                         statsVisibility={statsVisibility}

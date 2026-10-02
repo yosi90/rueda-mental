@@ -1,4 +1,5 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { StatsSkeleton } from "./StatsLoading";
 import { chartTooltipStyle, theme } from "../../../shared/theme/theme";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useI18n } from "../../../shared/i18n/I18nContext";
@@ -10,6 +11,8 @@ import type { StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
+
+const STATS_SECTION_COUNT = 7;
 
 // Tarjetas de gráficas: fondo propio (--ui-chart-card) para que la paleta validada mantenga 3:1 de contraste
 const CHART_CARD = "bg-chart-card";
@@ -38,6 +41,30 @@ export function StatsModal({
     const dialogRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     useDialogA11y(true, onClose, dialogRef);
+    // Primero se pinta el modal (con huecos) y después las gráficas, una por fotograma:
+    // cada gráfica es un bloque que no se puede trocear, así la página nunca se queda congelada.
+    const [revealed, setRevealed] = useState(0);
+    useEffect(() => {
+        if (revealed >= STATS_SECTION_COUNT) return;
+        let timer = 0;
+        const frame = requestAnimationFrame(() => {
+            timer = window.setTimeout(() => setRevealed((n) => n + 1), 0);
+        });
+        return () => {
+            cancelAnimationFrame(frame);
+            clearTimeout(timer);
+        };
+    }, [revealed]);
+    const sectionEnabled = [
+        statsVisibility.showDailyAverage,
+        statsVisibility.showSectorProgress,
+        statsVisibility.showLast7AllSectors,
+        statsVisibility.showComparison,
+        statsVisibility.showWeeklyTrend,
+        statsVisibility.showHeatMap,
+        statsVisibility.showInsights,
+    ];
+    const pendingSections = sectionEnabled.slice(revealed).filter(Boolean).length;
     // El modal solo se monta abierto: la selección empieza en el primer sector y con todos visibles.
     const [selectedSectorId, setSelectedSectorId] = useState(() => sectors[0]?.id ?? "");
     const [visibleSectors, setVisibleSectors] = useState<Record<string, boolean>>(() =>
@@ -138,7 +165,9 @@ export function StatsModal({
 
                         {/* Contenido con scroll */}
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                            {statsData.dailyAverage.length === 0 ? (
+                            {revealed === 0 ? (
+                                <StatsSkeleton />
+                            ) : statsData.dailyAverage.length === 0 ? (
                                 <div className={`text-center py-12 ${theme.textMuted}`}>
                                     <svg aria-hidden="true" className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                         <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -149,7 +178,7 @@ export function StatsModal({
                             ) : (
                                 <>
                                     {/* Gráfico 1: Media Diaria */}
-                                    {statsVisibility.showDailyAverage && (
+                                    {statsVisibility.showDailyAverage && revealed > 0 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.dailyAverageChart")}</h3>
                                             <ResponsiveContainer width="100%" height={250}>
@@ -191,7 +220,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 2: Progresión por Sector */}
-                                    {statsVisibility.showSectorProgress && (
+                                    {statsVisibility.showSectorProgress && revealed > 1 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                                 <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>{t("stats.sectorProgressChart")}</h3>
@@ -238,7 +267,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
-                                    {statsVisibility.showLast7AllSectors && last7ChartData && (
+                                    {statsVisibility.showLast7AllSectors && revealed > 2 && last7ChartData && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.last7Chart")}</h3>
 
@@ -318,7 +347,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 3: Comparación de Sectores */}
-                                    {statsVisibility.showComparison && (
+                                    {statsVisibility.showComparison && revealed > 3 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.comparisonChart")}</h3>
                                             <ResponsiveContainer width="100%" height={300}>
@@ -351,7 +380,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 4: Tendencia Semanal */}
-                                    {statsVisibility.showWeeklyTrend && (
+                                    {statsVisibility.showWeeklyTrend && revealed > 4 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.weeklyChart")}</h3>
                                             <ResponsiveContainer width="100%" height={250}>
@@ -382,7 +411,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 5: Heat Map de Consistencia */}
-                                    {statsVisibility.showHeatMap && (
+                                    {statsVisibility.showHeatMap && revealed > 5 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.heatMapChart")}</h3>
                                             <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
@@ -425,7 +454,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Resumen de Insights */}
-                                    {statsVisibility.showInsights && (
+                                    {statsVisibility.showInsights && revealed > 6 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>{t("statsVisibility.insights")}</h3>
                                             <div className="space-y-2 text-sm">
@@ -525,6 +554,7 @@ export function StatsModal({
                                             </div>
                                         </div>
                                     )}
+                                    {pendingSections > 0 && <StatsSkeleton count={pendingSections} />}
                                 </>
                             )}
                         </div>
