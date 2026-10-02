@@ -14,6 +14,8 @@ interface WheelLayersProps {
     sectors: Sector[];
     sectorsWithAngles: SectorWithAngles[];
     scores: Record<string, number>;
+    /** Puntuaciones de otro día dibujadas como contorno discontinuo (referencia). */
+    referenceScores?: Record<string, number> | null;
     hoverInfo: HoverInfo | null;
     dateStr: string;
     getComment: (date: string, sectorId: string) => string;
@@ -60,6 +62,7 @@ export function WheelLayers({
     sectors,
     sectorsWithAngles,
     scores,
+    referenceScores,
     hoverInfo,
     dateStr,
     getComment,
@@ -70,6 +73,31 @@ export function WheelLayers({
     onOpenSectorMenu,
 }: WheelLayersProps) {
     const { t } = useI18n();
+
+    // Arco discontinuo con la puntuación de referencia de cada sector
+    const referenceArcs = referenceScores
+        ? sectorsWithAngles.map((s) => {
+            const level = Math.max(0, Math.min(ringCount, referenceScores[s.id] ?? 0));
+            if (level <= 0) return null;
+            const r = levelOuterRadius(level);
+            const [x0, y0] = polar(cx, cy, r, s.a0);
+            const [x1, y1] = polar(cx, cy, r, s.a1);
+            const large = s.a1 - s.a0 > 180 ? 1 : 0;
+            return (
+                <path
+                    key={`ref-${s.id}`}
+                    d={`M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}`}
+                    fill="none"
+                    stroke={theme.svgText}
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    strokeLinecap="round"
+                    opacity={0.75}
+                    pointerEvents="none"
+                />
+            );
+        })
+        : null;
 
     const gridRings = Array.from({ length: ringCount }, (_, i) => (
         <circle
@@ -218,6 +246,7 @@ export function WheelLayers({
                 {gridRings}
                 {gridLines}
             </g>
+            {referenceArcs}
             {labels}
             {ringNumbers}
             {hoverLayer}

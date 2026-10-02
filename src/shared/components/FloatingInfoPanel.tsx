@@ -18,6 +18,8 @@ interface FloatingInfoPanelProps {
     daysWithData: ReadonlySet<string>;
     /** Día anterior con puntuaciones que se puede copiar al día actual (si este está vacío). */
     copySource: { label: string; onCopy: () => void } | null;
+    /** Fecha (ya formateada) dibujada como contorno discontinuo en la rueda, si la hay. */
+    referenceLabel: string | null;
 }
 
 export function FloatingInfoPanel({
@@ -34,6 +36,7 @@ export function FloatingInfoPanel({
     todayStr,
     daysWithData,
     copySource,
+    referenceLabel,
 }: FloatingInfoPanelProps) {
     const { t } = useI18n();
     const [calendarOpen, setCalendarOpen] = useState(false);
@@ -294,6 +297,15 @@ export function FloatingInfoPanel({
                     </button>
                 </div>
             </div>
+
+            {referenceLabel && (
+                <div className={`self-start inline-flex items-center gap-2 rounded-xl ${theme.card} backdrop-blur-sm px-3 py-1 text-xs shadow-md ${theme.textMuted}`}>
+                    <svg width="18" height="4" aria-hidden="true" className="shrink-0">
+                        <line x1="1" y1="2" x2="17" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" />
+                    </svg>
+                    {t("reference.legend", { date: referenceLabel })}
+                </div>
+            )}
 
             {copySource && (
                 <button

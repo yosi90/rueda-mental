@@ -6,6 +6,7 @@ import { SectorContextMenu } from "./features/sectors/components/SectorContextMe
 import { DataSettingsSection } from "./features/settings/components/DataSettingsSection";
 import { LanguageSection } from "./features/settings/components/LanguageSection";
 import { LegalSection } from "./features/settings/components/LegalSection";
+import { ReferenceDaySection } from "./features/settings/components/ReferenceDaySection";
 import { ScaleDirectionSection } from "./features/settings/components/ScaleDirectionSection";
 import { SectorsSettingsSection } from "./features/settings/components/SectorsSettingsSection";
 import { SettingsDrawer } from "./features/settings/components/SettingsDrawer";
@@ -108,10 +109,13 @@ export default function MentalWheelApp() {
         () => collectDaysWithData(scoresByDate, commentsByDate, dailySummaryByDate),
         [scoresByDate, commentsByDate, dailySummaryByDate]
     );
+    // Último día anterior con puntuaciones: se puede copiar a un día vacío y se dibuja como referencia
     const previousDateWithScores = useMemo(
-        () => (dayHasScores(scores) ? null : findPreviousDateWithScores(scoresByDate, dateStr)),
-        [scores, scoresByDate, dateStr]
+        () => findPreviousDateWithScores(scoresByDate, dateStr),
+        [scoresByDate, dateStr]
     );
+    const copySourceDate = dayHasScores(scores) ? null : previousDateWithScores;
+    const referenceDate = preferences.showReference ? previousDateWithScores : null;
     const toDisplay = (raw: number) => toDisplayScore(raw, RING_COUNT, isScaleInverted);
     const avg = sectors.length
         ? (sectors.reduce((acc, s) => acc + toDisplay(scores[s.id] ?? 0), 0) / sectors.length).toFixed(2)
@@ -275,10 +279,11 @@ export default function MentalWheelApp() {
                 onOpenSos={() => setSosOpen(true)}
                 todayStr={todayStr}
                 daysWithData={daysWithData}
-                copySource={previousDateWithScores ? {
-                    label: formatShortDate(previousDateWithScores),
-                    onCopy: () => copyScoresFrom(previousDateWithScores),
+                copySource={copySourceDate ? {
+                    label: formatShortDate(copySourceDate),
+                    onCopy: () => copyScoresFrom(copySourceDate),
                 } : null}
+                referenceLabel={referenceDate ? formatShortDate(referenceDate) : null}
             />
 
             {dateStr > todayStr && (
@@ -315,6 +320,7 @@ export default function MentalWheelApp() {
                                 sectors={sectors}
                                 sectorsWithAngles={sectorsWithAngles}
                                 scores={scores}
+                                referenceScores={referenceDate ? scoresByDate[referenceDate] : null}
                                 hoverInfo={hoverInfo}
                                 dateStr={dateStr}
                                 getComment={data.getComment}
@@ -399,6 +405,10 @@ export default function MentalWheelApp() {
                     setIsScaleInverted={preferences.setIsScaleInverted}
                 />
                 <DataSettingsSection resetDay={resetDay} exportJSON={exportBackup} onImportFile={importBackup} />
+                <ReferenceDaySection
+                    showReference={preferences.showReference}
+                    setShowReference={preferences.setShowReference}
+                />
                 <StatsVisibilitySection
                     statsVisibility={statsVisibility}
                     setStatsVisibility={preferences.setStatsVisibility}

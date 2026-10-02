@@ -232,6 +232,9 @@ const es = {
 
     "wheel.hasCommentAria": "Tiene comentario",
     "wheel.hasCommentTitle": "Tiene un comentario",
+    "reference.title": "Mostrar el día anterior como referencia",
+    "reference.description": "Dibuja con línea discontinua en la rueda las puntuaciones del último día registrado.",
+    "reference.legend": "Referencia: {{date}}",
     "toast.sectorDeleted": "Sector «{{name}}» eliminado",
     "toast.dayReset": "Día reseteado",
     "toast.imported": "Datos importados",
@@ -430,6 +433,9 @@ const en: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Has comment",
     "wheel.hasCommentTitle": "Has a comment",
+    "reference.title": "Show the previous day as a reference",
+    "reference.description": "Draws the scores of the last recorded day on the wheel as a dashed line.",
+    "reference.legend": "Reference: {{date}}",
     "toast.sectorDeleted": "Sector “{{name}}” deleted",
     "toast.dayReset": "Day reset",
     "toast.imported": "Data imported",
@@ -626,6 +632,9 @@ const pt: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Tem comentário",
     "wheel.hasCommentTitle": "Tem um comentário",
+    "reference.title": "Mostrar o dia anterior como referência",
+    "reference.description": "Desenha na roda, com linha tracejada, as pontuações do último dia registado.",
+    "reference.legend": "Referência: {{date}}",
     "toast.sectorDeleted": "Setor «{{name}}» eliminado",
     "toast.dayReset": "Dia reposto",
     "toast.imported": "Dados importados",
@@ -824,6 +833,9 @@ const de: Record<keyof typeof es, string> = {
 
     "wheel.hasCommentAria": "Hat Kommentar",
     "wheel.hasCommentTitle": "Hat einen Kommentar",
+    "reference.title": "Vortag als Referenz anzeigen",
+    "reference.description": "Zeigt die Bewertungen des zuletzt erfassten Tages als gestrichelte Linie im Rad.",
+    "reference.legend": "Referenz: {{date}}",
     "toast.sectorDeleted": "Bereich „{{name}}“ gelöscht",
     "toast.dayReset": "Tag zurückgesetzt",
     "toast.imported": "Daten importiert",

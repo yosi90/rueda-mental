@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
     language: "mental-wheel-language-v1",
+    showReference: "mental-wheel-show-reference-v1",
 } as const;
 
 export function loadConfig(): Sector[] | null {
@@ -187,6 +188,23 @@ export function loadLanguage(): string | null {
 export function saveLanguage(language: string): void {
     try {
         localStorage.setItem(STORAGE_KEYS.language, language);
+    } catch {
+        // noop
+    }
+}
+
+/** Mostrar el último día registrado como referencia en la rueda (por defecto, sí). */
+export function loadShowReference(): boolean {
+    try {
+        return localStorage.getItem(STORAGE_KEYS.showReference) !== "false";
+    } catch {
+        return true;
+    }
+}
+
+export function saveShowReference(show: boolean): void {
+    try {
+        localStorage.setItem(STORAGE_KEYS.showReference, String(show));
     } catch {
         // noop
     }
