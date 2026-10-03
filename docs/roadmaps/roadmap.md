@@ -119,9 +119,9 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 ## Hito 6 — Nuevas funciones
 
 ### Prioridad (revisión de uso)
-- [ ] Estadísticas: primera apertura lenta, sin indicación de carga (mejorar rendimiento y/o añadir indicador).
-- [ ] Resumen / notas del día: rediseñar el formulario.
-- [ ] Menú de configuración demasiado grande: reestructurarlo y dividirlo.
+- [x] Estadísticas: precarga en segundo plano, indicador de carga y gráficas escalonadas (modal en ~20 ms; antes 0,5 s sin respuesta).
+- [x] Resumen del día rediseñado: tarjetas con icono, texto que crece, navegación entre días, «Guardado ✓» y pantalla completa en móvil.
+- [x] Configuración en pestañas (Sectores, Apariencia, Datos, General); sectores en una línea.
 
 - [x] PWA instalable y offline (`vite-plugin-pwa`): aviso de versión nueva, botón «Instalar la app» y guía para iPhone; cabeceras de caché en Firebase.
 - [x] Protección de datos: `navigator.storage.persist()` cuando hay datos, fecha de la última copia y recordatorio (≥ 7 días con datos y copia de hace ≥ 30 días, máx. 1 por semana).
@@ -129,4 +129,5 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 - [ ] Archivar sectores en lugar de borrarlos, conservando su historial.
 - [ ] Vista de diario: listar y buscar resúmenes y comentarios pasados.
 - [ ] Exportar CSV / informe imprimible.
-- [ ] Estado de ánimo o emociones generales del día.
+- [x] Estado de ánimo general del día (5 niveles) en el resumen; se guarda en la copia de seguridad.
+- [ ] Estado de ánimo en las estadísticas (evolución y relación con la media de la rueda).

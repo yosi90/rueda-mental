@@ -406,6 +406,9 @@ export default function MentalWheelApp() {
                 summaryDateLabel={summaryDateLabel}
                 dailySummary={dailySummary}
                 onChangeField={(field, text) => data.setSummaryField(dateStr, field, text)}
+                onChangeMood={(mood) => data.setSummaryMood(dateStr, mood)}
+                onPrevDay={() => setDateStr((d) => addDaysToDateInput(d, -1))}
+                onNextDay={() => setDateStr((d) => addDaysToDateInput(d, 1))}
             />
             <SOSModal open={sosOpen} onClose={() => setSosOpen(false)} />
             <Suspense fallback={<StatsLoading onClose={() => setStatsOpen(false)} />}>

@@ -1,4 +1,5 @@
 import type { CommentsByDate, DailySummaryByDate, Scores, ScoresByDate } from "../types/mentalWheel";
+import { summaryHasContent } from "./summary";
 
 /** Un día cuenta como registrado si al menos un sector tiene nota (0 = sin nota). */
 export function dayHasScores(dayScores: Scores | undefined): boolean {
@@ -30,7 +31,7 @@ export function collectDaysWithData(
         if (Object.values(dayComments).some((text) => text.trim().length > 0)) days.add(date);
     }
     for (const [date, summary] of Object.entries(dailySummaryByDate)) {
-        if (Object.values(summary).some((text) => text.trim().length > 0)) days.add(date);
+        if (summaryHasContent(summary)) days.add(date);
     }
     return days;
 }

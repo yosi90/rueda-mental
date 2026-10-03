@@ -11,6 +11,7 @@ import type {
     StatsVisibility,
 } from "../../types/mentalWheel";
 import { isObjectRecord, normalizeStatsVisibility } from "../../utils/statsVisibility";
+import { isValidMood, SUMMARY_TEXT_FIELDS } from "../../utils/summary";
 
 export interface ParsedBackup {
     config?: Sector[];
@@ -49,7 +50,9 @@ function isCommentsDay(day: unknown): day is Record<string, string> {
 }
 
 function isSummaryDay(day: unknown): day is DailySummary {
-    return isObjectRecord(day) && ["good", "bad", "howFacedBad"].every((k) => typeof day[k] === "string");
+    return isObjectRecord(day)
+        && SUMMARY_TEXT_FIELDS.every((k) => typeof day[k] === "string")
+        && (day.mood === undefined || isValidMood(day.mood));
 }
 
 /**

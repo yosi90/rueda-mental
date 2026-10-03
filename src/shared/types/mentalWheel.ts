@@ -41,6 +41,8 @@ export interface DailySummary {
     good: string;
     bad: string;
     howFacedBad: string;
+    /** Estado de ánimo general del día (1 = muy mal … 5 = muy bien). */
+    mood?: number;
 }
 
 export interface DailySummaryByDate {

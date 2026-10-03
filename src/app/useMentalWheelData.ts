@@ -13,6 +13,7 @@ import {
     saveDailySummary,
     saveScores,
 } from "../shared/services/storage/mentalWheelStorage";
+import { summaryHasContent, type SummaryTextField } from "../shared/utils/summary";
 import type {
     CommentsByDate,
     DailySummary,
@@ -143,12 +144,21 @@ export function useMentalWheelData(language: Language) {
     }
 
     // --- Resumen diario ---
-    function setSummaryField(date: string, field: keyof DailySummary, text: string): void {
+    function updateSummary(date: string, patch: Partial<DailySummary>): void {
         setDailySummaryByDate((prev) => {
-            const updated = { ...(prev[date] ?? EMPTY_DAILY_SUMMARY), [field]: text };
-            const hasContent = Object.values(updated).some((value) => value.trim().length > 0);
-            return hasContent ? { ...prev, [date]: updated } : withoutKey(prev, date);
+            const updated: DailySummary = { ...(prev[date] ?? EMPTY_DAILY_SUMMARY), ...patch };
+            if (updated.mood === undefined) delete updated.mood;
+            return summaryHasContent(updated) ? { ...prev, [date]: updated } : withoutKey(prev, date);
         });
+    }
+
+    function setSummaryField(date: string, field: SummaryTextField, text: string): void {
+        updateSummary(date, { [field]: text });
+    }
+
+    /** undefined quita el estado de ánimo. */
+    function setSummaryMood(date: string, mood: number | undefined): void {
+        updateSummary(date, { mood });
     }
 
     // --- Día completo, deshacer e importación ---
@@ -192,6 +202,7 @@ export function useMentalWheelData(language: Language) {
         setComment,
         deleteComment,
         setSummaryField,
+        setSummaryMood,
         resetDay,
         takeSnapshot,
         restoreSnapshot,

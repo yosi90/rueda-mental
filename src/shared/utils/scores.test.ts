@@ -25,8 +25,8 @@ describe("scores", () => {
         const days = collectDaysWithData(
             { "2026-10-01": { a: 3 }, "2026-10-02": { a: 0 } },
             { "2026-10-03": { a: "nota" }, "2026-10-04": { a: "  " } },
-            { "2026-10-05": { good: "", bad: "x", howFacedBad: "" } }
+            { "2026-10-05": { good: "", bad: "x", howFacedBad: "" }, "2026-10-06": { good: "", bad: "", howFacedBad: "", mood: 4 } }
         );
-        expect([...days].sort()).toEqual(["2026-10-01", "2026-10-03", "2026-10-05"]);
+        expect([...days].sort()).toEqual(["2026-10-01", "2026-10-03", "2026-10-05", "2026-10-06"]);
     });
 });
