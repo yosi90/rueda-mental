@@ -453,7 +453,7 @@ export default function MentalWheelApp() {
                             />
                             {/* Flor del icono en el centro de la rueda (decorativa), sin recortar: sus pétalos sobresalen */}
                             <image
-                                href="/logo-mark.svg"
+                                href="/favicon.svg"
                                 x={cx - CENTER_MARK_SIZE / 2}
                                 y={cy - CENTER_MARK_SIZE / 2}
                                 width={CENTER_MARK_SIZE}

@@ -202,12 +202,11 @@ export function WheelLayers({
                     />
                     <text
                         x={tx}
-                        y={ty}
-                        dy="0.05em"
+                        // Las cifras no tienen trazos bajo la línea base: se centra su altura (≈ 0,72 em)
+                        y={ty + ringNumberFontSize * 0.36}
                         fontSize={ringNumberFontSize}
                         fontWeight={600}
                         textAnchor="middle"
-                        dominantBaseline="middle"
                         fill="var(--ui-fg)"
                         style={{ fontVariantNumeric: "tabular-nums" }}
                     >

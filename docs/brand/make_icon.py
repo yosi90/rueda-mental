@@ -79,25 +79,19 @@ maskable = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   {mark(256, 256, 0.78)}
 </svg>
 '''
-favicon = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  {BG}
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  {mark(256, 256, 1.04, center=88, heart=5.2)}
-</svg>
-'''
 apple = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   {BG}
   <rect width="512" height="512" fill="url(#bg)"/>
   {mark(256, 256, 0.9)}
 </svg>
 '''
-# Solo la flor (sin fondo), para el centro de la rueda
+# Solo la flor (sin fondo): favicon y centro de la rueda
 mark_only = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   {flower(256, 256, 244, border=14, corner=34, heart=7.6)}
 </svg>
 '''
-open("public/logo-mark.svg", "w", encoding="utf-8").write(mark_only)
-open("public/favicon.svg", "w", encoding="utf-8").write(favicon)
+# El favicon es la misma flor del centro de la rueda
+open("public/favicon.svg", "w", encoding="utf-8").write(mark_only)
 open("docs/brand/apple-touch-icon.svg", "w", encoding="utf-8").write(apple)
 open("docs/brand/icon.svg", "w", encoding="utf-8").write(icon)
 open("docs/brand/icon-maskable.svg", "w", encoding="utf-8").write(maskable)
