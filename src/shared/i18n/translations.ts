@@ -104,7 +104,7 @@ const es = {
     "scale.disabledDesc": "Desactivado: los tramos se muestran de 1 a 10 (mejor: 10)",
     "scale.toggleTitle": "Invertir numeración de tramos",
 
-    "data.title": "Datos",
+    "data.title": "Copia de seguridad",
     "data.description": "Resetea el día actual o guarda/carga tus datos en JSON para usarlos en otro dispositivo",
     "data.resetDay": "Resetear día",
     "data.exportJson": "Exportar JSON",
@@ -426,7 +426,7 @@ const en: Record<keyof typeof es, string> = {
     "scale.disabledDesc": "Disabled: ranges are shown from 1 to 10 (best: 10)",
     "scale.toggleTitle": "Invert range numbering",
 
-    "data.title": "Data",
+    "data.title": "Backup",
     "data.description": "Reset the current day or save/load your data as JSON to use it on another device",
     "data.resetDay": "Reset day",
     "data.exportJson": "Export JSON",
@@ -748,7 +748,7 @@ const pt: Record<keyof typeof es, string> = {
     "scale.disabledDesc": "Desativado: os intervalos aparecem de 1 a 10 (melhor: 10)",
     "scale.toggleTitle": "Inverter numeração da escala",
 
-    "data.title": "Dados",
+    "data.title": "Cópia de segurança",
     "data.description": "Repor o dia atual ou guardar/carregar os teus dados em JSON para usar noutro dispositivo",
     "data.resetDay": "Repor dia",
     "data.exportJson": "Exportar JSON",
@@ -1069,7 +1069,7 @@ const de: Record<keyof typeof es, string> = {
     "scale.disabledDesc": "Deaktiviert: Abschnitte werden von 1 bis 10 angezeigt (besser: 10)",
     "scale.toggleTitle": "Skalennummerierung umkehren",
 
-    "data.title": "Daten",
+    "data.title": "Datensicherung",
     "data.description": "Setze den aktuellen Tag zurück oder speichere/lade deine Daten als JSON für ein anderes Gerät",
     "data.resetDay": "Tag zurücksetzen",
     "data.exportJson": "JSON exportieren",

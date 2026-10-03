@@ -6,6 +6,7 @@ import { usePreferences } from "./app/usePreferences";
 import { useInstallPrompt, usePwaUpdates } from "./app/usePwa";
 import { useDataProtection } from "./app/useDataProtection";
 import { SectorContextMenu } from "./features/sectors/components/SectorContextMenu";
+import { ReportsSection } from "./features/settings/components/ReportsSection";
 import { DataSettingsSection } from "./features/settings/components/DataSettingsSection";
 import { LanguageSection } from "./features/settings/components/LanguageSection";
 import { LegalSection } from "./features/settings/components/LegalSection";
@@ -587,6 +588,13 @@ export default function MentalWheelApp() {
                                     statsVisibility={statsVisibility}
                                     setStatsVisibility={preferences.setStatsVisibility}
                                 />
+                                <ReportsSection
+                                    onExportCsv={exportCsv}
+                                    onOpenReport={() => {
+                                        setDrawerOpen(false);
+                                        setReportOpen(true);
+                                    }}
+                                />
                                 <DataSettingsSection
                                     resetDay={resetDay}
                                     exportJSON={exportBackup}
@@ -594,11 +602,6 @@ export default function MentalWheelApp() {
                                     lastBackupAt={lastBackupAt}
                                     canInstall={canInstall}
                                     onInstall={() => void install()}
-                                    onExportCsv={exportCsv}
-                                    onOpenReport={() => {
-                                        setDrawerOpen(false);
-                                        setReportOpen(true);
-                                    }}
                                 />
                             </>
                         ),
