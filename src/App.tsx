@@ -74,8 +74,8 @@ const LazyStatsModal = lazy(() => loadStatsModal().then((module) => ({ default: 
 const geometry = createWheelGeometry();
 const { size: SIZE, cx, cy, radius } = geometry;
 const RING_NUMBER_FONT_SIZE = 13;
-// La flor ocupa el 86 % de su lienzo; sus pétalos llegan a 1,1 × el radio del círculo central
-const CENTER_MARK_SIZE = (geometry.centerRadius * 2 * 1.1) / 0.86;
+// La flor ocupa el 98 % de su lienzo; sus pétalos más largos llegan a 1,1 × el radio del círculo central
+const CENTER_MARK_SIZE = (geometry.centerRadius * 2 * 1.1) / 0.98;
 
 export default function MentalWheelApp() {
     const { t, language, setLanguage, locale, languageDetails } = useI18n();

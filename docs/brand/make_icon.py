@@ -39,6 +39,30 @@ def mark(cx, cy, scale, center=50, heart=2.75):
     return "\n  ".join(out)
 
 
+def rounded_wedge(cx, cy, r1, a0, a1, corner):
+    """Sector desde el centro hasta r1 con las esquinas exteriores redondeadas."""
+    p = lambda r, a: (cx + r * math.cos(a), cy + r * math.sin(a))
+    da = corner / r1
+    x0, y0 = p(r1 - corner, a0); kx0, ky0 = p(r1, a0); ax0, ay0 = p(r1, a0 + da)
+    ax1, ay1 = p(r1, a1 - da); kx1, ky1 = p(r1, a1); x1, y1 = p(r1 - corner, a1)
+    return (f"M{cx:.2f} {cy:.2f} L{x0:.2f} {y0:.2f} Q{kx0:.2f} {ky0:.2f} {ax0:.2f} {ay0:.2f} "
+            f"A{r1:.2f} {r1:.2f} 0 0 1 {ax1:.2f} {ay1:.2f} Q{kx1:.2f} {ky1:.2f} {x1:.2f} {y1:.2f}Z")
+
+
+def flower(cx, cy, rmax, border, corner, heart):
+    """Flor del centro de la rueda: pétalos hasta el centro, bordeados de blanco, y corazón con contorno blanco."""
+    out = []
+    n = len(COLORS)
+    for i, (color, length) in enumerate(zip(COLORS, LENGTHS)):
+        a0 = -math.pi / 2 + i * 2 * math.pi / n
+        a1 = a0 + 2 * math.pi / n
+        d = rounded_wedge(cx, cy, rmax * (0.62 + 0.38 * length), a0, a1, corner)
+        out.append(f'<path d="{d}" fill="{color}" stroke="#ffffff" stroke-width="{border}" stroke-linejoin="round"/>')
+    out.append(f'<path d="{HEART}" transform="translate({cx} {cy + 6}) scale({heart}) translate(-12 -12)" '
+               f'fill="#e11d48" stroke="#ffffff" stroke-width="{18 / heart:.2f}" stroke-linejoin="round" paint-order="stroke"/>')
+    return "\n  ".join(out)
+
+
 BG = ('<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">'
       '<stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#312e81"/></linearGradient></defs>')
 
@@ -69,7 +93,7 @@ apple = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 '''
 # Solo la flor (sin fondo), para el centro de la rueda
 mark_only = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  {mark(256, 256, 1.04, center=88, heart=5.2)}
+  {flower(256, 256, 244, border=14, corner=34, heart=7.6)}
 </svg>
 '''
 open("public/logo-mark.svg", "w", encoding="utf-8").write(mark_only)
