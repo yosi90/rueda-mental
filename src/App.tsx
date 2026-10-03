@@ -574,10 +574,6 @@ export default function MentalWheelApp() {
                                     isScaleInverted={isScaleInverted}
                                     setIsScaleInverted={preferences.setIsScaleInverted}
                                 />
-                                <StatsVisibilitySection
-                                    statsVisibility={statsVisibility}
-                                    setStatsVisibility={preferences.setStatsVisibility}
-                                />
                             </>
                         ),
                     },
@@ -586,19 +582,25 @@ export default function MentalWheelApp() {
                         label: t("settings.tab.data"),
                         Icon: Database,
                         content: (
-                            <DataSettingsSection
-                                resetDay={resetDay}
-                                exportJSON={exportBackup}
-                                onImportFile={importBackup}
-                                lastBackupAt={lastBackupAt}
-                                canInstall={canInstall}
-                                onInstall={() => void install()}
-                                onExportCsv={exportCsv}
-                                onOpenReport={() => {
-                                    setDrawerOpen(false);
-                                    setReportOpen(true);
-                                }}
-                            />
+                            <>
+                                <StatsVisibilitySection
+                                    statsVisibility={statsVisibility}
+                                    setStatsVisibility={preferences.setStatsVisibility}
+                                />
+                                <DataSettingsSection
+                                    resetDay={resetDay}
+                                    exportJSON={exportBackup}
+                                    onImportFile={importBackup}
+                                    lastBackupAt={lastBackupAt}
+                                    canInstall={canInstall}
+                                    onInstall={() => void install()}
+                                    onExportCsv={exportCsv}
+                                    onOpenReport={() => {
+                                        setDrawerOpen(false);
+                                        setReportOpen(true);
+                                    }}
+                                />
+                            </>
                         ),
                     },
                     {
