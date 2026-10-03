@@ -525,6 +525,65 @@ const report = [];
     await context.close();
 }
 
+// 16. Diario: listar, buscar, filtrar e ir a un día
+{
+    async function seedJournal(page) {
+        await page.evaluate(() => {
+            const day = (back) => {
+                const d = new Date(); d.setDate(d.getDate() - back);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            };
+            localStorage.setItem("mental-wheel-daily-summary-v1", JSON.stringify({
+                [day(0)]: { good: "Paseo largo por el monte con el perro", bad: "Dormí poco", howFacedBad: "Siesta corta", mood: 4 },
+                [day(1)]: { good: "", bad: "Discusión en el trabajo", howFacedBad: "Lo hablé con calma al día siguiente", mood: 2 },
+                [day(40)]: { good: "Cena con amigos", bad: "", howFacedBad: "" },
+            }));
+            localStorage.setItem("mental-wheel-comments-v1", JSON.stringify({
+                [day(1)]: { s4: "Reunión tensa", s0: "Llamé a mamá" },
+                [day(5)]: { s6: "Canción nueva en la guitarra" },
+            }));
+        });
+        await page.reload();
+        await page.waitForSelector("svg");
+    }
+    const { page, context, errors } = await newPage(browser);
+    await seedJournal(page);
+    await page.getByRole("button", { name: "Diario" }).click();
+    const journal = page.getByRole("dialog", { name: "Diario" });
+    const days = () => journal.locator("article h3").allInnerTexts();
+    report.push(`diario: ${(await days()).length} días · foco en buscar: ${await page.evaluate(() => document.activeElement?.getAttribute("type"))}`);
+    await page.screenshot({ path: `${OUT}/23-journal.png` });
+    await journal.getByRole("searchbox").fill("cancion");
+    await page.waitForTimeout(200);
+    report.push(`buscar «cancion»: ${(await days()).length} día(s) · resaltado: ${await journal.locator("mark").first().innerText()}`);
+    await journal.getByRole("searchbox").fill("trabajo");
+    await page.waitForTimeout(200);
+    report.push(`buscar «trabajo» (texto o sector): ${(await days()).length} día(s)`);
+    await journal.getByRole("searchbox").fill("");
+    await journal.getByRole("button", { name: "Comentarios" }).click();
+    report.push(`filtro comentarios: ${(await days()).length} días`);
+    await journal.getByRole("button", { name: "Todo" }).click();
+    await journal.getByRole("button", { name: "Editar resumen" }).nth(1).click();
+    const summary = page.getByRole("dialog", { name: "Resumen de mi día" });
+    report.push(`editar resumen de ayer: ${await summary.getByLabel("Lo malo", { exact: true }).inputValue()}`);
+    report.push(`errores diario: ${JSON.stringify(errors)}`);
+    await context.close();
+
+    const mobile = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await seedJournal(mobile.page);
+    await mobile.page.getByRole("button", { name: "Diario" }).click();
+    await mobile.page.waitForTimeout(300);
+    await mobile.page.screenshot({ path: `${OUT}/24-journal-mobile.png` });
+    await mobile.page.keyboard.press("Escape");
+    await mobile.page.screenshot({ path: `${OUT}/25-nav-mobile.png` });
+    await mobile.context.close();
+
+    const empty = await newPage(browser);
+    await empty.page.getByRole("button", { name: "Diario" }).click();
+    report.push(`diario vacío: ${(await empty.page.getByText("Tu diario está vacío").count()) > 0}`);
+    await empty.context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

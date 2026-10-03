@@ -8,6 +8,7 @@ interface MainActionButtonsProps {
     /** Intención de abrir estadísticas (hover/foco/toque): precarga su código. */
     onPrefetchStats?: () => void;
     onOpenSummary: () => void;
+    onOpenJournal: () => void;
     onOpenSettings: () => void;
     /** Resalta el botón del resumen (lo señala el tutorial). */
     highlightSummary?: boolean;
@@ -22,6 +23,7 @@ export function MainActionButtons({
     onOpenStats,
     onPrefetchStats,
     onOpenSummary,
+    onOpenJournal,
     onOpenSettings,
     highlightSummary = false,
 }: MainActionButtonsProps) {
@@ -46,6 +48,10 @@ export function MainActionButtons({
                 <line x1="8" y1="8" x2="16" y2="8" />
                 <line x1="8" y1="12" x2="16" y2="12" />
                 <line x1="8" y1="16" x2="14" y2="16" />
+            </ActionButton>
+            <ActionButton label={t("top.journal")} onClick={onOpenJournal}>
+                <path d="M12 7v14" />
+                <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
             </ActionButton>
             <ActionButton label={t("top.settings")} onClick={onOpenSettings}>
                 <line x1="3" y1="12" x2="21" y2="12" />

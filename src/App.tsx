@@ -34,6 +34,7 @@ import {
 } from "./features/wheel/utils/wheelGeometry";
 import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
 import { MainActionButtons } from "./shared/components/MainActionButtons";
+import { JournalModal } from "./features/journal/components/JournalModal";
 import { useFeedback } from "./shared/feedback/FeedbackProvider";
 import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
 import { useMediaQuery } from "./shared/hooks/useMediaQuery";
@@ -92,6 +93,7 @@ export default function MentalWheelApp() {
     const [statsOpen, setStatsOpen] = useState(false);
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [sosOpen, setSosOpen] = useState(false);
+    const [journalOpen, setJournalOpen] = useState(false);
     const [lastBackupAt, setLastBackupAt] = useState<number | null>(() => loadLastBackupAt());
     const svgRef = useRef<SVGSVGElement>(null);
     const labelBounds = useVisibleLabelBounds(svgRef, SIZE);
@@ -187,6 +189,11 @@ export default function MentalWheelApp() {
     });
     function formatShortDate(date: string): string {
         return parseDateInput(date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+    }
+    // Media de las puntuaciones que tiene ese día (como en las estadísticas)
+    function journalDayAverage(date: string): string | null {
+        const values = Object.values(scoresByDate[date] ?? {}).filter((score) => score > 0).map(toDisplay);
+        return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : null;
     }
     const sectorName = (id: string) => sectors.find((s) => s.id === id)?.name ?? "";
 
@@ -319,6 +326,7 @@ export default function MentalWheelApp() {
                     setStatsOpen(false);
                     setSummaryOpen(true);
                 }}
+                onOpenJournal={() => setJournalOpen(true)}
                 onOpenSettings={() => setDrawerOpen(true)}
                 onPrefetchStats={() => void loadStatsModal()}
                 highlightSummary={tutorialStep === 4}
@@ -447,6 +455,23 @@ export default function MentalWheelApp() {
                 onChangeMood={(mood) => data.setSummaryMood(dateStr, mood)}
                 onPrevDay={() => setDateStr((d) => addDaysToDateInput(d, -1))}
                 onNextDay={() => setDateStr((d) => addDaysToDateInput(d, 1))}
+            />
+            <JournalModal
+                open={journalOpen}
+                onClose={() => setJournalOpen(false)}
+                dailySummaryByDate={dailySummaryByDate}
+                commentsByDate={commentsByDate}
+                sectors={sectors}
+                dayAverage={journalDayAverage}
+                onGoToDay={(date) => {
+                    setDateStr(date);
+                    setJournalOpen(false);
+                }}
+                onEditSummary={(date) => {
+                    setDateStr(date);
+                    setJournalOpen(false);
+                    setSummaryOpen(true);
+                }}
             />
             <SOSModal open={sosOpen} onClose={() => setSosOpen(false)} />
             {stylePickerVisible && (

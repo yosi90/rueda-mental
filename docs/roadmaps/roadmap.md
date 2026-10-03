@@ -128,7 +128,7 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 - [x] Protección de datos: `navigator.storage.persist()` cuando hay datos, fecha de la última copia y recordatorio (≥ 7 días con datos y copia de hace ≥ 30 días, máx. 1 por semana).
 - [x] Teléfonos SOS por país (España, Portugal, Brasil, Alemania, Austria, Suiza, Reino Unido, México, Argentina, Colombia y Chile), verificados el 2026-10-03; España por defecto y el país elegido se recuerda; selector junto al título en escritorio y junto a los botones en móvil; «Otro país» con el 112 y un directorio internacional. Sin Estados Unidos ni Israel por decisión del proyecto.
 - [x] Archivar sectores: salen de la rueda y de la media del día pero conservan puntuaciones y comentarios; lista «Archivados» en Configuración → Sectores para recuperarlos o eliminarlos, botón en el menú del sector, deshacer, y consulta en «Progresión por sector». No se puede archivar el último sector activo.
-- [ ] Vista de diario: listar y buscar resúmenes y comentarios pasados.
+- [x] Diario: botón propio en la barra principal; días con resumen o comentarios agrupados por mes, con estado de ánimo y media; búsqueda sin distinguir tildes con resaltado (también por nombre de sector), filtro Todo/Resúmenes/Comentarios, «Editar resumen» e «Ir a este día»; 30 días por tanda con «Mostrar más».
 - [ ] Exportar CSV / informe imprimible.
 - [x] Estado de ánimo general del día (5 niveles) en el resumen; se guarda en la copia de seguridad.
 - [ ] Estado de ánimo en las estadísticas (evolución y relación con la media de la rueda).
