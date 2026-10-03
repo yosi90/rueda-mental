@@ -6,7 +6,7 @@ import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
 import { loadSosCountry, saveSosCountry } from "../../../shared/services/storage/mentalWheelStorage";
 import {
-    detectSosCountry,
+    DEFAULT_SOS_COUNTRY,
     getSosCountry,
     OTHER_COUNTRY,
     SOS_COUNTRIES,
@@ -32,13 +32,11 @@ const KIND_LABEL: Record<SupportKind, TranslationKey> = {
 const callButtonClass = "shrink-0 rounded-lg bg-red-600 hover:bg-red-700 !text-white hover:!text-white visited:!text-white no-underline px-3 py-2 text-sm font-semibold transition-colors";
 
 export function SOSModal({ open, onClose }: SOSModalProps) {
-    const { t, language, locale } = useI18n();
+    const { t, locale } = useI18n();
     const dialogRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const selectId = useId();
-    const [countryCode, setCountryCode] = useState(() =>
-        loadSosCountry() ?? detectSosCountry(navigator.languages ?? [navigator.language], language)
-    );
+    const [countryCode, setCountryCode] = useState(() => loadSosCountry() ?? DEFAULT_SOS_COUNTRY);
     useDialogA11y(open, onClose, dialogRef);
 
     const regionNames = useMemo(() => new Intl.DisplayNames([locale], { type: "region" }), [locale]);
@@ -56,6 +54,27 @@ export function SOSModal({ open, onClose }: SOSModalProps) {
     function changeCountry(code: string) {
         setCountryCode(code);
         saveSosCountry(code);
+    }
+
+    // Se pinta en dos sitios (cabecera en escritorio, pie en móvil); solo uno es visible a la vez
+    function countrySelect(id: string) {
+        return (
+            <>
+                <label htmlFor={id} className="sr-only">{t("sos.country")}</label>
+                <select
+                    id={id}
+                    value={country ? countryCode : OTHER_COUNTRY}
+                    onChange={(e) => changeCountry(e.target.value)}
+                    title={t("sos.country")}
+                    className={`min-h-9 max-w-full rounded-lg border ${theme.input} px-2 sm:px-3 text-sm ${theme.focusRing}`}
+                >
+                    {countryOptions.map(({ code, name }) => (
+                        <option key={code} value={code}>{name}</option>
+                    ))}
+                    <option value={OTHER_COUNTRY}>{t("sos.otherCountry")}</option>
+                </select>
+            </>
+        );
     }
 
     function contactDetails(contact: SupportContact): string {
@@ -90,33 +109,21 @@ export function SOSModal({ open, onClose }: SOSModalProps) {
                             {t("sos.urgent", { number: emergencyNumber })}
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
-                        title={t("sos.closeTitle")}
-                        aria-label={t("sos.closeTitle")}
-                    >
-                        <CloseIcon />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-3">
+                        <div className="hidden sm:block">{countrySelect(`${selectId}-top`)}</div>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className={`rounded-full p-2 ${theme.buttonPrimary} transition-colors`}
+                            title={t("sos.closeTitle")}
+                            aria-label={t("sos.closeTitle")}
+                        >
+                            <CloseIcon />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                    <div className="mb-4 flex flex-wrap items-center gap-2">
-                        <label htmlFor={selectId} className={`text-sm font-semibold ${theme.text}`}>{t("sos.country")}</label>
-                        <select
-                            id={selectId}
-                            value={country ? countryCode : OTHER_COUNTRY}
-                            onChange={(e) => changeCountry(e.target.value)}
-                            className={`min-h-9 rounded-lg border ${theme.input} px-3 text-sm ${theme.focusRing}`}
-                        >
-                            {countryOptions.map(({ code, name }) => (
-                                <option key={code} value={code}>{name}</option>
-                            ))}
-                            <option value={OTHER_COUNTRY}>{t("sos.otherCountry")}</option>
-                        </select>
-                    </div>
-
                     <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt} mb-4`}>
                         <p className={`text-sm ${theme.text}`}>{t("sos.disclaimer")}</p>
                     </div>
@@ -151,7 +158,8 @@ export function SOSModal({ open, onClose }: SOSModalProps) {
                     )}
                 </div>
 
-                <div className={`p-4 md:px-6 md:pb-6 border-t ${theme.borderLight} flex flex-wrap items-center justify-end gap-2`}>
+                <div className={`p-4 md:px-6 md:pb-6 border-t ${theme.borderLight} flex items-center justify-end gap-2`}>
+                    <div className="mr-auto min-w-0 sm:hidden">{countrySelect(`${selectId}-bottom`)}</div>
                     <a href={toTelHref(emergencyNumber)} className={`${callButtonClass} px-4`}>
                         {t("sos.callEmergency", { number: emergencyNumber })}
                     </a>

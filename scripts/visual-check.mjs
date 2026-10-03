@@ -454,7 +454,7 @@ const report = [];
     const { page, context, errors } = await newPage(browser, {}, { locale: "es-ES" });
     await page.getByRole("button", { name: "Ayuda SOS" }).click();
     const sos = page.getByRole("dialog", { name: "Números y servicios de urgencia" });
-    const country = sos.getByLabel("País");
+    const country = sos.locator("select:visible");
     const numbers = () => sos.getByRole("link").allInnerTexts();
     report.push(`SOS por defecto (es-ES): ${await country.inputValue()} → ${(await numbers()).join(", ")}`);
     await country.selectOption("CL");
@@ -466,13 +466,24 @@ const report = [];
     await page.reload();
     await page.waitForSelector("svg");
     await page.getByRole("button", { name: "Ayuda SOS" }).click();
-    report.push(`SOS recuerda el país elegido: ${await page.getByRole("dialog", { name: "Números y servicios de urgencia" }).getByLabel("País").inputValue()}`);
+    report.push(`SOS recuerda el país elegido: ${await page.getByRole("dialog", { name: "Números y servicios de urgencia" }).locator("select:visible").inputValue()}`);
     report.push(`errores SOS: ${JSON.stringify(errors)}`);
     await context.close();
 
-    const mx = await newPage(browser, {}, { locale: "es-MX" });
-    await mx.page.getByRole("button", { name: "Ayuda SOS" }).click();
-    report.push(`SOS por defecto (es-MX): ${await mx.page.getByLabel("País").inputValue()}`);
+    // Por defecto España aunque el navegador sea de otro país; en móvil el selector va abajo
+    const mx = await newPage(browser, {}, { locale: "es-MX", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const sosButton = mx.page.getByRole("button", { name: "Ayuda SOS" });
+    if (await sosButton.isVisible()) {
+        await sosButton.click();
+    } else {
+        await mx.page.getByRole("button", { name: "Configuración" }).first().click();
+        await mx.page.waitForTimeout(400);
+        await mx.page.getByRole("button", { name: "Abrir SOS" }).click();
+    }
+    const mobileSelect = mx.page.getByRole("dialog", { name: "Números y servicios de urgencia" }).locator("select:visible");
+    const box = await mobileSelect.boundingBox();
+    report.push(`SOS móvil (es-MX): ${await mobileSelect.inputValue()} · selector abajo: ${box !== null && box.y > 700}`);
+    await mx.page.screenshot({ path: `${OUT}/19-sos-mobile.png` });
     await mx.context.close();
 }
 

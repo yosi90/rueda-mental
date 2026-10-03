@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectSosCountry, OTHER_COUNTRY, SOS_COUNTRIES, toTelHref } from "./sosDirectory";
+import { DEFAULT_SOS_COUNTRY, SOS_COUNTRIES, toTelHref } from "./sosDirectory";
 
 describe("sosDirectory", () => {
     it("cada país tiene su número de emergencias entre sus contactos y sin duplicados", () => {
@@ -16,15 +16,9 @@ describe("sosDirectory", () => {
         expect(codes).not.toContain("IL");
     });
 
-    it("detecta el país por la región del navegador o, sin región, por el idioma", () => {
-        expect(detectSosCountry(["es-ES"], "es")).toBe("ES");
-        expect(detectSosCountry(["es-MX", "es"], "es")).toBe("MX");
-        expect(detectSosCountry(["pt-BR"], "pt")).toBe("BR");
-        expect(detectSosCountry(["de-CH"], "de")).toBe("CH");
-        expect(detectSosCountry(["en"], "en")).toBe("GB");
-        expect(detectSosCountry(["de"], "de")).toBe("DE");
-        expect(detectSosCountry(["en-US"], "en")).toBe(OTHER_COUNTRY);
-        expect(detectSosCountry(["he-IL"], "es")).toBe(OTHER_COUNTRY);
+    it("España es el país por defecto", () => {
+        expect(DEFAULT_SOS_COUNTRY).toBe("ES");
+        expect(SOS_COUNTRIES.map((c) => c.code)).toContain(DEFAULT_SOS_COUNTRY);
     });
 
     it("genera enlaces tel: sin espacios", () => {

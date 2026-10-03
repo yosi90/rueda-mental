@@ -126,7 +126,7 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 
 - [x] PWA instalable y offline (`vite-plugin-pwa`): aviso de versión nueva, botón «Instalar la app» y guía para iPhone; cabeceras de caché en Firebase.
 - [x] Protección de datos: `navigator.storage.persist()` cuando hay datos, fecha de la última copia y recordatorio (≥ 7 días con datos y copia de hace ≥ 30 días, máx. 1 por semana).
-- [x] Teléfonos SOS por país (España, Portugal, Brasil, Alemania, Austria, Suiza, Reino Unido, México, Argentina, Colombia y Chile), verificados el 2026-10-03; país detectado del navegador y recordado; «Otro país» con el 112 y un directorio internacional. Sin Estados Unidos ni Israel por decisión del proyecto.
+- [x] Teléfonos SOS por país (España, Portugal, Brasil, Alemania, Austria, Suiza, Reino Unido, México, Argentina, Colombia y Chile), verificados el 2026-10-03; España por defecto y el país elegido se recuerda; selector junto al título en escritorio y junto a los botones en móvil; «Otro país» con el 112 y un directorio internacional. Sin Estados Unidos ni Israel por decisión del proyecto.
 - [ ] Archivar sectores en lugar de borrarlos, conservando su historial.
 - [ ] Vista de diario: listar y buscar resúmenes y comentarios pasados.
 - [ ] Exportar CSV / informe imprimible.

@@ -153,20 +153,8 @@ export function getSosCountry(code: string): SupportCountry | undefined {
     return BY_CODE.get(code);
 }
 
-/** País por defecto del idioma de la app cuando el navegador no indica región. */
-const LANGUAGE_DEFAULT: Record<string, string> = { es: "ES", pt: "PT", de: "DE", en: "GB" };
-
-/**
- * País sugerido a partir de las preferencias del navegador (p. ej. es-MX → MX).
- * Si la región indicada no está en el directorio, «otro país»; si no hay región, el del idioma de la app.
- */
-export function detectSosCountry(browserLanguages: readonly string[], appLanguage: string): string {
-    for (const tag of browserLanguages) {
-        const region = tag.split(/[-_]/)[1]?.toUpperCase();
-        if (region && /^[A-Z]{2}$/.test(region)) return BY_CODE.has(region) ? region : OTHER_COUNTRY;
-    }
-    return LANGUAGE_DEFAULT[appLanguage] ?? OTHER_COUNTRY;
-}
+/** País por defecto del SOS (el usuario puede elegir otro y se recuerda). */
+export const DEFAULT_SOS_COUNTRY = "ES";
 
 /** Cadena para enlaces tel: (sin espacios). El «*» se deja tal cual (iOS no marca solo esos números: se ven y se marcan a mano). */
 export function toTelHref(number: string): string {
