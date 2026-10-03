@@ -21,6 +21,7 @@ const STORAGE_KEYS = {
     backupReminderAt: "mental-wheel-backup-reminder-v1",
     persistRequested: "mental-wheel-persist-requested-v1",
     stylePickerDone: "mental-wheel-style-picker-done-v1",
+    sosCountry: "mental-wheel-sos-country-v1",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
     language: "mental-wheel-language-v1",
@@ -285,3 +286,20 @@ export const savePersistRequestedAt = () => saveTimestamp(STORAGE_KEYS.persistRe
 /** El usuario ya eligió (o descartó) estilo en el selector de bienvenida o en Configuración. */
 export const loadStylePickerDoneAt = () => loadTimestamp(STORAGE_KEYS.stylePickerDone);
 export const saveStylePickerDoneAt = () => saveTimestamp(STORAGE_KEYS.stylePickerDone);
+
+/** País elegido en el SOS (null: se detecta del navegador). */
+export function loadSosCountry(): string | null {
+    try {
+        return localStorage.getItem(STORAGE_KEYS.sosCountry);
+    } catch {
+        return null;
+    }
+}
+
+export function saveSosCountry(code: string): void {
+    try {
+        localStorage.setItem(STORAGE_KEYS.sosCountry, code);
+    } catch {
+        // noop
+    }
+}

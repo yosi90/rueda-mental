@@ -1,89 +1,76 @@
-import { useId, useRef } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 import type { TranslationKey } from "../../../shared/i18n/translations";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
+import { loadSosCountry, saveSosCountry } from "../../../shared/services/storage/mentalWheelStorage";
+import {
+    detectSosCountry,
+    getSosCountry,
+    OTHER_COUNTRY,
+    SOS_COUNTRIES,
+    toTelHref,
+    type SupportContact,
+    type SupportKind,
+} from "../sosDirectory";
 
 interface SOSModalProps {
     open: boolean;
     onClose: () => void;
 }
 
-interface EmergencyContact {
-    id: string;
-    number: string;
-    serviceKey: TranslationKey;
-    descriptionKey: TranslationKey;
-    availabilityKey: TranslationKey;
-    extraKey?: TranslationKey;
-}
+const KIND_LABEL: Record<SupportKind, TranslationKey> = {
+    emergency: "sos.kind.emergency",
+    medical: "sos.kind.medical",
+    police: "sos.kind.police",
+    crisis: "sos.kind.crisis",
+    support: "sos.kind.support",
+    violence: "sos.kind.violence",
+};
 
-const EMERGENCY_CONTACTS_ES: EmergencyContact[] = [
-    {
-        id: "urgencias-112",
-        number: "112",
-        serviceKey: "sos.contact.112.service",
-        descriptionKey: "sos.contact.112.description",
-        availabilityKey: "sos.contact.112.availability",
-    },
-    {
-        id: "linea-024",
-        number: "024",
-        serviceKey: "sos.contact.024.service",
-        descriptionKey: "sos.contact.024.description",
-        availabilityKey: "sos.contact.024.availability",
-    },
-    {
-        id: "apoyo-emocional",
-        number: "900 107 917",
-        serviceKey: "sos.contact.emotional.service",
-        descriptionKey: "sos.contact.emotional.description",
-        availabilityKey: "sos.contact.emotional.availability",
-    },
-    {
-        id: "violencia-genero",
-        number: "016",
-        serviceKey: "sos.contact.016.service",
-        descriptionKey: "sos.contact.016.description",
-        availabilityKey: "sos.contact.016.availability",
-        extraKey: "sos.contact.016.extra",
-    },
-    {
-        id: "policia",
-        number: "091",
-        serviceKey: "sos.contact.091.service",
-        descriptionKey: "sos.contact.091.description",
-        availabilityKey: "sos.contact.091.availability",
-    },
-    {
-        id: "guardia-civil",
-        number: "062",
-        serviceKey: "sos.contact.062.service",
-        descriptionKey: "sos.contact.062.description",
-        availabilityKey: "sos.contact.062.availability",
-    },
-];
-
-function toTelHref(number: string): string {
-    return `tel:${number.replace(/\s+/g, "")}`;
-}
+const callButtonClass = "shrink-0 rounded-lg bg-red-600 hover:bg-red-700 !text-white hover:!text-white visited:!text-white no-underline px-3 py-2 text-sm font-semibold transition-colors";
 
 export function SOSModal({ open, onClose }: SOSModalProps) {
-    const { t } = useI18n();
+    const { t, language, locale } = useI18n();
     const dialogRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
+    const selectId = useId();
+    const [countryCode, setCountryCode] = useState(() =>
+        loadSosCountry() ?? detectSosCountry(navigator.languages ?? [navigator.language], language)
+    );
     useDialogA11y(open, onClose, dialogRef);
+
+    const regionNames = useMemo(() => new Intl.DisplayNames([locale], { type: "region" }), [locale]);
+    const countryOptions = useMemo(
+        () => SOS_COUNTRIES.map((c) => ({ code: c.code, name: regionNames.of(c.code) ?? c.code }))
+            .sort((a, b) => a.name.localeCompare(b.name, locale)),
+        [regionNames, locale]
+    );
 
     if (!open) return null;
 
+    const country = getSosCountry(countryCode);
+    const emergencyNumber = country?.emergency ?? "112";
+
+    function changeCountry(code: string) {
+        setCountryCode(code);
+        saveSosCountry(code);
+    }
+
+    function contactDetails(contact: SupportContact): string {
+        return [
+            contact.available24 ? t("sos.available24") : contact.hours ? t("sos.hours", { hours: contact.hours }) : null,
+            contact.free ? t("sos.free") : null,
+            contact.area ? t("sos.area", { area: contact.area }) : null,
+            contact.nationwide ? t("sos.nationwide") : null,
+            contact.mobileOnly ? t("sos.mobileOnly") : null,
+        ].filter(Boolean).join(" · ");
+    }
+
     return (
         <>
-            <div
-                className={`fixed inset-0 ${theme.overlay} z-[60] transition-opacity`}
-                onClick={onClose}
-                aria-hidden="true"
-            />
+            <div className={`fixed inset-0 ${theme.overlay} z-[60] transition-opacity`} onClick={onClose} aria-hidden="true" />
             <div
                 ref={dialogRef}
                 role="dialog"
@@ -100,7 +87,7 @@ export function SOSModal({ open, onClose }: SOSModalProps) {
                         </div>
                         <h2 id={titleId} className={`text-lg sm:text-xl md:text-2xl font-bold mt-3 ${theme.text}`}>{t("sos.title")}</h2>
                         <p className={`text-xs sm:text-sm mt-1 ${theme.textMuted}`}>
-                            {t("sos.urgent")}
+                            {t("sos.urgent", { number: emergencyNumber })}
                         </p>
                     </div>
                     <button
@@ -115,49 +102,58 @@ export function SOSModal({ open, onClose }: SOSModalProps) {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <label htmlFor={selectId} className={`text-sm font-semibold ${theme.text}`}>{t("sos.country")}</label>
+                        <select
+                            id={selectId}
+                            value={country ? countryCode : OTHER_COUNTRY}
+                            onChange={(e) => changeCountry(e.target.value)}
+                            className={`min-h-9 rounded-lg border ${theme.input} px-3 text-sm ${theme.focusRing}`}
+                        >
+                            {countryOptions.map(({ code, name }) => (
+                                <option key={code} value={code}>{name}</option>
+                            ))}
+                            <option value={OTHER_COUNTRY}>{t("sos.otherCountry")}</option>
+                        </select>
+                    </div>
+
                     <div className={`rounded-xl border ${theme.border} p-4 ${theme.inputAlt} mb-4`}>
-                        <p className={`text-sm ${theme.text}`}>
-                            {t("sos.disclaimer")}
-                        </p>
+                        <p className={`text-sm ${theme.text}`}>{t("sos.disclaimer")}</p>
                     </div>
 
-                    <div className="grid gap-3">
-                        {EMERGENCY_CONTACTS_ES.map((contact) => (
-                            <div key={contact.id} className={`rounded-xl border ${theme.border} p-4`}>
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <h3 className={`text-sm sm:text-base font-semibold ${theme.text}`}>{t(contact.serviceKey)}</h3>
-                                        <p className={`text-xs sm:text-sm mt-1 ${theme.textMuted}`}>{t(contact.descriptionKey)}</p>
-                                        <p className={`text-xs mt-2 ${theme.textMuted}`}>{t(contact.availabilityKey)}</p>
-                                        {contact.extraKey && (
-                                            <p className={`text-xs mt-1 ${theme.textMuted}`}>{t(contact.extraKey)}</p>
-                                        )}
+                    {country ? (
+                        <div className="grid gap-3">
+                            {country.contacts.map((contact) => (
+                                <div key={`${contact.number}-${contact.kind}`} className={`rounded-xl border ${theme.border} p-4`}>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h3 className={`text-sm sm:text-base font-semibold ${theme.text}`}>{t(KIND_LABEL[contact.kind])}</h3>
+                                            {contact.name && <p className={`text-xs sm:text-sm mt-0.5 ${theme.text}`}>{contact.name}</p>}
+                                            <p className={`text-xs mt-1.5 ${theme.textMuted}`}>{contactDetails(contact)}</p>
+                                            {contact.noteKey && <p className={`text-xs mt-1 ${theme.textMuted}`}>{t(contact.noteKey)}</p>}
+                                        </div>
+                                        <a
+                                            href={toTelHref(contact.number)}
+                                            className={callButtonClass}
+                                            aria-label={t("sos.contactCallAria", { number: contact.number })}
+                                        >
+                                            {contact.number}
+                                        </a>
                                     </div>
-                                    <a
-                                        href={toTelHref(contact.number)}
-                                        className="shrink-0 rounded-lg bg-red-600 hover:bg-red-700 !text-white hover:!text-white visited:!text-white no-underline px-3 py-2 text-sm font-semibold transition-colors"
-                                        aria-label={t("sos.contactCallAria", { number: contact.number })}
-                                    >
-                                        {contact.number}
-                                    </a>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className={`rounded-xl border ${theme.border} p-4 mt-4 ${theme.inputAlt}`}>
-                        <p className={`text-xs sm:text-sm ${theme.textMuted}`}>
-                            {t("sos.resources")} {t("sos.outsideSpain")}
-                        </p>
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className={`rounded-xl border ${theme.border} p-4`}>
+                            <p className={`text-sm ${theme.text}`}>{t("sos.otherCountryText")}</p>
+                            <p className={`text-sm mt-2 ${theme.textMuted}`}>{t("sos.findHelpline")} findahelpline.com</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className={`p-4 md:px-6 md:pb-6 border-t ${theme.borderLight} flex flex-wrap items-center justify-end gap-2`}>
-                    <a
-                        href="tel:112"
-                        className="rounded-lg bg-red-600 hover:bg-red-700 !text-white hover:!text-white visited:!text-white no-underline px-4 py-2 text-sm font-semibold transition-colors"
-                    >
-                        {t("sos.call112")}
+                    <a href={toTelHref(emergencyNumber)} className={`${callButtonClass} px-4`}>
+                        {t("sos.callEmergency", { number: emergencyNumber })}
                     </a>
                     <button
                         type="button"

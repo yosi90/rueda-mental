@@ -449,6 +449,33 @@ const report = [];
     await mobile.context.close();
 }
 
+// 14. SOS por país
+{
+    const { page, context, errors } = await newPage(browser, {}, { locale: "es-ES" });
+    await page.getByRole("button", { name: "Ayuda SOS" }).click();
+    const sos = page.getByRole("dialog", { name: "Números y servicios de urgencia" });
+    const country = sos.getByLabel("País");
+    const numbers = () => sos.getByRole("link").allInnerTexts();
+    report.push(`SOS por defecto (es-ES): ${await country.inputValue()} → ${(await numbers()).join(", ")}`);
+    await country.selectOption("CL");
+    report.push(`SOS Chile: ${(await numbers()).join(", ")}`);
+    await page.screenshot({ path: `${OUT}/18-sos-chile.png` });
+    await country.selectOption("OTHER");
+    report.push(`SOS otro país: ${(await numbers()).join(", ")} · texto: ${(await sos.getByText("número de emergencias de tu país").count()) > 0}`);
+    await page.keyboard.press("Escape");
+    await page.reload();
+    await page.waitForSelector("svg");
+    await page.getByRole("button", { name: "Ayuda SOS" }).click();
+    report.push(`SOS recuerda el país elegido: ${await page.getByRole("dialog", { name: "Números y servicios de urgencia" }).getByLabel("País").inputValue()}`);
+    report.push(`errores SOS: ${JSON.stringify(errors)}`);
+    await context.close();
+
+    const mx = await newPage(browser, {}, { locale: "es-MX" });
+    await mx.page.getByRole("button", { name: "Ayuda SOS" }).click();
+    report.push(`SOS por defecto (es-MX): ${await mx.page.getByLabel("País").inputValue()}`);
+    await mx.context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
