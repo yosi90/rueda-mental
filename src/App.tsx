@@ -76,6 +76,9 @@ export default function MentalWheelApp() {
     const data = useMentalWheelData(language);
     const preferences = usePreferences();
     const { sectors, scoresByDate, commentsByDate, dailySummaryByDate } = data;
+    // La rueda, la media y el tutorial usan solo los sectores activos; los archivados conservan su historial
+    const activeSectors = useMemo(() => sectors.filter((s) => !s.archived), [sectors]);
+    const archivedSectors = useMemo(() => sectors.filter((s) => s.archived), [sectors]);
     const { isScaleInverted, statsVisibility } = preferences;
     const isTouchDevice = useTouchDeviceDetection();
     const isSmallScreen = useMediaQuery("(max-width: 639px)");
@@ -95,10 +98,10 @@ export default function MentalWheelApp() {
 
     const scores = useMemo(() => scoresByDate[dateStr] ?? {}, [scoresByDate, dateStr]);
     const dailySummary = dailySummaryByDate[dateStr] ?? EMPTY_DAILY_SUMMARY;
-    const sectorsWithAngles = useMemo(() => computeSectorAngles(sectors), [sectors]);
+    const sectorsWithAngles = useMemo(() => computeSectorAngles(activeSectors), [activeSectors]);
 
     const { tutorialStep, tutorialSector, restartTutorial, skipTutorial } = useTutorialFlow({
-        sectors,
+        sectors: activeSectors,
         scoresByDate,
         dateStr,
         infoMenuContextual: contextMenu,
@@ -120,7 +123,7 @@ export default function MentalWheelApp() {
     const statsData = useMemo(
         () => buildStatsData({
             scoresByDate,
-            sectors,
+            sectors: activeSectors,
             scores,
             todayStr,
             ringCount: RING_COUNT,
@@ -129,7 +132,7 @@ export default function MentalWheelApp() {
             weekDaysShort: languageDetails.weekDaysShort,
             todayLabel: languageDetails.todayLabel,
         }),
-        [scoresByDate, sectors, scores, todayStr, isScaleInverted, locale, languageDetails.weekDaysShort, languageDetails.todayLabel]
+        [scoresByDate, activeSectors, scores, todayStr, isScaleInverted, locale, languageDetails.weekDaysShort, languageDetails.todayLabel]
     );
     const daysWithData = useMemo(
         () => collectDaysWithData(scoresByDate, commentsByDate, dailySummaryByDate),
@@ -173,8 +176,8 @@ export default function MentalWheelApp() {
     const copySourceDate = dayHasScores(scores) ? null : previousDateWithScores;
     const referenceDate = preferences.showReference ? previousDateWithScores : null;
     const toDisplay = (raw: number) => toDisplayScore(raw, RING_COUNT, isScaleInverted);
-    const avg = sectors.length
-        ? (sectors.reduce((acc, s) => acc + toDisplay(scores[s.id] ?? 0), 0) / sectors.length).toFixed(2)
+    const avg = activeSectors.length
+        ? (activeSectors.reduce((acc, s) => acc + toDisplay(scores[s.id] ?? 0), 0) / activeSectors.length).toFixed(2)
         : "0.00";
     const summaryDateLabel = parseDateInput(dateStr).toLocaleDateString(locale, {
         weekday: "long",
@@ -223,6 +226,16 @@ export default function MentalWheelApp() {
         const snapshot = data.takeSnapshot();
         data.deleteSector(id);
         notifyUndoable(t("toast.sectorDeleted", { name }), snapshot);
+    }
+
+    function setSectorArchived(id: string, archived: boolean): void {
+        const name = sectorName(id);
+        data.setSectorArchived(id, archived);
+        notify({
+            message: t(archived ? "toast.sectorArchived" : "toast.sectorRestored", { name }),
+            actionLabel: t("common.undo"),
+            onAction: () => data.setSectorArchived(id, !archived),
+        });
     }
 
     function resetDay(): void {
@@ -379,7 +392,7 @@ export default function MentalWheelApp() {
                                 ringCount={RING_COUNT}
                                 isScaleInverted={isScaleInverted}
                                 ringNumberFontSize={RING_NUMBER_FONT_SIZE}
-                                sectors={sectors}
+                                sectors={activeSectors}
                                 sectorsWithAngles={sectorsWithAngles}
                                 scores={scores}
                                 referenceScores={referenceDate ? scoresByDate[referenceDate] : null}
@@ -418,6 +431,7 @@ export default function MentalWheelApp() {
                 onClose={() => setContextMenu(null)}
                 updateSector={data.updateSector}
                 removeSector={removeSector}
+                archiveSector={activeSectors.length > 1 ? (id) => setSectorArchived(id, true) : undefined}
                 setScore={setDisplayScore}
                 getComment={data.getComment}
                 setComment={data.setComment}
@@ -451,7 +465,8 @@ export default function MentalWheelApp() {
                         statsVisibility={statsVisibility}
                         ringCount={RING_COUNT}
                         isScaleInverted={isScaleInverted}
-                        sectors={sectors}
+                        sectors={activeSectors}
+                        archivedSectors={archivedSectors}
                     />
                 )}
             </Suspense>
@@ -475,6 +490,7 @@ export default function MentalWheelApp() {
                                 updateSector={data.updateSector}
                                 moveSector={data.moveSector}
                                 removeSector={removeSector}
+                                setSectorArchived={setSectorArchived}
                             />
                         ),
                     },

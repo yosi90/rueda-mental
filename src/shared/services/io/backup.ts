@@ -33,7 +33,8 @@ function isSector(value: unknown): value is Sector {
         && typeof value.id === "string" && value.id.length > 0
         && typeof value.name === "string"
         && typeof value.color === "string"
-        && (value.icon === undefined || typeof value.icon === "string");
+        && (value.icon === undefined || typeof value.icon === "string")
+        && (value.archived === undefined || typeof value.archived === "boolean");
 }
 
 function isByDate<T>(value: unknown, isDay: (day: unknown) => day is T): value is Record<string, T> {

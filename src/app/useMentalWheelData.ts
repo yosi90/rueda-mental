@@ -83,16 +83,29 @@ export function useMentalWheelData(language: Language) {
         setSectors((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
     }
 
+    /** Mueve el sector por delante/detrás del siguiente sector activo (los archivados no cuentan). */
     function moveSector(id: string, direction: number): void {
         setSectors((prev) => {
             const from = prev.findIndex((s) => s.id === id);
-            const to = from + direction;
+            let to = from + direction;
+            while (to >= 0 && to < prev.length && prev[to].archived) to += direction;
             if (from < 0 || to < 0 || to >= prev.length) return prev;
             const next = [...prev];
             const [moved] = next.splice(from, 1);
             next.splice(to, 0, moved);
             return next;
         });
+    }
+
+    /** Archivar saca el sector de la rueda sin tocar sus puntuaciones ni comentarios. */
+    function setSectorArchived(id: string, archived: boolean): void {
+        setSectors((prev) => prev.map((s) => {
+            if (s.id !== id) return s;
+            const next = { ...s };
+            if (archived) next.archived = true;
+            else delete next.archived;
+            return next;
+        }));
     }
 
     /** Elimina el sector y todas sus puntuaciones y comentarios. */
@@ -194,6 +207,7 @@ export function useMentalWheelData(language: Language) {
         addSector,
         updateSector,
         moveSector,
+        setSectorArchived,
         deleteSector,
         setScore,
         restoreScore,

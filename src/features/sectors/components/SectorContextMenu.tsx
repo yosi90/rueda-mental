@@ -6,7 +6,7 @@ import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWhe
 import { rgbToHex } from "../../../shared/utils/color";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { IconPicker } from "./IconPicker";
-import { Trash2 } from "lucide-react";
+import { Archive, Trash2 } from "lucide-react";
 
 interface SectorContextMenuProps {
     menu: InfoMenuContextual | null;
@@ -18,6 +18,8 @@ interface SectorContextMenuProps {
     onClose: () => void;
     updateSector: (id: string, patch: Partial<Omit<Sector, "id">>) => void;
     removeSector: (id: string) => void;
+    /** Ausente si no se puede archivar (es el último sector activo). */
+    archiveSector?: (id: string) => void;
     /** Puntuación en escala visible. */
     setScore: (id: string, displayScore: number) => void;
     getComment: (date: string, sectorId: string) => string;
@@ -37,6 +39,7 @@ export function SectorContextMenu({
     onClose,
     updateSector,
     removeSector,
+    archiveSector,
     setScore,
     getComment,
     setComment,
@@ -92,6 +95,7 @@ export function SectorContextMenu({
                         onClose={onClose}
                         updateSector={updateSector}
                         removeSector={removeSector}
+                        archiveSector={archiveSector}
                         setScore={setScore}
                         initialComment={getComment(dateStr, sector.id)}
                         setComment={setComment}
@@ -107,7 +111,7 @@ const COMMENT_MAX_LENGTH = 100;
 
 interface SectorMenuContentProps extends Pick<SectorContextMenuProps,
     "dateStr" | "ringCount" | "isScaleInverted" | "onClose" | "updateSector"
-    | "removeSector" | "setScore" | "setComment" | "deleteComment"> {
+    | "removeSector" | "archiveSector" | "setScore" | "setComment" | "deleteComment"> {
     sector: Sector;
     score: number;
     initialComment: string;
@@ -122,6 +126,7 @@ function SectorMenuContent({
     onClose,
     updateSector,
     removeSector,
+    archiveSector,
     setScore,
     initialComment,
     setComment,
@@ -172,6 +177,20 @@ function SectorMenuContent({
                     className={`flex-1 min-w-0 rounded-lg border ${theme.input} px-2 sm:px-3 py-1 text-sm ${theme.focusRing}`}
                 />
 
+                {archiveSector && (
+                    <button
+                        type="button"
+                        title={t("sectors.archive")}
+                        aria-label={`${t("sectors.archive")}: ${sector.name}`}
+                        className={`inline-flex items-center justify-center min-h-8 min-w-8 rounded-md border ${theme.border} ${theme.button} px-2 text-xs transition-colors flex-shrink-0`}
+                        onClick={() => {
+                            onClose();
+                            archiveSector(sector.id);
+                        }}
+                    >
+                        <Archive size={16} aria-hidden="true" />
+                    </button>
+                )}
                 <button
                     type="button"
                     title={t("sectorMenu.deleteTitle")}

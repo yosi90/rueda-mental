@@ -487,6 +487,44 @@ const report = [];
     await mx.context.close();
 }
 
+// 15. Archivar sectores
+{
+    const { page, context, errors } = await newPage(browser);
+    const labels = () => page.locator("svg.select-none text").allTextContents();
+    await page.getByRole("button", { name: "Configuración" }).first().click();
+    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Archivar: Dinero" }).click();
+    const toast = await page.getByText("Sector «Dinero» archivado").count();
+    const wheelHasDinero = (await labels()).some((l) => l.includes("Dinero"));
+    const restoreVisible = await page.getByRole("button", { name: "Recuperar: Dinero" }).count();
+    report.push(`archivar: aviso ${toast > 0} · fuera de la rueda: ${!wheelHasDinero} · en «Archivados»: ${restoreVisible > 0}`);
+    // Mover «Amigos» abajo salta el archivado y queda tras «Amor»
+    await page.getByRole("button", { name: "Bajar: Amigos" }).click();
+    const order = await page.evaluate(() => JSON.parse(localStorage.getItem("mental-wheel-config-v1")).filter((s) => !s.archived).map((s) => s.name).join(", "));
+    report.push(`orden tras bajar Amigos: ${order}`);
+    await page.screenshot({ path: `${OUT}/20-archived-settings.png` });
+    // Historial intacto y visible en estadísticas
+    const kept = await page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("mental-wheel-scores-v1"))).filter((d) => d.s2).length);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    await page.getByRole("button", { name: "Estadísticas" }).first().click();
+    const progress = page.locator("select").filter({ has: page.locator("optgroup") });
+    await progress.waitFor({ timeout: 5000 });
+    await progress.selectOption({ label: "Dinero" });
+    report.push(`historial conservado: ${kept} días · en estadísticas (archivados): ${await progress.inputValue()}`);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    // Recuperar
+    await page.getByRole("button", { name: "Configuración" }).first().click();
+    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Recuperar: Dinero" }).click();
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    report.push(`recuperado en la rueda: ${(await labels()).some((l) => l.includes("Dinero"))}`);
+    report.push(`errores archivar: ${JSON.stringify(errors)}`);
+    await context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

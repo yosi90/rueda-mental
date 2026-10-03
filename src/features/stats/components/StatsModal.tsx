@@ -27,6 +27,8 @@ interface StatsModalProps {
     ringCount: number;
     isScaleInverted: boolean;
     sectors: Sector[];
+    /** Sectores archivados: solo se pueden consultar en «Progresión por sector». */
+    archivedSectors?: Sector[];
 }
 
 export function StatsModal({
@@ -36,6 +38,7 @@ export function StatsModal({
     ringCount,
     isScaleInverted,
     sectors,
+    archivedSectors = [],
 }: StatsModalProps) {
     const { t, locale } = useI18n();
     const dialogRef = useRef<HTMLDivElement>(null);
@@ -232,6 +235,13 @@ export function StatsModal({
                                                     {sectors.map(s => (
                                                         <option key={s.id} value={s.id}>{s.name}</option>
                                                     ))}
+                                                    {archivedSectors.length > 0 && (
+                                                        <optgroup label={t("stats.archivedGroup")}>
+                                                            {archivedSectors.map(s => (
+                                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                                            ))}
+                                                        </optgroup>
+                                                    )}
                                                 </select>
                                             </div>
                                             <ResponsiveContainer width="100%" height={250}>
@@ -255,7 +265,7 @@ export function StatsModal({
                                                     <Line
                                                         type="monotone"
                                                         dataKey="puntuacion"
-                                                        stroke={sectors.find(s => s.id === selectedSectorId)?.color || "var(--chart-series-1)"}
+                                                        stroke={[...sectors, ...archivedSectors].find(s => s.id === selectedSectorId)?.color || "var(--chart-series-1)"}
                                                         strokeWidth={2}
                                                         isAnimationActive={ANIMATE_CHARTS}
                                                         dot={{ r: 4 }}

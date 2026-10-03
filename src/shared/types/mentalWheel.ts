@@ -4,6 +4,8 @@ export interface Sector {
     color: string;
     /** id de icono (ver sectorIcons). "" = sin icono elegido explícitamente; undefined = nunca asignado. */
     icon?: string;
+    /** Archivado: fuera de la rueda, pero con su historial intacto. */
+    archived?: boolean;
 }
 
 export interface SectorWithAngles extends Sector {

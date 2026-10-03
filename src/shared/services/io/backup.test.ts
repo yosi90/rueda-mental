@@ -28,12 +28,18 @@ describe("parseBackup", () => {
         ["no es un objeto", "[1,2]"],
         ["sin datos", JSON.stringify({ darkMode: true })],
         ["sector sin id", JSON.stringify({ ...validBackup, config: [{ name: "X", color: "#000" }] })],
+        ["sector con «archived» no booleano", JSON.stringify({ ...validBackup, config: [{ id: "a", name: "X", color: "#000", archived: "sí" }] })],
         ["puntuación no numérica", JSON.stringify({ ...validBackup, scoresByDate: { "2026-10-01": { a: "7" } } })],
         ["fecha inválida", JSON.stringify({ ...validBackup, scoresByDate: { "ayer": { a: 7 } } })],
         ["resumen incompleto", JSON.stringify({ ...validBackup, dailySummaryByDate: { "2026-10-01": { good: "x" } } })],
         ["estado de ánimo fuera de rango", JSON.stringify({ ...validBackup, dailySummaryByDate: { "2026-10-01": { good: "", bad: "", howFacedBad: "", mood: 9 } } })],
     ])("rechaza: %s", (_, raw) => {
         expect(parseBackup(raw)).toBeNull();
+    });
+
+    it("conserva los sectores archivados", () => {
+        const config = [{ id: "a", name: "Salud", color: "#ff0000" }, { id: "b", name: "Ocio", color: "#00ff00", archived: true }];
+        expect(parseBackup(JSON.stringify({ ...validBackup, config }))?.config).toEqual(config);
     });
 
     it("ignora un idioma no soportado", () => {
