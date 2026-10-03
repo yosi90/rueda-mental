@@ -184,20 +184,36 @@ export function WheelLayers({
             const r = levelLabelRadius(level);
             const [tx, ty] = polar(cx, cy, r, 0);
             const displayLevel = toDisplayScore(level, ringCount, isScaleInverted);
+            // Ficha con el fondo de la interfaz: se lee igual sobre cualquier color de sector o estilo
+            const chipHeight = ringNumberFontSize + 5;
+            const chipWidth = displayLevel >= 10 ? ringNumberFontSize * 1.65 : chipHeight;
             return (
-                <text
-                    key={`n-${i}`}
-                    x={tx}
-                    y={ty}
-                    fontSize={ringNumberFontSize}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill={theme.svgText}
-                    opacity={0.75}
-                    className="hidden md:block"
-                >
-                    {displayLevel}
-                </text>
+                <g key={`n-${i}`} className="hidden md:block" pointerEvents="none" aria-hidden="true">
+                    <rect
+                        x={tx - chipWidth / 2}
+                        y={ty - chipHeight / 2}
+                        width={chipWidth}
+                        height={chipHeight}
+                        rx={chipHeight / 2}
+                        fill="var(--ui-surface)"
+                        fillOpacity={0.92}
+                        stroke="var(--ui-line)"
+                        strokeWidth={0.75}
+                    />
+                    <text
+                        x={tx}
+                        y={ty}
+                        dy="0.05em"
+                        fontSize={ringNumberFontSize}
+                        fontWeight={600}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fill="var(--ui-fg)"
+                        style={{ fontVariantNumeric: "tabular-nums" }}
+                    >
+                        {displayLevel}
+                    </text>
+                </g>
             );
         });
 

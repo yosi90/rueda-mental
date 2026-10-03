@@ -73,7 +73,7 @@ const LazyStatsModal = lazy(() => loadStatsModal().then((module) => ({ default: 
 
 const geometry = createWheelGeometry();
 const { size: SIZE, cx, cy, radius } = geometry;
-const RING_NUMBER_FONT_SIZE = 13;
+const RING_NUMBER_FONT_SIZE = 11;
 // La flor ocupa el 98 % de su lienzo; sus pétalos más largos llegan a 1,1 × el radio del círculo central
 const CENTER_MARK_SIZE = (geometry.centerRadius * 2 * 1.1) / 0.98;
 
