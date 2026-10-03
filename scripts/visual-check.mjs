@@ -183,6 +183,10 @@ const report = [];
     // Configuración: interruptores con role=switch
     await page.getByRole("button", { name: "Configuración" }).click();
     await page.waitForTimeout(400);
+    // Pestañas: la inicial es Sectores; flechas cambian de pestaña
+    await page.getByRole("tab", { name: "Sectores" }).focus();
+    await page.keyboard.press("ArrowRight");
+    report.push(`pestañas: ${await page.getByRole("tab").allInnerTexts().then((x) => x.join(" / "))} · tras → seleccionada: ${await page.getByRole("tab", { selected: true }).innerText()}`);
     const switches = await page.getByRole("switch").evaluateAll((els) => els.map((el) => `${el.getAttribute("aria-label")}=${el.getAttribute("aria-checked")}`));
     report.push(`interruptores: ${switches.join(", ")}`);
     await page.screenshot({ path: `${OUT}/09-settings-open.png` });
@@ -270,6 +274,7 @@ const report = [];
     const { page, context, errors } = await newPage(browser, {}, { acceptDownloads: true });
     await page.getByRole("button", { name: "Configuración" }).click();
     await page.waitForTimeout(400);
+    await page.getByRole("tab", { name: "Datos" }).click();
     const [download] = await Promise.all([
         page.waitForEvent("download"),
         page.getByRole("button", { name: "Exportar JSON" }).click(),
@@ -278,16 +283,20 @@ const report = [];
     await download.saveAs(backupPath);
 
     // Borrar «Ocio» y luego importar la copia: debe volver
+    await page.getByRole("tab", { name: "Sectores" }).click();
     await page.getByRole("button", { name: "Eliminar: Ocio" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Eliminar" }).click();
     const afterDelete = await page.getByRole("button", { name: "Eliminar: Ocio" }).count();
+    await page.getByRole("tab", { name: "Datos" }).click();
     await page.locator('input[type="file"]').setInputFiles(backupPath);
     await page.getByRole("alertdialog").getByRole("button", { name: "Importar JSON" }).click();
     await page.waitForTimeout(200);
+    await page.getByRole("tab", { name: "Sectores" }).click();
     const restored = await page.getByRole("button", { name: "Eliminar: Ocio" }).count();
     report.push(`copia: descargada ${download.suggestedFilename()} · tras borrar Ocio: ${afterDelete} · tras importar: ${restored}`);
 
     // Un archivo inválido muestra un aviso de error
+    await page.getByRole("tab", { name: "Datos" }).click();
     await page.locator('input[type="file"]').setInputFiles({ name: "malo.json", mimeType: "application/json", buffer: Buffer.from("{nope") });
     report.push(`archivo inválido → aviso: ${await page.getByRole("alert").textContent()}`);
     report.push(`errores copia: ${JSON.stringify(errors)}`);
@@ -381,6 +390,7 @@ const report = [];
     const { page, context, errors } = await newPage(browser);
     await page.getByRole("button", { name: "Configuración" }).click();
     await page.waitForTimeout(400);
+    await page.getByRole("tab", { name: "Apariencia" }).click();
     const styleOf = () => page.evaluate(() => `${document.documentElement.dataset.style}/${document.documentElement.dataset.theme}`);
     report.push(`estilo inicial: ${await styleOf()}`);
     for (const name of ["Aurora", "Playa", "Rock", "Montaña"]) {

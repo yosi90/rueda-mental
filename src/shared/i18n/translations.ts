@@ -76,6 +76,10 @@ const es = {
     "settings.quickSos.title": "Acceso rápido SOS",
     "settings.quickSos.desc": "Recursos de urgencia para España y teléfono directo en 1 toque.",
     "settings.quickSos.button": "Abrir SOS",
+    "settings.tab.sectors": "Sectores",
+    "settings.tab.appearance": "Apariencia",
+    "settings.tab.data": "Datos",
+    "settings.tab.general": "General",
 
     "language.title": "Idioma",
     "language.description": "Selecciona el idioma de la interfaz.",
@@ -312,6 +316,10 @@ const en: Record<keyof typeof es, string> = {
     "settings.quickSos.title": "Quick SOS access",
     "settings.quickSos.desc": "Emergency resources for Spain and direct call in one tap.",
     "settings.quickSos.button": "Open SOS",
+    "settings.tab.sectors": "Sectors",
+    "settings.tab.appearance": "Appearance",
+    "settings.tab.data": "Data",
+    "settings.tab.general": "General",
 
     "language.title": "Language",
     "language.description": "Choose the interface language.",
@@ -548,6 +556,10 @@ const pt: Record<keyof typeof es, string> = {
     "settings.quickSos.title": "Acesso rápido SOS",
     "settings.quickSos.desc": "Recursos de emergência para Espanha e chamada direta num toque.",
     "settings.quickSos.button": "Abrir SOS",
+    "settings.tab.sectors": "Setores",
+    "settings.tab.appearance": "Aparência",
+    "settings.tab.data": "Dados",
+    "settings.tab.general": "Geral",
 
     "language.title": "Idioma",
     "language.description": "Escolhe o idioma da interface.",
@@ -783,6 +795,10 @@ const de: Record<keyof typeof es, string> = {
     "settings.quickSos.title": "Schneller SOS-Zugang",
     "settings.quickSos.desc": "Notfallressourcen für Spanien und direkter Anruf mit nur einem Tippen.",
     "settings.quickSos.button": "SOS öffnen",
+    "settings.tab.sectors": "Bereiche",
+    "settings.tab.appearance": "Darstellung",
+    "settings.tab.data": "Daten",
+    "settings.tab.general": "Allgemein",
 
     "language.title": "Sprache",
     "language.description": "Wähle die Sprache der Benutzeroberfläche.",

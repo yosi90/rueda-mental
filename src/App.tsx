@@ -1,3 +1,4 @@
+import { ChartPie, Database, Palette, SlidersHorizontal } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useGlobalShortcuts } from "./app/useGlobalShortcuts";
 import { EMPTY_DAILY_SUMMARY, useMentalWheelData, type DataSnapshot } from "./app/useMentalWheelData";
@@ -427,48 +428,77 @@ export default function MentalWheelApp() {
                     setDrawerOpen(false);
                     setSosOpen(true);
                 }}
-            >
-                <LanguageSection />
-                <SectorsSettingsSection
-                    addSector={data.addSector}
-                    sectors={sectors}
-                    updateSector={data.updateSector}
-                    moveSector={data.moveSector}
-                    removeSector={removeSector}
-                    scores={scores}
-                    ringCount={RING_COUNT}
-                    setScore={setDisplayScore}
-                    isScaleInverted={isScaleInverted}
-                />
-                <ScaleDirectionSection
-                    isScaleInverted={isScaleInverted}
-                    setIsScaleInverted={preferences.setIsScaleInverted}
-                />
-                <DataSettingsSection
-                    resetDay={resetDay}
-                    exportJSON={exportBackup}
-                    onImportFile={importBackup}
-                    lastBackupAt={lastBackupAt}
-                    canInstall={canInstall}
-                    onInstall={() => void install()}
-                />
-                <ReferenceDaySection
-                    showReference={preferences.showReference}
-                    setShowReference={preferences.setShowReference}
-                />
-                <StatsVisibilitySection
-                    statsVisibility={statsVisibility}
-                    setStatsVisibility={preferences.setStatsVisibility}
-                />
-                <ThemeSection
-                    style={preferences.style}
-                    setStyle={preferences.setStyle}
-                    backgroundImage={preferences.backgroundImage}
-                    setBackgroundImage={preferences.setBackgroundImage}
-                />
-                <TutorialSection onRestartTutorial={restartTutorial} />
-                <LegalSection />
-            </SettingsDrawer>
+                tabs={[
+                    {
+                        id: "sectors",
+                        label: t("settings.tab.sectors"),
+                        Icon: ChartPie,
+                        content: (
+                            <SectorsSettingsSection
+                                addSector={data.addSector}
+                                sectors={sectors}
+                                updateSector={data.updateSector}
+                                moveSector={data.moveSector}
+                                removeSector={removeSector}
+                            />
+                        ),
+                    },
+                    {
+                        id: "appearance",
+                        label: t("settings.tab.appearance"),
+                        Icon: Palette,
+                        content: (
+                            <>
+                                <ThemeSection
+                                    style={preferences.style}
+                                    setStyle={preferences.setStyle}
+                                    backgroundImage={preferences.backgroundImage}
+                                    setBackgroundImage={preferences.setBackgroundImage}
+                                />
+                                <ReferenceDaySection
+                                    showReference={preferences.showReference}
+                                    setShowReference={preferences.setShowReference}
+                                />
+                                <ScaleDirectionSection
+                                    isScaleInverted={isScaleInverted}
+                                    setIsScaleInverted={preferences.setIsScaleInverted}
+                                />
+                                <StatsVisibilitySection
+                                    statsVisibility={statsVisibility}
+                                    setStatsVisibility={preferences.setStatsVisibility}
+                                />
+                            </>
+                        ),
+                    },
+                    {
+                        id: "data",
+                        label: t("settings.tab.data"),
+                        Icon: Database,
+                        content: (
+                            <DataSettingsSection
+                                resetDay={resetDay}
+                                exportJSON={exportBackup}
+                                onImportFile={importBackup}
+                                lastBackupAt={lastBackupAt}
+                                canInstall={canInstall}
+                                onInstall={() => void install()}
+                            />
+                        ),
+                    },
+                    {
+                        id: "general",
+                        label: t("settings.tab.general"),
+                        Icon: SlidersHorizontal,
+                        content: (
+                            <>
+                                <LanguageSection />
+                                <TutorialSection onRestartTutorial={restartTutorial} />
+                                <LegalSection />
+                            </>
+                        ),
+                    },
+                ]}
+            />
         </div>
     );
 }

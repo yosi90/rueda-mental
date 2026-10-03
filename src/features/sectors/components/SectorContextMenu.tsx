@@ -6,6 +6,7 @@ import type { InfoMenuContextual, Sector } from "../../../shared/types/mentalWhe
 import { rgbToHex } from "../../../shared/utils/color";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { IconPicker } from "./IconPicker";
+import { Trash2 } from "lucide-react";
 
 interface SectorContextMenuProps {
     menu: InfoMenuContextual | null;
@@ -181,7 +182,7 @@ function SectorMenuContent({
                         removeSector(sector.id);
                     }}
                 >
-                    <span aria-hidden="true">🗑️</span>
+                    <Trash2 size={16} aria-hidden="true" />
                 </button>
             </div>
 
