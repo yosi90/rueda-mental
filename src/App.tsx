@@ -1,4 +1,4 @@
-import { ChartPie, Database, Palette, SlidersHorizontal } from "lucide-react";
+import { ChartPie, Database, LocateFixed, Palette, SlidersHorizontal } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useGlobalShortcuts } from "./app/useGlobalShortcuts";
 import { EMPTY_DAILY_SUMMARY, useMentalWheelData, type DataSnapshot } from "./app/useMentalWheelData";
@@ -371,11 +371,11 @@ export default function MentalWheelApp() {
                 <button
                     type="button"
                     onClick={resetZoom}
-                    className={`fixed bottom-20 sm:bottom-4 right-4 z-40 rounded-full ${theme.buttonPrimary} px-4 py-3 shadow-lg transition-colors text-sm font-medium`}
+                    className="fixed bottom-20 sm:bottom-4 right-4 z-40 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-primary-fg shadow-lg transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     title={t("app.resetZoom")}
                     aria-label={t("app.resetZoom")}
                 >
-                    <span aria-hidden="true">🔍</span>
+                    <LocateFixed className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
                 </button>
             )}
 

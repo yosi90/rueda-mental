@@ -134,7 +134,7 @@ export function FloatingInfoPanel({
         <div className="fixed z-40 inset-x-0 top-0 flex flex-col gap-2 sm:inset-x-auto sm:top-4 sm:left-4 sm:flex-row sm:items-start sm:gap-3">
             {/* Media del día y SOS: solo desde sm (en móvil, SOS está en Configuración) */}
             <div className="hidden sm:flex flex-col gap-2 w-fit">
-                <div className={`rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg min-w-40 sm:min-w-none`}>
+                <div className={`app-panel rounded-xl sm:rounded-2xl ${theme.card} backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 shadow-lg min-w-40 sm:min-w-none`}>
                     <div className={`text-xs sm:text-sm ${theme.textMuted}`}>
                         {hasHoverInfo ? (
                             hoverInfoContent
@@ -161,7 +161,7 @@ export function FloatingInfoPanel({
 
             <div className="flex flex-col gap-2">
             {/* En móvil, barra superior a todo el ancho; desde sm, tarjeta flotante */}
-            <div className={`border-b ${theme.borderLight} bg-surface px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:rounded-2xl sm:border-0 sm:bg-surface/90 sm:backdrop-blur-sm sm:px-4 sm:py-3 sm:shadow-lg`}>
+            <div className={`app-panel border-b ${theme.borderLight} bg-surface px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:rounded-2xl sm:border-0 sm:bg-surface/90 sm:backdrop-blur-sm sm:px-4 sm:py-3 sm:shadow-lg`}>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
@@ -301,7 +301,7 @@ export function FloatingInfoPanel({
             </div>
 
             {referenceLabel && (
-                <div className={`mx-3 sm:mx-0 self-start inline-flex items-center gap-2 rounded-xl ${theme.card} backdrop-blur-sm px-3 py-1 text-xs shadow-md ${theme.textMuted}`}>
+                <div className={`app-panel mx-3 sm:mx-0 self-start inline-flex items-center gap-2 rounded-xl ${theme.card} backdrop-blur-sm px-3 py-1 text-xs shadow-md ${theme.textMuted}`}>
                     <svg width="18" height="4" aria-hidden="true" className="shrink-0">
                         <line x1="1" y1="2" x2="17" y2="2" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" />
                     </svg>
@@ -314,7 +314,7 @@ export function FloatingInfoPanel({
                     type="button"
                     onClick={copySource.onCopy}
                     title={t("panel.copyFromTitle", { date: copySource.label })}
-                    className={`mx-3 sm:mx-0 self-start inline-flex items-center gap-1.5 rounded-xl ${theme.card} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${theme.text} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+                    className={`app-panel mx-3 sm:mx-0 self-start inline-flex items-center gap-1.5 rounded-xl ${theme.card} backdrop-blur-sm min-h-8 px-3 text-xs font-medium shadow-md transition-colors ${theme.text} hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
                 >
                     <span aria-hidden="true">↺</span>
                     {t("panel.copyFrom", { date: copySource.label })}
