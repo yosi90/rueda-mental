@@ -35,11 +35,14 @@ import {
 import { FloatingInfoPanel } from "./shared/components/FloatingInfoPanel";
 import { MainActionButtons } from "./shared/components/MainActionButtons";
 import { JournalModal } from "./features/journal/components/JournalModal";
+import { ReportView } from "./features/report/components/ReportView";
+import { buildCsv, csvOptionsFor } from "./features/report/csv";
+import { collectReportDays, type ReportSource } from "./features/report/report";
 import { useFeedback } from "./shared/feedback/FeedbackProvider";
 import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection";
 import { useMediaQuery } from "./shared/hooks/useMediaQuery";
 import { useI18n } from "./shared/i18n/I18nContext";
-import { downloadBackup, readBackupFile } from "./shared/services/io/backup";
+import { downloadBackup, downloadFile, readBackupFile } from "./shared/services/io/backup";
 import {
     hasTutorialBeenShown,
     loadLastBackupAt,
@@ -94,6 +97,7 @@ export default function MentalWheelApp() {
     const [summaryOpen, setSummaryOpen] = useState(false);
     const [sosOpen, setSosOpen] = useState(false);
     const [journalOpen, setJournalOpen] = useState(false);
+    const [reportOpen, setReportOpen] = useState(false);
     const [lastBackupAt, setLastBackupAt] = useState<number | null>(() => loadLastBackupAt());
     const svgRef = useRef<SVGSVGElement>(null);
     const labelBounds = useVisibleLabelBounds(svgRef, SIZE);
@@ -273,6 +277,31 @@ export default function MentalWheelApp() {
         }, `rueda-desempeno-${dateStr}.json`);
         saveLastBackupAt();
         setLastBackupAt(Date.now());
+    }
+
+    const reportSource: ReportSource = useMemo(() => ({
+        sectors,
+        scoresByDate,
+        commentsByDate,
+        dailySummaryByDate,
+        toDisplay: (raw: number) => toDisplayScore(raw, RING_COUNT, isScaleInverted),
+    }), [sectors, scoresByDate, commentsByDate, dailySummaryByDate, isScaleInverted]);
+
+    function exportCsv(): void {
+        const days = collectReportDays(reportSource, undefined, todayStr);
+        if (days.length === 0) {
+            notify({ message: t("report.csvEmpty") });
+            return;
+        }
+        const csv = buildCsv(days, sectors, {
+            date: t("report.csvHeader.date"),
+            average: t("report.csvHeader.average"),
+            mood: t("report.csvHeader.mood"),
+            summary: { good: t("summary.good"), bad: t("summary.bad"), howFacedBad: t("summary.howFaced") },
+            comment: (name) => t("report.csvHeader.comment", { name }),
+            archived: (name) => t("report.csvHeader.archived", { name }),
+        }, csvOptionsFor(locale));
+        downloadFile(csv, `dia-a-dia-${todayStr}.csv`, "text/csv;charset=utf-8");
     }
 
     async function importBackup(file: File): Promise<void> {
@@ -473,6 +502,9 @@ export default function MentalWheelApp() {
                     setSummaryOpen(true);
                 }}
             />
+            {reportOpen && (
+                <ReportView source={reportSource} today={todayStr} ringCount={RING_COUNT} onClose={() => setReportOpen(false)} />
+            )}
             <SOSModal open={sosOpen} onClose={() => setSosOpen(false)} />
             {stylePickerVisible && (
                 <StyleWelcomePicker
@@ -561,6 +593,11 @@ export default function MentalWheelApp() {
                                 lastBackupAt={lastBackupAt}
                                 canInstall={canInstall}
                                 onInstall={() => void install()}
+                                onExportCsv={exportCsv}
+                                onOpenReport={() => {
+                                    setDrawerOpen(false);
+                                    setReportOpen(true);
+                                }}
                             />
                         ),
                     },

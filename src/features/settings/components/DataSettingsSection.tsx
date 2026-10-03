@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { theme } from "../../../shared/theme/theme";
 import { useI18n } from "../../../shared/i18n/I18nContext";
 
@@ -11,6 +11,8 @@ interface DataSettingsSectionProps {
     /** El navegador ofrece instalar la app (Chromium). */
     canInstall: boolean;
     onInstall: () => void;
+    onExportCsv: () => void;
+    onOpenReport: () => void;
 }
 
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -23,6 +25,8 @@ export function DataSettingsSection({
     lastBackupAt,
     canInstall,
     onInstall,
+    onExportCsv,
+    onOpenReport,
 }: DataSettingsSectionProps) {
     const { t, locale } = useI18n();
     const buttonClass = `flex-1 rounded-lg border ${theme.border} ${theme.button} px-3 py-2 text-sm transition-colors`;
@@ -59,6 +63,21 @@ export function DataSettingsSection({
                 </label>
             </div>
             <p className={`mt-2 text-xs ${theme.textLight}`}>{lastBackupLabel}</p>
+
+            <div className={`mt-3 border-t ${theme.borderLight} pt-3`}>
+                <div className={`text-sm font-semibold ${theme.text}`}>{t("report.sectionTitle")}</div>
+                <p className={`mb-2 text-xs ${theme.textLight}`}>{t("report.sectionHint")}</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <button type="button" onClick={onOpenReport} className={`${buttonClass} inline-flex items-center justify-center gap-2`}>
+                        <FileText size={16} aria-hidden="true" />
+                        {t("report.open")}
+                    </button>
+                    <button type="button" onClick={onExportCsv} className={`${buttonClass} inline-flex items-center justify-center gap-2`}>
+                        <FileSpreadsheet size={16} aria-hidden="true" />
+                        {t("report.exportCsv")}
+                    </button>
+                </div>
+            </div>
 
             {!isStandalone() && (canInstall || isIos()) && (
                 <div className={`mt-3 border-t ${theme.borderLight} pt-3`}>

@@ -584,6 +584,60 @@ const report = [];
     await empty.context.close();
 }
 
+// 17. Exportar CSV e informe imprimible
+{
+    const { page, context, errors } = await newPage(browser);
+    await page.evaluate(() => {
+        const day = (back) => {
+            const d = new Date(); d.setDate(d.getDate() - back);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        };
+        localStorage.setItem("mental-wheel-daily-summary-v1", JSON.stringify({
+            [day(0)]: { good: "Paseo; con \"amigos\"", bad: "", howFacedBad: "", mood: 4 },
+            [day(2)]: { good: "", bad: "Mal día", howFacedBad: "", mood: 2 },
+            [day(4)]: { good: "", bad: "", howFacedBad: "", mood: 4 },
+        }));
+        localStorage.setItem("mental-wheel-comments-v1", JSON.stringify({ [day(1)]: { s0: "Comida familiar" } }));
+    });
+    await page.reload();
+    await page.waitForSelector("svg");
+    await page.getByRole("button", { name: "Configuración" }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("tab", { name: "Datos" }).click();
+    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Exportar CSV" }).click()]);
+    const csvPath = await download.path();
+    const { readFileSync } = await import("node:fs");
+    const csv = readFileSync(csvPath, "utf8");
+    const lines = csv.replace(/^\uFEFF/, "").trim().split("\r\n");
+    report.push(`CSV: ${download.suggestedFilename()} · BOM ${csv.charCodeAt(0) === 0xfeff} · ${lines.length - 1} filas`);
+    report.push(`CSV cabecera: ${lines[0]}`);
+    report.push(`CSV hoy: ${lines[lines.length - 1]}`);
+
+    await page.getByRole("button", { name: "Informe imprimible" }).click();
+    const dialog = page.getByRole("dialog", { name: "Informe de bienestar" });
+    await dialog.waitFor({ timeout: 3000 });
+    report.push(`informe 30 días: ${await dialog.locator("tbody").last().locator("tr").count()} días en la tabla`);
+    await page.screenshot({ path: `${OUT}/26-report.png` });
+    await dialog.getByRole("button", { name: "7 días" }).click();
+    await dialog.getByLabel("Incluir resúmenes y comentarios").check();
+    report.push(`informe 7 días: ${await dialog.locator("tbody").last().locator("tr").count()} días · notas: ${await dialog.getByText("Comida familiar").count()}`);
+    await page.emulateMedia({ media: "print" });
+    await page.screenshot({ path: `${OUT}/27-report-print.png`, fullPage: true });
+    await page.pdf({ path: `${OUT}/report.pdf`, format: "A4" });
+    await page.emulateMedia({ media: "screen" });
+    report.push(`errores informe: ${JSON.stringify(errors)}`);
+
+    const mobile = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await mobile.page.getByRole("button", { name: "Configuración" }).first().click();
+    await mobile.page.waitForTimeout(300);
+    await mobile.page.getByRole("tab", { name: "Datos" }).click();
+    await mobile.page.getByRole("button", { name: "Informe imprimible" }).click();
+    await mobile.page.waitForTimeout(300);
+    await mobile.page.screenshot({ path: `${OUT}/28-report-mobile.png` });
+    await mobile.context.close();
+    await context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

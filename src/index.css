@@ -187,3 +187,42 @@ select {
 .padding-esp {
   padding: 2px 4px;
 }
+
+/* Informe imprimible: al imprimir solo se ve la hoja del informe */
+@media print {
+  body > :not(.print-report) {
+    display: none !important;
+  }
+
+  .print-report {
+    position: static !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .print-report .no-print {
+    display: none !important;
+  }
+
+  .print-report .report-paper {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .print-report,
+  .print-report * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

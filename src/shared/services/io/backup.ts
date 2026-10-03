@@ -102,7 +102,12 @@ export function parseBackup(raw: string): ParsedBackup | null {
 
 /** Descarga la copia de seguridad como archivo JSON. */
 export function downloadBackup(backup: MentalWheelBackup, filename: string): void {
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    downloadFile(JSON.stringify(backup, null, 2), filename, "application/json");
+}
+
+/** Descarga un texto como archivo. */
+export function downloadFile(content: string, filename: string, type: string): void {
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
