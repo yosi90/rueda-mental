@@ -80,7 +80,7 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 - [x] Ajustar contraste de los fondos (claro más luminoso, oscuro más contrastado).
 - [x] «Rueda fantasma»: contorno discontinuo del último día registrado (desactivable en Configuración).
 - [x] Optimizar el favicon (70 KB → 3 KB) y añadir icono para iOS, descripción y color de tema.
-- [x] Banderas del selector de idioma sustituidas por el código de idioma (las banderas son de países, no de idiomas).
+- [x] Banderas del selector de idioma dibujadas en SVG (los emojis de bandera no se ven en Windows); inglés con la del Reino Unido.
 - [x] Zoom con la rueda del ratón sin error de listener pasivo; importar JSON accesible con teclado.
 
 ### Ajustes tras revisión en móvil

@@ -1,4 +1,5 @@
 import { useI18n } from "../../../shared/i18n/I18nContext";
+import { LanguageFlag } from "./LanguageFlag";
 import { theme } from "../../../shared/theme/theme";
 
 export function LanguageSection() {
@@ -28,7 +29,7 @@ export function LanguageSection() {
                             aria-pressed={isActive}
                             lang={option.code}
                         >
-                            <span className="mr-2 inline-block min-w-6 rounded px-1 text-xs font-semibold uppercase tracking-wide opacity-70 border border-current" aria-hidden="true">{option.code}</span>
+                            <LanguageFlag language={option.code} className="mr-2 align-[-2px]" />
                             {option.name}
                         </button>
                     );
