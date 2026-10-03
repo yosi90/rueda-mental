@@ -74,6 +74,8 @@ const LazyStatsModal = lazy(() => loadStatsModal().then((module) => ({ default: 
 const geometry = createWheelGeometry();
 const { size: SIZE, cx, cy, radius } = geometry;
 const RING_NUMBER_FONT_SIZE = 13;
+// La flor ocupa el 86 % de su lienzo; sus pétalos llegan a 1,1 × el radio del círculo central
+const CENTER_MARK_SIZE = (geometry.centerRadius * 2 * 1.1) / 0.86;
 
 export default function MentalWheelApp() {
     const { t, language, setLanguage, locale, languageDetails } = useI18n();
@@ -449,21 +451,16 @@ export default function MentalWheelApp() {
                                 onKeyboardScore={setDisplayScore}
                                 onOpenSectorMenu={(idSector, x, y) => setContextMenu({ idSector, x, y })}
                             />
-                            {/* Icono de la app en el centro de la rueda (decorativo) */}
-                            <clipPath id="wheel-center-clip">
-                                <circle cx={cx} cy={cy} r={geometry.centerRadius} />
-                            </clipPath>
+                            {/* Flor del icono en el centro de la rueda (decorativa), sin recortar: sus pétalos sobresalen */}
                             <image
-                                href="/favicon.svg"
-                                x={cx - geometry.centerRadius}
-                                y={cy - geometry.centerRadius}
-                                width={geometry.centerRadius * 2}
-                                height={geometry.centerRadius * 2}
-                                clipPath="url(#wheel-center-clip)"
+                                href="/logo-mark.svg"
+                                x={cx - CENTER_MARK_SIZE / 2}
+                                y={cy - CENTER_MARK_SIZE / 2}
+                                width={CENTER_MARK_SIZE}
+                                height={CENTER_MARK_SIZE}
                                 pointerEvents="none"
                                 aria-hidden="true"
                             />
-                            <circle cx={cx} cy={cy} r={geometry.centerRadius} fill="none" stroke={theme.svgCenterBorder} pointerEvents="none" />
                         </g>
                     </svg>
                 </div>
