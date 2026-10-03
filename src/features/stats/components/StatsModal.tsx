@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { MOODS } from "../../summary/summaryDefinitions";
 import { StatsSkeleton } from "./StatsLoading";
 import { chartTooltipStyle, theme } from "../../../shared/theme/theme";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -12,7 +13,7 @@ import { getSectorSeriesKey } from "../utils/sectorSeriesKey";
 import { useDialogA11y } from "../../../shared/hooks/useDialogA11y";
 import { CloseIcon } from "../../../shared/components/CloseIcon";
 
-const STATS_SECTION_COUNT = 7;
+const STATS_SECTION_COUNT = 8;
 
 // Tarjetas de gráficas: fondo propio (--ui-chart-card) para que la paleta validada mantenga 3:1 de contraste
 const CHART_CARD = "bg-chart-card";
@@ -60,6 +61,7 @@ export function StatsModal({
     }, [revealed]);
     const sectionEnabled = [
         statsVisibility.showDailyAverage,
+        statsVisibility.showMood,
         statsVisibility.showSectorProgress,
         statsVisibility.showLast7AllSectors,
         statsVisibility.showComparison,
@@ -123,6 +125,31 @@ export function StatsModal({
         actual: toChartScore(point.actual),
         promedio: toChartScore(point.promedio),
     }));
+
+    const moodLabel = (mood: number) => t(MOODS[mood - 1].labelKey);
+    const moodChartData = statsData.moodHistory.map((point) => ({
+        ...point,
+        media: point.media === null ? null : toChartScore(point.media),
+    }));
+    const moodRelationChartData = statsData.moodRelation.map((point) => ({
+        label: moodLabel(point.mood),
+        media: toChartScore(point.media),
+    }));
+    // La serie del ánimo muestra su etiqueta; la de la media, la puntuación en escala visible
+    const formatMoodTooltip = (value: number | string, name: string, item: { dataKey?: unknown }): [string | number, string] =>
+        item.dataKey === "mood" && typeof value === "number" ? [moodLabel(value), name] : formatChartTooltipValue(value, name);
+    // Comparación entre el mejor y el peor estado de ánimo con días puntuados
+    const highMood = statsData.moodRelation[statsData.moodRelation.length - 1];
+    const lowMood = statsData.moodRelation[0];
+    const formatScore = (value: number) => value.toLocaleString(locale, { maximumFractionDigits: 1 });
+    const moodInsight = statsData.moodRelation.length >= 2
+        ? t("stats.moodInsight", {
+            high: moodLabel(highMood.mood),
+            highAvg: formatScore(highMood.media),
+            low: moodLabel(lowMood.mood),
+            lowAvg: formatScore(lowMood.media),
+        })
+        : null;
 
     const weeklyChartData = statsData.weeklyData.map((point) => ({
         ...point,
@@ -222,8 +249,90 @@ export function StatsModal({
                                         </div>
                                     )}
 
+                                    {/* Estado de ánimo y su relación con la media de la rueda */}
+                                    {statsVisibility.showMood && revealed > 1 && (
+                                        <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
+                                            <h3 className={`text-base md:text-lg font-semibold mb-1 ${theme.text}`}>{t("stats.moodChart")}</h3>
+                                            {statsData.moodHistory.length < 2 ? (
+                                                <p className={`text-sm ${theme.textMuted}`}>{t("stats.moodEmpty")}</p>
+                                            ) : (
+                                                <>
+                                                    <p className={`text-xs mb-3 ${theme.textMuted}`}>{t("stats.moodChartDesc")}</p>
+                                                    <ResponsiveContainer width="100%" height={250}>
+                                                        <LineChart data={moodChartData}>
+                                                            <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                            <XAxis dataKey="displayDate" stroke={theme.chartText} style={{ fontSize: '12px' }} />
+                                                            <YAxis
+                                                                yAxisId="score"
+                                                                domain={yAxisDomain}
+                                                                tickFormatter={formatChartAxisTick}
+                                                                stroke={theme.chartText}
+                                                                style={{ fontSize: '12px' }}
+                                                            />
+                                                            <YAxis
+                                                                yAxisId="mood"
+                                                                orientation="right"
+                                                                domain={[1, 5]}
+                                                                ticks={[1, 2, 3, 4, 5]}
+                                                                allowDecimals={false}
+                                                                stroke={theme.chartText}
+                                                                style={{ fontSize: '12px' }}
+                                                                width={30}
+                                                            />
+                                                            <Tooltip formatter={formatMoodTooltip} contentStyle={chartTooltipStyle} />
+                                                            <Legend formatter={legendText} />
+                                                            <Line
+                                                                yAxisId="score"
+                                                                type="monotone"
+                                                                dataKey="media"
+                                                                name={t("stats.moodWheelAverage")}
+                                                                stroke="var(--chart-series-1)"
+                                                                strokeWidth={2}
+                                                                connectNulls
+                                                                isAnimationActive={ANIMATE_CHARTS}
+                                                                dot={{ r: 3 }}
+                                                            />
+                                                            <Line
+                                                                yAxisId="mood"
+                                                                type="monotone"
+                                                                dataKey="mood"
+                                                                name={t("stats.moodLine")}
+                                                                stroke="var(--chart-series-2)"
+                                                                strokeWidth={2}
+                                                                strokeDasharray="5 3"
+                                                                isAnimationActive={ANIMATE_CHARTS}
+                                                                dot={{ r: 4 }}
+                                                            />
+                                                        </LineChart>
+                                                    </ResponsiveContainer>
+
+                                                    {statsData.moodRelation.length > 0 && (
+                                                        <div className={`mt-4 pt-4 border-t ${theme.borderLight}`}>
+                                                            <h4 className={`text-sm font-semibold mb-3 ${theme.text}`}>{t("stats.moodRelation")}</h4>
+                                                            <ResponsiveContainer width="100%" height={200}>
+                                                                <BarChart data={moodRelationChartData}>
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />
+                                                                    <XAxis dataKey="label" stroke={theme.chartText} style={{ fontSize: '12px' }} interval={0} />
+                                                                    <YAxis
+                                                                        domain={yAxisDomain}
+                                                                        tickFormatter={formatChartAxisTick}
+                                                                        stroke={theme.chartText}
+                                                                        style={{ fontSize: '12px' }}
+                                                                    />
+                                                                    <Tooltip formatter={formatChartTooltipValue} contentStyle={chartTooltipStyle} />
+                                                                    <Bar dataKey="media" name={t("stats.moodWheelAverage")} fill="var(--chart-series-1)" radius={[4, 4, 0, 0]} isAnimationActive={ANIMATE_CHARTS} />
+                                                                </BarChart>
+                                                            </ResponsiveContainer>
+                                                            {moodInsight && <p className={`text-sm mt-2 text-center ${theme.text}`}>{moodInsight}</p>}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Gráfico 2: Progresión por Sector */}
-                                    {statsVisibility.showSectorProgress && revealed > 1 && (
+                                    {statsVisibility.showSectorProgress && revealed > 2 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                                 <h3 className={`text-base md:text-lg font-semibold ${theme.text}`}>{t("stats.sectorProgressChart")}</h3>
@@ -277,7 +386,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico: Últimos 7 Días - Todos los Sectores */}
-                                    {statsVisibility.showLast7AllSectors && revealed > 2 && last7ChartData && (
+                                    {statsVisibility.showLast7AllSectors && revealed > 3 && last7ChartData && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.last7Chart")}</h3>
 
@@ -357,7 +466,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 3: Comparación de Sectores */}
-                                    {statsVisibility.showComparison && revealed > 3 && (
+                                    {statsVisibility.showComparison && revealed > 4 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.comparisonChart")}</h3>
                                             <ResponsiveContainer width="100%" height={300}>
@@ -390,7 +499,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 4: Tendencia Semanal */}
-                                    {statsVisibility.showWeeklyTrend && revealed > 4 && (
+                                    {statsVisibility.showWeeklyTrend && revealed > 5 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.weeklyChart")}</h3>
                                             <ResponsiveContainer width="100%" height={250}>
@@ -421,7 +530,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Gráfico 5: Heat Map de Consistencia */}
-                                    {statsVisibility.showHeatMap && revealed > 5 && (
+                                    {statsVisibility.showHeatMap && revealed > 6 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-4 ${theme.text}`}>{t("stats.heatMapChart")}</h3>
                                             <div className="grid lg:grid-cols-30 grid-cols-10 gap-1 sm:gap-2">
@@ -464,7 +573,7 @@ export function StatsModal({
                                     )}
 
                                     {/* Resumen de Insights */}
-                                    {statsVisibility.showInsights && revealed > 6 && (
+                                    {statsVisibility.showInsights && revealed > 7 && (
                                         <div className={`rounded-xl border ${theme.border} p-4 ${CHART_CARD}`}>
                                             <h3 className={`text-base md:text-lg font-semibold mb-3 ${theme.text}`}>{t("statsVisibility.insights")}</h3>
                                             <div className="space-y-2 text-sm">

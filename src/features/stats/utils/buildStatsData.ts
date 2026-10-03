@@ -1,12 +1,14 @@
-import type { Scores, ScoresByDate, Sector } from "../../../shared/types/mentalWheel";
+import type { DailySummaryByDate, Scores, ScoresByDate, Sector } from "../../../shared/types/mentalWheel";
+import { isValidMood } from "../../../shared/utils/summary";
 import { toDisplayScore } from "../../../shared/utils/scoreScale";
 import { addDaysToDateInput, parseDateInput } from "../../../shared/utils/date";
 import { dayHasScores } from "../../../shared/utils/scores";
-import type { Last7AllSectorsPoint, StatsData } from "../types/stats";
+import type { Last7AllSectorsPoint, MoodPoint, MoodRelationPoint, StatsData } from "../types/stats";
 import { getSectorSeriesKey } from "./sectorSeriesKey";
 
 interface BuildStatsDataParams {
     scoresByDate: ScoresByDate;
+    dailySummaryByDate?: DailySummaryByDate;
     sectors: Sector[];
     scores: Scores;
     todayStr: string;
@@ -36,6 +38,7 @@ export function calculateStreak(datesWithData: ReadonlySet<string>, todayStr: st
 
 export function buildStatsData({
     scoresByDate,
+    dailySummaryByDate = {},
     sectors,
     scores,
     todayStr,
@@ -153,6 +156,23 @@ export function buildStatsData({
         });
     };
 
+    // Estado de ánimo (resumen del día) y su relación con la media de la rueda
+    const moodHistory: MoodPoint[] = Object.keys(dailySummaryByDate)
+        .filter((date) => date <= todayStr && isValidMood(dailySummaryByDate[date].mood))
+        .sort()
+        .map((date) => ({
+            date,
+            displayDate: formatShort(date),
+            mood: dailySummaryByDate[date].mood as number,
+            media: datesWithData.has(date) ? parseFloat(dayAverage(date).toFixed(2)) : null,
+        }));
+    const moodRelation: MoodRelationPoint[] = [1, 2, 3, 4, 5]
+        .map((mood) => {
+            const averages = moodHistory.filter((p) => p.mood === mood && p.media !== null).map((p) => p.media as number);
+            return { mood, media: parseFloat(average(averages).toFixed(2)), days: averages.length };
+        })
+        .filter((point) => point.days > 0);
+
     return {
         todaySectorScores,
         historicalSectorScores,
@@ -165,5 +185,7 @@ export function buildStatsData({
         last7DaysAllSectors: last7DaysAllSectors(),
         totalDays: dates.length,
         currentStreak: calculateStreak(datesWithData, todayStr),
+        moodHistory,
+        moodRelation,
     };
 }

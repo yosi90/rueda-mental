@@ -14,6 +14,7 @@ type StatsToggleKey = Exclude<keyof StatsVisibility, "enabled">;
 
 const STATS_VISIBILITY_OPTIONS: ReadonlyArray<{ key: StatsToggleKey; labelKey: TranslationKey }> = [
     { key: "showDailyAverage", labelKey: "statsVisibility.dailyAverage" },
+    { key: "showMood", labelKey: "statsVisibility.mood" },
     { key: "showSectorProgress", labelKey: "statsVisibility.sectorProgress" },
     { key: "showLast7AllSectors", labelKey: "statsVisibility.last7" },
     { key: "showComparison", labelKey: "statsVisibility.comparison" },

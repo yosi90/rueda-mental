@@ -48,6 +48,22 @@ export type Last7AllSectorsPoint = {
     isToday: boolean;
 } & Record<string, string | number | boolean>;
 
+export interface MoodPoint {
+    date: string;
+    displayDate: string;
+    /** 1 (muy mal) … 5 (muy bien). */
+    mood: number;
+    /** Media de la rueda ese día (escala visible), o null si no hay puntuaciones. */
+    media: number | null;
+}
+
+export interface MoodRelationPoint {
+    mood: number;
+    /** Media de la rueda en los días con este estado de ánimo (escala visible). */
+    media: number;
+    days: number;
+}
+
 export interface StatsData {
     todaySectorScores: SectorScorePoint[];
     historicalSectorScores: SectorScorePoint[];
@@ -60,4 +76,8 @@ export interface StatsData {
     last7DaysAllSectors: Last7AllSectorsPoint[] | null;
     totalDays: number;
     currentStreak: number;
+    /** Días con estado de ánimo anotado (hasta hoy), en orden. */
+    moodHistory: MoodPoint[];
+    /** Media de la rueda por estado de ánimo (solo niveles con días puntuados). */
+    moodRelation: MoodRelationPoint[];
 }

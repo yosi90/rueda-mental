@@ -60,6 +60,7 @@ export type StatsVisibility = {
     showWeeklyTrend: boolean;
     showHeatMap: boolean;
     showInsights: boolean;
+    showMood: boolean;
 };
 
 export interface MentalWheelBackup {

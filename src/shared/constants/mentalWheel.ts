@@ -9,4 +9,5 @@ export const DEFAULT_STATS_VISIBILITY: StatsVisibility = {
     showWeeklyTrend: true,
     showHeatMap: true,
     showInsights: true,
+    showMood: true,
 };

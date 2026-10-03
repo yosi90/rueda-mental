@@ -130,6 +130,7 @@ export default function MentalWheelApp() {
     const statsData = useMemo(
         () => buildStatsData({
             scoresByDate,
+            dailySummaryByDate,
             sectors: activeSectors,
             scores,
             todayStr,
@@ -139,7 +140,7 @@ export default function MentalWheelApp() {
             weekDaysShort: languageDetails.weekDaysShort,
             todayLabel: languageDetails.todayLabel,
         }),
-        [scoresByDate, activeSectors, scores, todayStr, isScaleInverted, locale, languageDetails.weekDaysShort, languageDetails.todayLabel]
+        [scoresByDate, dailySummaryByDate, activeSectors, scores, todayStr, isScaleInverted, locale, languageDetails.weekDaysShort, languageDetails.todayLabel]
     );
     const daysWithData = useMemo(
         () => collectDaysWithData(scoresByDate, commentsByDate, dailySummaryByDate),

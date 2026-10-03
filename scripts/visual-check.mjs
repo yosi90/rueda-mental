@@ -638,6 +638,39 @@ const report = [];
     await context.close();
 }
 
+// 18. Estado de ánimo en las estadísticas
+{
+    const { page, context, errors } = await newPage(browser);
+    await page.evaluate(() => {
+        const scores = JSON.parse(localStorage.getItem("mental-wheel-scores-v1"));
+        const summaries = {};
+        for (const date of Object.keys(scores).sort().slice(-14)) {
+            const values = Object.values(scores[date]);
+            if (!values.length) continue;
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            summaries[date] = { good: "", bad: "", howFacedBad: "", mood: Math.max(1, Math.min(5, Math.round(avg / 2))) };
+        }
+        localStorage.setItem("mental-wheel-daily-summary-v1", JSON.stringify(summaries));
+    });
+    await page.reload();
+    await page.waitForSelector("svg");
+    await page.getByRole("button", { name: "Estadísticas" }).first().click();
+    const card = page.locator("div", { has: page.getByRole("heading", { name: "Estado de ánimo", exact: true }) }).last();
+    await card.waitFor({ timeout: 5000 });
+    await page.waitForTimeout(1200);
+    await card.scrollIntoViewIfNeeded();
+    report.push(`ánimo en estadísticas: ${await card.locator("svg.recharts-surface").count()} gráficas · ${await card.locator("p").last().innerText()}`);
+    await card.screenshot({ path: `${OUT}/31-stats-mood.png` });
+    report.push(`errores ánimo: ${JSON.stringify(errors)}`);
+    await context.close();
+
+    const empty = await newPage(browser);
+    await empty.page.getByRole("button", { name: "Estadísticas" }).first().click();
+    await empty.page.waitForTimeout(800);
+    report.push(`ánimo sin datos: ${(await empty.page.getByText("Anota tu estado de ánimo en el resumen").count()) > 0}`);
+    await empty.context.close();
+}
+
 // 5. Móvil
 {
     const { page, context } = await newPage(browser, {}, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

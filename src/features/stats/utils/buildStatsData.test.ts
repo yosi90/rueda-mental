@@ -53,6 +53,38 @@ describe("buildStatsData", () => {
         expect(stats.dailyAverage).toEqual([expect.objectContaining({ date: "2026-10-01", media: 5 })]);
     });
 
+    it("estado de ánimo: historial y media de la rueda por nivel", () => {
+        const stats = buildStatsData({
+            scoresByDate: { "2026-09-29": { a: 8, b: 6 }, "2026-09-30": { a: 4 }, "2026-10-01": { a: 6 } },
+            dailySummaryByDate: {
+                "2026-09-29": { good: "", bad: "", howFacedBad: "", mood: 4 },
+                "2026-09-30": { good: "", bad: "", howFacedBad: "", mood: 2 },
+                "2026-10-01": { good: "", bad: "", howFacedBad: "", mood: 4 },
+                "2026-09-28": { good: "", bad: "", howFacedBad: "", mood: 3 }, // sin puntuaciones
+                "2026-10-05": { good: "", bad: "", howFacedBad: "", mood: 5 }, // futuro
+                "2026-09-27": { good: "x", bad: "", howFacedBad: "" }, // sin ánimo
+            },
+            sectors,
+            scores: {},
+            todayStr: "2026-10-02",
+            ringCount: 10,
+            isScaleInverted: false,
+            locale: "es-ES",
+            weekDaysShort: WEEK_DAYS,
+            todayLabel: "Hoy",
+        });
+        expect(stats.moodHistory.map((p) => [p.date, p.mood, p.media])).toEqual([
+            ["2026-09-28", 3, null],
+            ["2026-09-29", 4, 7],
+            ["2026-09-30", 2, 4],
+            ["2026-10-01", 4, 6],
+        ]);
+        expect(stats.moodRelation).toEqual([
+            { mood: 2, media: 4, days: 1 },
+            { mood: 4, media: 6.5, days: 2 },
+        ]);
+    });
+
     it("la media diaria no cuenta sectores sin puntuar, también con escala invertida", () => {
         const stats = build({ "2026-10-01": { a: 2 } }, "2026-10-02", true);
         // Raw 2 en escala invertida (1..10) se muestra como 9; el sector sin puntuar no suma.
