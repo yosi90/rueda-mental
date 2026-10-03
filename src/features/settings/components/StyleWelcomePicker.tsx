@@ -120,14 +120,15 @@ export function StyleWelcomePicker({ currentStyle, backgroundImage, onConfirm, o
             >
                 <div className="px-5 pt-5 sm:px-6">
                     <h2 id={titleId} className="text-xl sm:text-2xl font-bold">{t("welcome.styleTitle")}</h2>
-                    <p id={descId} className={`mt-1 text-sm ${theme.textMuted}`}>{t("welcome.styleSubtitle")}</p>
+                    {/* En móvil se oculta (sigue como descripción accesible del diálogo) */}
+                    <p id={descId} className={`mt-1 hidden text-sm sm:block ${theme.textMuted}`}>{t("welcome.styleSubtitle")}</p>
                 </div>
 
                 <div
                     ref={listRef}
                     role="radiogroup"
                     aria-labelledby={titleId}
-                    className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-[15%] pb-2 [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-6 lg:grid-cols-6"
+                    className="mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-[15%] py-3 [scrollbar-width:none] sm:mt-4 sm:py-0 sm:pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-6 lg:grid-cols-6"
                 >
                     {APP_STYLES.map((id, index) => {
                         const definition = APP_STYLE_DEFINITIONS[id];
