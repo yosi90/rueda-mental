@@ -307,14 +307,14 @@ h3 {
     animation: app-panel-aurora 14s linear infinite;
   }
 
-  /* Playa: bordes ondulados, esquinas irregulares y un toque de agua */
+  /* Playa: bordes con curvas irregulares, esquinas distintas y un toque de agua */
   [data-style="beach"] .app-panel {
-    --wave-top: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 6'%3E%3Cpath d='M0 6V3q5-3 10 0t10 0v3z'/%3E%3C/svg%3E");
-    --wave-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 6'%3E%3Cpath d='M0 0v3q5 3 10 0t10 0V0z'/%3E%3C/svg%3E");
+    --wave-top: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 7' preserveAspectRatio='none'%3E%3Cpath d='M0 7V3.5C12 3.5 18 1 32 1.2s20 3.6 38 3.4 24-3.8 42-3c14 .6 20 1.9 28 1.9V7z'/%3E%3C/svg%3E");
+    --wave-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 7' preserveAspectRatio='none'%3E%3Cpath d='M0 0v3c10 0 20 2.6 38 2.4s26-3.2 46-3 26 3.6 42 2.6c8-.6 10-2 14-2V0z'/%3E%3C/svg%3E");
     --wave-mask:
-      linear-gradient(#000 0 0) left center / 100% calc(100% - 10px) no-repeat,
-      var(--wave-top) left top / 20px 6px repeat-x,
-      var(--wave-bottom) left bottom / 20px 6px repeat-x;
+      linear-gradient(#000 0 0) left center / 100% calc(100% - 12px) no-repeat,
+      var(--wave-top) left top / 140px 7px repeat-x,
+      var(--wave-bottom) left bottom / 140px 7px repeat-x;
     border: 0;
     /* Cada esquina distinta: contorno de canto rodado */
     border-radius: 22px 12px 26px 10px / 16px 22px 12px 24px;
