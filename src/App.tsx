@@ -15,6 +15,7 @@ import { SectorsSettingsSection } from "./features/settings/components/SectorsSe
 import { SettingsDrawer } from "./features/settings/components/SettingsDrawer";
 import { StatsVisibilitySection } from "./features/settings/components/StatsVisibilitySection";
 import { ThemeSection } from "./features/settings/components/ThemeSection";
+import { StyleWelcomePicker } from "./features/settings/components/StyleWelcomePicker";
 import { TutorialSection } from "./features/settings/components/TutorialSection";
 import { buildStatsData } from "./features/stats/utils/buildStatsData";
 import { StatsLoading } from "./features/stats/components/StatsLoading";
@@ -38,7 +39,15 @@ import { useTouchDeviceDetection } from "./shared/hooks/useTouchDeviceDetection"
 import { useMediaQuery } from "./shared/hooks/useMediaQuery";
 import { useI18n } from "./shared/i18n/I18nContext";
 import { downloadBackup, readBackupFile } from "./shared/services/io/backup";
-import { hasTutorialBeenShown, loadLastBackupAt, saveLastBackupAt, saveTutorialShown } from "./shared/services/storage/mentalWheelStorage";
+import {
+    hasTutorialBeenShown,
+    loadLastBackupAt,
+    loadStylePickerDoneAt,
+    saveLastBackupAt,
+    saveStylePickerDoneAt,
+    saveTutorialShown,
+} from "./shared/services/storage/mentalWheelStorage";
+import type { AppStyle } from "./shared/theme/styles";
 import { theme } from "./shared/theme/theme";
 import type { HoverInfo, InfoMenuContextual } from "./shared/types/mentalWheel";
 import { addDaysToDateInput, formatDateInput, parseDateInput } from "./shared/utils/date";
@@ -127,6 +136,21 @@ export default function MentalWheelApp() {
         [scoresByDate, commentsByDate, dailySummaryByDate]
     );
     // Último día anterior con puntuaciones: se puede copiar a un día vacío y se dibuja como referencia
+    // Selector de estilo de bienvenida: tras el tutorial (o en la próxima visita) para quien nunca eligió estilo
+    const [stylePickerPending, setStylePickerPending] = useState(() => loadStylePickerDoneAt() === null);
+    const [stylePickerVisible, setStylePickerVisible] = useState(false);
+    useEffect(() => {
+        if (!stylePickerPending || tutorialStep !== 0 || !hasTutorialBeenShown()) return;
+        const timer = setTimeout(() => setStylePickerVisible(true), 600);
+        return () => clearTimeout(timer);
+    }, [stylePickerPending, tutorialStep]);
+    function finishStylePicker(style?: AppStyle) {
+        if (style) preferences.setStyle(style);
+        saveStylePickerDoneAt();
+        setStylePickerPending(false);
+        setStylePickerVisible(false);
+    }
+
     usePwaUpdates();
     const StatsModalComponent = loadedStatsModal ?? LazyStatsModal;
 
@@ -411,6 +435,14 @@ export default function MentalWheelApp() {
                 onNextDay={() => setDateStr((d) => addDaysToDateInput(d, 1))}
             />
             <SOSModal open={sosOpen} onClose={() => setSosOpen(false)} />
+            {stylePickerVisible && (
+                <StyleWelcomePicker
+                    currentStyle={preferences.style}
+                    backgroundImage={preferences.backgroundImage}
+                    onConfirm={(style) => finishStylePicker(style)}
+                    onDismiss={() => finishStylePicker()}
+                />
+            )}
             <Suspense fallback={<StatsLoading onClose={() => setStatsOpen(false)} />}>
                 {statsOpen && (
                     <StatsModalComponent
@@ -454,7 +486,10 @@ export default function MentalWheelApp() {
                             <>
                                 <ThemeSection
                                     style={preferences.style}
-                                    setStyle={preferences.setStyle}
+                                    setStyle={(style) => {
+                                        preferences.setStyle(style);
+                                        if (stylePickerPending) finishStylePicker();
+                                    }}
                                     backgroundImage={preferences.backgroundImage}
                                     setBackgroundImage={preferences.setBackgroundImage}
                                 />

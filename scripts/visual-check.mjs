@@ -34,6 +34,8 @@ function seed({ dark = false, tutorialShown = true, sectors = config } = {}) {
         localStorage.setItem("mental-wheel-dark-mode", JSON.stringify(data.dark));
         localStorage.setItem("mental-wheel-language-v1", "es");
         if (data.tutorialShown) localStorage.setItem("mental-wheel-tutorial-shown", "true");
+        // El selector de estilo de bienvenida se prueba aparte (bloque 13)
+        if (data.stylePicker !== false) localStorage.setItem("mental-wheel-style-picker-done-v1", String(Date.now()));
     };
 }
 
@@ -44,7 +46,7 @@ async function newPage(browser, opts = {}, ctxOpts = {}) {
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
     await page.goto(URL);
-    await page.evaluate(seed(opts), { dark: false, tutorialShown: true, sectors: config, scores, ...opts });
+    await page.evaluate(seed(opts), { dark: false, tutorialShown: true, stylePicker: true, sectors: config, scores, ...opts });
     await page.reload();
     await page.waitForSelector("svg");
     return { page, context, errors };
@@ -410,6 +412,41 @@ const report = [];
     report.push(`tras recargar: ${await styleOf()} · imagen: ${await bgOf()}`);
     report.push(`errores estilos: ${JSON.stringify(errors)}`);
     await context.close();
+}
+
+// 13. Selector de estilo de bienvenida
+{
+    // Escritorio: vista previa en directo, «Ahora no» y no vuelve a salir
+    const { page, context, errors } = await newPage(browser, { stylePicker: false });
+    const picker = page.getByRole("dialog", { name: "Elige tu estilo" });
+    await picker.waitFor({ timeout: 3000 });
+    const live = () => page.evaluate(() => `${document.documentElement.dataset.style} (guardado: ${localStorage.getItem("mental-wheel-style-v1")})`);
+    await picker.getByRole("radio", { name: /Aurora/ }).click();
+    report.push(`bienvenida: tras pulsar Aurora → ${await live()}`);
+    await page.screenshot({ path: `${OUT}/16-style-picker-desktop.png` });
+    await picker.getByRole("button", { name: "Ahora no" }).click();
+    report.push(`«Ahora no» → ${await live()} · selector cerrado: ${(await picker.count()) === 0}`);
+    await page.reload();
+    await page.waitForSelector("svg");
+    await page.waitForTimeout(1000);
+    report.push(`tras recargar, selector visible: ${await picker.count() > 0}`);
+    report.push(`errores bienvenida: ${JSON.stringify(errors)}`);
+    await context.close();
+
+    // Móvil: carrusel deslizable y confirmar
+    const mobile = await newPage(browser, { stylePicker: false }, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const mPicker = mobile.page.getByRole("dialog", { name: "Elige tu estilo" });
+    await mPicker.waitFor({ timeout: 3000 });
+    await mobile.page.waitForTimeout(500);
+    await mobile.page.getByRole("radiogroup").evaluate((el) => { el.scrollLeft += el.clientWidth * 0.7 * 3; });
+    await mobile.page.waitForTimeout(600);
+    const chosen = await mPicker.getByRole("radio", { checked: true }).getAttribute("data-style");
+    await mobile.page.screenshot({ path: `${OUT}/17-style-picker-mobile.png` });
+    await mPicker.getByRole("button", { name: /^Usar / }).click();
+    const saved = await mobile.page.evaluate(() => localStorage.getItem("mental-wheel-style-v1"));
+    report.push(`móvil: tras deslizar → ${chosen} · confirmado y guardado: ${saved}`);
+    report.push(`errores bienvenida móvil: ${JSON.stringify(mobile.errors)}`);
+    await mobile.context.close();
 }
 
 // 5. Móvil

@@ -20,6 +20,7 @@ const STORAGE_KEYS = {
     lastBackupAt: "mental-wheel-last-backup-v1",
     backupReminderAt: "mental-wheel-backup-reminder-v1",
     persistRequested: "mental-wheel-persist-requested-v1",
+    stylePickerDone: "mental-wheel-style-picker-done-v1",
     tutorialShown: "mental-wheel-tutorial-shown",
     statsVisibility: "mental-wheel-stats-visibility-v1",
     language: "mental-wheel-language-v1",
@@ -280,3 +281,7 @@ export const saveBackupReminderAt = () => saveTimestamp(STORAGE_KEYS.backupRemin
 /** Si ya se pidió al navegador almacenamiento persistente. */
 export const loadPersistRequestedAt = () => loadTimestamp(STORAGE_KEYS.persistRequested);
 export const savePersistRequestedAt = () => saveTimestamp(STORAGE_KEYS.persistRequested);
+
+/** El usuario ya eligió (o descartó) estilo en el selector de bienvenida o en Configuración. */
+export const loadStylePickerDoneAt = () => loadTimestamp(STORAGE_KEYS.stylePickerDone);
+export const saveStylePickerDoneAt = () => saveTimestamp(STORAGE_KEYS.stylePickerDone);

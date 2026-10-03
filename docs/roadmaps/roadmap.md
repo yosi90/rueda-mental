@@ -105,6 +105,7 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 - [x] El icono se guarda en la copia de seguridad; los sectores por defecto existentes reciben su icono al cargar.
 
 ### Estilos visuales
+- [x] Selector de estilo de bienvenida (tras el tutorial o en la siguiente visita, una vez): vista previa en directo; rejilla en escritorio y carrusel en móvil.
 - [x] Base: tokens de interfaz (--ui-*) registrados en Tailwind; ningún color fijo en componentes.
 - [x] Selector de estilo en Configuración con vistas previas reales (claro y oscuro se mantienen).
 - [x] Aurora: rosa nocturno (fondo CSS/SVG: cielo, estrellas).
