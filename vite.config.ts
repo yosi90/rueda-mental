@@ -46,7 +46,7 @@ export default defineConfig({
     VitePWA({
       // La app avisa de la nueva versión y el usuario decide cuándo actualizar
       registerType: 'prompt',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Día a día',
         short_name: 'Día a día',

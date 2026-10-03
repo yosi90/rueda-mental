@@ -63,7 +63,7 @@ Arreglos de bugs reales y deuda técnica rápida. Alto impacto, bajo riesgo.
 - [x] Desactivar el arrastre (pan) con zoom 1 para no confundir con «clic para puntuar».
 - [x] Detectar el idioma del navegador en la primera visita.
 - [x] Tema inicial según `prefers-color-scheme`.
-- [ ] Decidir si la «Media del día» del panel debe ignorar los sectores sin puntuar (como ya hacen las estadísticas).
+- [x] La «Media del día» del panel ignora los sectores sin puntuar (como las estadísticas, el diario y el informe); sin puntuaciones muestra «–».
 
 ---
 
@@ -132,3 +132,4 @@ Más estilo y dinamismo sin perder legibilidad ni accesibilidad. Los temas claro
 - [x] Informes (Configuración → Datos): CSV con una fila por día (puntuaciones, media, ánimo, resumen y comentarios; «;» y coma decimal en es/pt/de, BOM UTF-8, protegido contra fórmulas) e informe imprimible o en PDF (7/30/90 días o todo; días registrados, media, ánimo habitual, sectores con media, rango y tendencia, distribución del ánimo, tabla por día y, opcionalmente, resúmenes y comentarios).
 - [x] Estado de ánimo general del día (5 niveles) en el resumen; se guarda en la copia de seguridad.
 - [x] Estado de ánimo en las estadísticas: evolución del ánimo junto a la media de la rueda (dos ejes), media de la rueda por nivel de ánimo y frase comparando el mejor y el peor; se puede ocultar como las demás gráficas.
+- [x] Icono nuevo: rueda de «pétalos» de colores con un corazón en el centro (equilibrio entre estadística y salud mental); fuentes y generador en `docs/brand/`, favicon SVG y PNG para PWA/iOS; el icono aparece también en el centro de la rueda.

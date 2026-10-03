@@ -184,9 +184,11 @@ export default function MentalWheelApp() {
     const copySourceDate = dayHasScores(scores) ? null : previousDateWithScores;
     const referenceDate = preferences.showReference ? previousDateWithScores : null;
     const toDisplay = (raw: number) => toDisplayScore(raw, RING_COUNT, isScaleInverted);
-    const avg = activeSectors.length
-        ? (activeSectors.reduce((acc, s) => acc + toDisplay(scores[s.id] ?? 0), 0) / activeSectors.length).toFixed(2)
-        : "0.00";
+    // Media del día: solo los sectores puntuados (como en las estadísticas, el diario y el informe)
+    const scoredValues = activeSectors.filter((s) => (scores[s.id] ?? 0) > 0).map((s) => toDisplay(scores[s.id]));
+    const avg = scoredValues.length
+        ? (scoredValues.reduce((acc, value) => acc + value, 0) / scoredValues.length).toFixed(2)
+        : "–";
     const summaryDateLabel = parseDateInput(dateStr).toLocaleDateString(locale, {
         weekday: "long",
         day: "2-digit",
@@ -447,7 +449,21 @@ export default function MentalWheelApp() {
                                 onKeyboardScore={setDisplayScore}
                                 onOpenSectorMenu={(idSector, x, y) => setContextMenu({ idSector, x, y })}
                             />
-                            <circle cx={cx} cy={cy} r={geometry.centerRadius} fill={theme.svgCenter} stroke={theme.svgCenterBorder} />
+                            {/* Icono de la app en el centro de la rueda (decorativo) */}
+                            <clipPath id="wheel-center-clip">
+                                <circle cx={cx} cy={cy} r={geometry.centerRadius} />
+                            </clipPath>
+                            <image
+                                href="/favicon.svg"
+                                x={cx - geometry.centerRadius}
+                                y={cy - geometry.centerRadius}
+                                width={geometry.centerRadius * 2}
+                                height={geometry.centerRadius * 2}
+                                clipPath="url(#wheel-center-clip)"
+                                pointerEvents="none"
+                                aria-hidden="true"
+                            />
+                            <circle cx={cx} cy={cy} r={geometry.centerRadius} fill="none" stroke={theme.svgCenterBorder} pointerEvents="none" />
                         </g>
                     </svg>
                 </div>

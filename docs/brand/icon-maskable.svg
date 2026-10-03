@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#312e81"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <path d="M264.02 199.63 L278.09 100.78 A156.78 156.78 0 0 1 350.13 130.62 L290.19 210.47 A56.94 56.94 0 0 0 264.02 199.63Z" fill="#fda4af" stroke="#fda4af" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M301.91 222.32 L361.65 178.48 A131.04 131.04 0 0 1 385.52 236.11 L312.28 247.36 A56.94 56.94 0 0 0 301.91 222.32Z" fill="#fdba74" stroke="#fdba74" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M312.33 264.29 L399.54 277.11 A145.08 145.08 0 0 1 372.42 342.57 L301.69 289.98 A56.94 56.94 0 0 0 312.33 264.29Z" fill="#fde047" stroke="#fde047" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M289.46 302.07 L327.51 354.45 A121.68 121.68 0 0 1 275.04 376.18 L264.91 312.24 A56.94 56.94 0 0 0 289.46 302.07Z" fill="#86efac" stroke="#86efac" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M247.88 312.36 L234.30 406.54 A152.10 152.10 0 0 1 164.90 377.80 L221.89 301.60 A56.94 56.94 0 0 0 247.88 312.36Z" fill="#5eead4" stroke="#5eead4" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M210.13 289.74 L148.55 335.03 A133.38 133.38 0 0 1 124.14 276.10 L199.71 264.58 A56.94 56.94 0 0 0 210.13 289.74Z" fill="#7dd3fc" stroke="#7dd3fc" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M199.67 247.66 L114.80 235.09 A142.74 142.74 0 0 1 141.37 170.94 L210.27 222.07 A56.94 56.94 0 0 0 199.67 247.66Z" fill="#a5b4fc" stroke="#a5b4fc" stroke-width="17.16" stroke-linejoin="round"/>
+  <path d="M222.42 210.01 L181.48 153.95 A126.36 126.36 0 0 1 236.53 131.15 L247.23 199.74 A56.94 56.94 0 0 0 222.42 210.01Z" fill="#f0abfc" stroke="#f0abfc" stroke-width="17.16" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="39.00" fill="#ffffff"/>
+  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" transform="translate(256 257.17) scale(2.145) translate(-12 -12)" fill="#e11d48"/>
+</svg>
